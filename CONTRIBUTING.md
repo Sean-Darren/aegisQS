@@ -34,13 +34,6 @@ aegisQS uses a **simplified Git Flow** model. We keep a stable `main` for produc
 | `chore/`   | `develop`     | `develop`                | Tooling, dependencies, CI, refactors with no behaviour change |
 | `docs/`    | `develop`     | `develop`                | Documentation-only changes                                    |
 
-### 1.3 Branch Naming Convention
-
-```
-<type>/<ticket-id>-<short-kebab-case-description>
-```
-
-**Rules:**
 
 ### 1.3 Branch Naming Convention
 

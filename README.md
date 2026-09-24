@@ -1,0 +1,1 @@
+aegisQS - SmartQS Hackathon 2026 

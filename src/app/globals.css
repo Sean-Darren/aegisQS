@@ -1,0 +1,130 @@
+@import "tailwindcss";
+
+:root {
+  /* shadcn contract — every 21st.dev component reads these */
+  --background: #f7f5f2;
+  --foreground: #2b211b;
+  --card: #ffffff;
+  --card-foreground: #2b211b;
+  --popover: #ffffff;
+  --popover-foreground: #2b211b;
+  --primary: #6b5445;
+  --primary-foreground: #ffffff;
+  --secondary: #f3e4c9;
+  --secondary-foreground: #4a3a2f;
+  --muted: #f1ece5;
+  --muted-foreground: #6e6259;
+  --accent: #f8f0e1;
+  --accent-foreground: #2b211b;
+  --destructive: #9e2b36;
+  --destructive-foreground: #ffffff;
+  --border: #e7ded2;
+  --input: #94877b;
+  --ring: #8a6f5c;
+  --radius: 0.625rem;
+
+  --sidebar: #2b211b;
+  --sidebar-foreground: #f3e4c9;
+  --sidebar-primary: #babf94;
+  --sidebar-primary-foreground: #2b211b;
+  --sidebar-accent: #3a2e26;
+  --sidebar-accent-foreground: #f3e4c9;
+  --sidebar-border: #3f332b;
+  --sidebar-ring: #babf94;
+
+  --chart-1: #2b211b; /* focus series */
+  --chart-2: #5e6440; /* within tolerance */
+  --chart-3: #9e2b36; /* breach */
+  --chart-4: #b8862e; /* caution */
+  --chart-5: #cfc2b2; /* background series */
+
+  /* Smart QS semantic tokens (names used in AGENTS.md / TASK_PROMPTS.md) */
+  --ink: #2b211b;
+  --surface: #f7f5f2;
+  --panel: #ffffff;
+  --muted-ink: #6e6259;
+  --clay: #a98b76;
+  --clay-600: #8a6f5c;
+  --clay-700: #6b5445;
+  --clay-800: #4a3a2f;
+  --sandstone: #bfa28c;
+  --limewash: #f3e4c9;
+  --limewash-100: #f8f0e1;
+  --lichen: #babf94;
+  --stone-50: #f1ece5;
+  --line: #e7ded2;
+  --line-strong: #94877b;
+  --tolerance: #474c2e;
+  --tolerance-bg: #eef0e2;
+  --caution: #7f5710;
+  --caution-bg: #f6eacb;
+  --risk: #9e2b36;
+  --risk-bg: #f7e0e2;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-border: var(--sidebar-border);
+
+  --color-ink: var(--ink);
+  --color-clay: var(--clay);
+  --color-clay-600: var(--clay-600);
+  --color-clay-700: var(--clay-700);
+  --color-clay-800: var(--clay-800);
+  --color-sandstone: var(--sandstone);
+  --color-limewash: var(--limewash);
+  --color-limewash-100: var(--limewash-100);
+  --color-lichen: var(--lichen);
+  --color-stone-50: var(--stone-50);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-tolerance: var(--tolerance);
+  --color-tolerance-bg: var(--tolerance-bg);
+  --color-caution: var(--caution);
+  --color-caution-bg: var(--caution-bg);
+  --color-risk: var(--risk);
+  --color-risk-bg: var(--risk-bg);
+
+  --font-sans:
+    var(--font-karla), var(--font-noto-hk), "Noto Sans HK", ui-sans-serif,
+    system-ui, sans-serif;
+
+  --radius-sm: 0.25rem; /* 4px  badges inside tables, checkboxes */
+  --radius-md: 0.375rem; /* 6px  buttons, inputs, selects */
+  --radius-lg: 0.625rem; /* 10px panels, cards, drawer */
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+}
+
+body {
+  font-size: 14px;
+  line-height: 20px;
+}
+:lang(zh-HK) body {
+  line-height: 22px;
+}

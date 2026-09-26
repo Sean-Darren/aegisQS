@@ -90,7 +90,7 @@ The UI hides or disables actions per permission, but **the backend is the real e
 | Concern | Choice |
 |---|---|
 | Framework | Next.js (App Router) + TypeScript `strict: true` |
-| Package manager | pnpm |
+| Package manager | **npm** — commit `package-lock.json`; never create `pnpm-lock.yaml` or `yarn.lock`; use `npm ci` in CI |
 | Styling | Tailwind CSS with design tokens as CSS variables (see §8) |
 | UI primitives | shadcn/ui + **21st.dev** components (installed into `src/components/ui`, restyled per `DESIGN.md` §12) on Radix UI |
 | Server state | TanStack Query |
@@ -415,12 +415,13 @@ Deterministic seed in `src/mocks/fixtures` (use a seeded PRNG, never `Math.rando
 ## 12. Commands
 
 ```
-pnpm dev            # next dev (mocks on if NEXT_PUBLIC_API_MOCKING=enabled)
-pnpm build
-pnpm typecheck      # tsc --noEmit
-pnpm lint
-pnpm test           # vitest
-pnpm test:e2e       # playwright
+npm install            # install dependencies
+npm run dev            # next dev (mocks on if NEXT_PUBLIC_API_MOCKING=enabled)
+npm run build
+npm run typecheck      # tsc --noEmit
+npm run lint
+npm test               # vitest
+npm run test:e2e       # playwright
 ```
 
 ---
@@ -435,7 +436,7 @@ pnpm test:e2e       # playwright
 
 ### Definition of done (every task)
 
-- [ ] `pnpm typecheck`, `pnpm lint`, `pnpm test` pass; no new console errors/warnings in dev
+- [ ] `npm run typecheck`, `npm run lint`, `npm test` pass; no new console errors/warnings in dev
 - [ ] All API data parsed via Zod; loading, empty, error, and insufficient-data states implemented
 - [ ] Permissions enforced via `can()`; verified with at least `senior_qs` and `junior_qs`
 - [ ] All strings in `en.json` and `zh-HK.json`; banned-word test passes
@@ -458,3 +459,13 @@ Site scheduling or attendance tracking · physical inspection tools · structura
 | Owner access model | Expiring share-link token (`/shared/[token]`), no login |
 | Weight changes after reports are signed | Signed reports are immutable; show the `configVersion` they used |
 | Consultant-fee benchmarking | Not in scope yet |
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->

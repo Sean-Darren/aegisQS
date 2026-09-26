@@ -1,0 +1,10 @@
+{
+  "Home": {
+    "title": "Smart QS",
+    "description": "Smart QS 工作區正在準備中。"
+  },
+  "Mock": {
+    "loading": "正在準備工作區…",
+    "error": "模擬服務未能啟動。請重新載入頁面再試。"
+  }
+}

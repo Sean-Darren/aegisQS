@@ -92,7 +92,7 @@ The UI hides or disables actions per permission, but **the backend is the real e
 | Framework | Next.js (App Router) + TypeScript `strict: true` |
 | Package manager | pnpm |
 | Styling | Tailwind CSS with design tokens as CSS variables (see §8) |
-| UI primitives | Radix UI (via shadcn/ui-style local components in `src/components/ui`) |
+| UI primitives | shadcn/ui + **21st.dev** components (installed into `src/components/ui`, restyled per `DESIGN.md` §12) on Radix UI |
 | Server state | TanStack Query |
 | Data grid | TanStack Table + TanStack Virtual |
 | Charts | Apache ECharts via `echarts-for-react` |
@@ -342,25 +342,14 @@ Rules: features import from `components/`, `lib/`, `schemas/` — never from ano
 
 ## 8. Design system
 
-### Palette (CSS variables in `src/app/globals.css`, exposed to Tailwind)
+**The full visual system lives in `DESIGN.md` — read it before any UI work.** It defines the palette (Clay `#A98B76`, Sandstone `#BFA28C`, Limewash `#F3E4C9`, Lichen `#BABF94` plus contrast-checked derived shades), the shadcn/21st.dev theme variables, Karla typography, component specs, chart theme, motion rules, and the 21st.dev adoption checklist.
 
-| Token | Hex | Use |
-|---|---|---|
-| `--ink` | `#0E1A2B` | Primary text, dark panels (recommended-awardee card, distribution chart background) |
-| `--surface` | `#F3F5F4` | App background |
-| `--panel` | `#FFFFFF` | Cards, tables |
-| `--tolerance` | `#15935F` | Within tolerance / low risk |
-| `--caution` | `#C77D0A` | Moderate risk, medium severity |
-| `--risk` | `#D93A3F` | High/critical risk, breached thresholds |
-| `--steel` | `#4A6378` | Secondary text, gridlines, neutral chart series |
+Summary of the rules most often broken:
 
-Provide a dark theme later; build with tokens so it is a token swap.
-
-### Typography
-
-- Latin: **IBM Plex Sans** (fits the engineering/industrial subject; strong tabular figures). Chinese fallback: **Noto Sans HK**.
-- All numbers in tables, KPI cards, and charts use `font-variant-numeric: tabular-nums` and are **right-aligned**. Do not switch to a monospace face for data.
+- Use theme tokens only (`--ink`, `--surface`, `--panel`, `--tolerance`, `--caution`, `--risk`, `--muted-ink`, brand tokens). No raw Tailwind colours (`zinc-*`, `slate-*`, `indigo-*`…) and no hex values in components.
+- Font is **Karla** (Chinese fallback **Noto Sans HK**). Karla's default digits are proportional, so all numbers in tables, KPI cards, and charts use `tabular-nums` and are **right-aligned**. Never switch to a monospace face for data.
 - Sentence case for all labels, buttons, headings. No all-caps eyebrow labels.
+- Brand colours are never used for text on light backgrounds (they fail contrast); use the derived shades in `DESIGN.md` §2.2.
 
 ### Formatting (all through `src/lib/format`)
 

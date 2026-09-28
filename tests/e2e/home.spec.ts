@@ -24,7 +24,9 @@ test("home defaults to English, renders both locales, and starts browser mocks",
   expect(currentUser.status).toBe(200);
   expect(currentUser.body.role).toBe("senior_qs");
   await page.goto("/zh-HK");
-  await expect(page.getByText(zh.Home.description)).toBeVisible();
+  await expect(
+    page.locator("main p").filter({ hasText: zh.Home.description }),
+  ).toBeVisible();
   await expect(page.locator("html")).toHaveAttribute("lang", "zh-HK");
   expect(errors).toEqual([]);
 });

@@ -1,8 +1,16 @@
-import { userSchema } from "@/schemas/user";
-export const mockUser = userSchema.parse({
-  id: "user-senior",
-  name: "Sample Senior QS",
-  email: "senior@example.test",
-  role: "senior_qs",
-  locale: "en",
-});
+import { userSchema, roleSchema } from "@/schemas";
+export const users = roleSchema.options.map((role, index) =>
+  userSchema.parse({
+    id: ["user-senior", "user-junior", "user-owner", "user-admin"][index],
+    name: [
+      "Sample Senior QS",
+      "Sample Junior QS",
+      "Sample Owner",
+      "Sample Administrator",
+    ][index],
+    email: `${role}@example.test`,
+    role,
+    locale: "en",
+  }),
+);
+export const mockUser = users[0];

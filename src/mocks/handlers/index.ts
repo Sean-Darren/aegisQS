@@ -1,5 +1,12 @@
-import { http, HttpResponse } from "msw";
-import { mockUser } from "../fixtures/users";
+import { projectHandlers } from "./projects";
+import { flagHandlers } from "./flags";
+import { documentHandlers } from "./documents";
+import { jobReportHandlers } from "./jobs-reports";
+import { wsHandlers } from "../ws";
 export const handlers = [
-  http.get("*/api/v1/me", () => HttpResponse.json(mockUser)),
+  ...projectHandlers,
+  ...flagHandlers,
+  ...documentHandlers,
+  ...jobReportHandlers,
+  ...wsHandlers,
 ];

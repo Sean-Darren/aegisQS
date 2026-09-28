@@ -1,6 +1,7 @@
 import { Karla, Noto_Sans_HK } from "next/font/google";
 export const karla = Karla({
   subsets: ["latin"],
+  weight: "variable",
   variable: "--font-karla",
   display: "swap",
 });

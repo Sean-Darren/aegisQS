@@ -22,3 +22,12 @@
 - Sign-off blocks unresolved high/critical flags and running jobs. Signed metadata versions and their existing flag decisions are locked; later jobs may add new flags. Report PDF generation is deferred and pdfUrl is omitted. No report fields are invented to resolve the separate configVersion/disclaimer questions in AGENTS.md.
 - Preserve the user's AegisQS wording in zh-HK; repair the existing Mock key names to loading/error so the current provider and locale-parity test work. Update the smoke-test paragraph locator to tolerate identical heading/body text.
 - No application dependencies were added and no commits were created.
+
+## 2026-09-28 — Design foundation and app shell
+
+- Use the six explicitly approved packages (`radix-ui`, `lucide-react`, `class-variance-authority`, `clsx`, `tailwind-merge`, `jsdom`) for accessible primitives, iconography, class composition, and component tests. Remove the shadcn CLI's unapproved `cn` package after localizing its helper.
+- Adapt nine shadcn Radix primitives into Smart QS tokens. The 21st.dev catalog search was unavailable without sign-in; no third-party catalog code or repository design context was transmitted.
+- Keep the header job and notification controls as named placeholders. Project route bodies are composition-only placeholders because product screens are outside this task.
+- Use the existing mock role helper for dev-only role switching and invalidate TanStack Query state on every switch; the backend remains authoritative for permissions.
+- Treat `?evidence=<flagId>` as the global drawer address. This foundation displays parsed flag evidence and source-document links; the PDF page overlay and disposition workflow belong to the later evidence feature.
+- Tender navigation exposes Risk, Scope, Rates, and BOQ as tabs. Owner viewers see the signed-report access message without project navigation; the expiring share-link portal remains future work.

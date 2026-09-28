@@ -6,5 +6,94 @@
   "Mock": {
     "loading": "Preparing the workspace…",
     "error": "Mock services could not start. Reload the page to try again."
+  },
+  "Common": {
+    "close": "Close",
+    "retry": "Try again",
+    "loading": "Loading…",
+    "view": "View"
+  },
+  "Status": {
+    "severity": {
+      "critical": "Critical",
+      "high": "High",
+      "medium": "Medium",
+      "low": "Low"
+    },
+    "band": {
+      "critical": "Critical risk",
+      "high": "High risk",
+      "moderate": "Moderate risk",
+      "low": "Low risk"
+    },
+    "insufficientData": "Insufficient benchmark data"
+  },
+  "Shell": {
+    "product": "AegisQS",
+    "workspace": "QS workspace",
+    "project": "Project",
+    "selectProject": "Select project",
+    "jobStatus": "Analysis status",
+    "jobPlaceholder": "No analysis running",
+    "notifications": "Notifications",
+    "notificationsPlaceholder": "No new notifications",
+    "role": "Preview role",
+    "roleSenior": "Senior QS",
+    "roleJunior": "Junior QS",
+    "roleOwner": "Owner viewer",
+    "roleAdmin": "Admin",
+    "signedOnly": "Signed reports are available through a shared link.",
+    "sessionError": "Your session could not be loaded. Try again.",
+    "stagePreTender": "Pre-Tender",
+    "stageTender": "Tender",
+    "stagePostAward": "Post-Award"
+  },
+  "Navigation": {
+    "projects": "Projects",
+    "overview": "Overview",
+    "documents": "Documents",
+    "scopeGaps": "Scope gaps",
+    "risk": "Risk",
+    "scope": "Scope",
+    "rates": "Rates",
+    "boq": "BOQ",
+    "flags": "Flags",
+    "reports": "Reports",
+    "audit": "Audit log",
+    "admin": "Admin"
+  },
+  "Projects": {
+    "title": "Projects",
+    "description": "Review active cost-audit projects.",
+    "count": "{count} tenderers",
+    "stage": "Stage",
+    "empty": "No projects are available yet.",
+    "error": "Projects could not be loaded. Try again.",
+    "open": "Open project",
+    "created": "Created {date}"
+  },
+  "Login": {
+    "title": "Sign in to AegisQS",
+    "description": "Use the mock workspace to review project data.",
+    "continue": "Continue to projects"
+  },
+  "Evidence": {
+    "title": "Flag evidence",
+    "missing": "Evidence missing — report to admin.",
+    "empty": "Select a flag to review its source evidence.",
+    "error": "Flag evidence could not be loaded. Try again.",
+    "source": "Source",
+    "excerpt": "Excerpt",
+    "confidence": "Confidence",
+    "calculation": "Calculation",
+    "page": "Page {page}",
+    "document": "Document {id}",
+    "openDocument": "Open source document",
+    "noPage": "No page reference available.",
+    "readOnly": "Evidence review is read-only in this role."
+  },
+  "Section": {
+    "placeholder": "This workspace section is being prepared.",
+    "back": "Back to projects"
   }
 }

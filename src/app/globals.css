@@ -37,6 +37,7 @@
   --chart-3: #9e2b36; /* breach */
   --chart-4: #b8862e; /* caution */
   --chart-5: #cfc2b2; /* background series */
+  --chart-grid: #efe8de;
 
   /* Smart QS semantic tokens (names used in AGENTS.md / TASK_PROMPTS.md) */
   --ink: #2b211b;
@@ -121,6 +122,16 @@ body {
   font-family: var(--font-sans);
 }
 
+.num,
+table,
+[data-number] {
+  font-variant-numeric: tabular-nums lining-nums;
+}
+.floating-layer {
+  box-shadow:
+    0 8px 24px rgba(43, 33, 27, 0.12),
+    0 1px 2px rgba(43, 33, 27, 0.08);
+}
 body {
   font-size: 14px;
   line-height: 20px;

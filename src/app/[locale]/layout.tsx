@@ -3,6 +3,8 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import { notFound } from "next/navigation";
 import { routing } from "@/i18n/routing";
 import { MockProvider } from "@/mocks/provider";
+import { AppProviders } from "@/components/layout/providers";
+import { ChartThemeProvider } from "@/components/layout/chart-theme-provider";
 import { karla, notoSansHK } from "../fonts";
 import "../globals.css";
 export function generateStaticParams() {
@@ -32,7 +34,12 @@ export default async function LocaleLayout({
     <html lang={locale} className={`${karla.variable} ${notoSansHK.variable}`}>
       <body>
         <NextIntlClientProvider>
-          <MockProvider>{children}</MockProvider>
+          <MockProvider>
+            <AppProviders>
+              <ChartThemeProvider />
+              {children}
+            </AppProviders>
+          </MockProvider>
         </NextIntlClientProvider>
       </body>
     </html>

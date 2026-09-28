@@ -1,0 +1,120 @@
+"use client";
+import type { ReactNode } from "react";
+import { Bell, CircleDashed } from "lucide-react";
+import { useTranslations } from "next-intl";
+import { useRouter } from "@/i18n/navigation";
+import { Link } from "@/i18n/navigation";
+import { can } from "@/lib/auth/permissions";
+import { useMockRoleSwitcher } from "@/lib/auth/session";
+import type { Project, Role, User } from "@/schemas";
+import {
+  IconButton,
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui";
+import { StageStepper } from "./stage-stepper";
+
+const roles: Role[] = ["senior_qs", "junior_qs", "owner_viewer", "admin"];
+export function Header({
+  user,
+  projects,
+  projectId,
+  primaryAction,
+}: {
+  user?: User;
+  projects: Project[];
+  projectId?: string;
+  primaryAction?: ReactNode;
+}) {
+  const t = useTranslations("Shell");
+  const router = useRouter();
+  const switchRole = useMockRoleSwitcher();
+  const project = projects.find((item) => item.id === projectId);
+  return (
+    <header className="flex min-h-16 flex-wrap items-center gap-4 border-b border-line bg-panel px-5 py-3">
+      <Link
+        href="/projects"
+        className="shrink-0 rounded-sm text-lg font-bold tracking-tight text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-clay-600"
+      >
+        {t("product")}
+      </Link>
+      {can(user, "project.view") && (
+        <label className="flex items-center gap-2 text-xs text-muted-ink">
+          <span>{t("project")}</span>
+          <select
+            aria-label={t("selectProject")}
+            value={projectId ?? ""}
+            onChange={(event) =>
+              router.push(`/projects/${event.target.value}/overview`)
+            }
+            className="h-9 max-w-56 rounded-md border border-line-strong bg-panel px-3 text-sm text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-clay-600"
+          >
+            <option value="" disabled>
+              {t("selectProject")}
+            </option>
+            {projects.map((item) => (
+              <option value={item.id} key={item.id}>
+                {item.name}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
+      {project && can(user, "project.view") && (
+        <StageStepper projectId={project.id} stage={project.stage} />
+      )}
+      <div className="ml-auto flex items-center gap-2">
+        {primaryAction}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span>
+              <IconButton label={t("jobStatus")}>
+                <CircleDashed size={18} strokeWidth={1.5} />
+              </IconButton>
+            </span>
+          </TooltipTrigger>
+          <TooltipContent>{t("jobPlaceholder")}</TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span>
+              <IconButton label={t("notifications")}>
+                <Bell size={18} strokeWidth={1.5} />
+              </IconButton>
+            </span>
+          </TooltipTrigger>
+          <TooltipContent>{t("notificationsPlaceholder")}</TooltipContent>
+        </Tooltip>
+        {process.env.NEXT_PUBLIC_API_MOCKING === "enabled" && user && (
+          <label className="flex items-center gap-2 text-xs text-muted-ink">
+            <span>{t("role")}</span>
+            <select
+              aria-label={t("role")}
+              value={user.role}
+              onChange={async (event) => {
+                await switchRole(event.target.value as Role);
+                router.push("/projects");
+              }}
+              className="h-9 rounded-md border border-line-strong bg-panel px-2 text-sm text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-clay-600"
+            >
+              {roles.map((role) => (
+                <option key={role} value={role}>
+                  {t(
+                    role === "senior_qs"
+                      ? "roleSenior"
+                      : role === "junior_qs"
+                        ? "roleJunior"
+                        : role === "owner_viewer"
+                          ? "roleOwner"
+                          : "roleAdmin",
+                  )}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
+      </div>
+    </header>
+  );
+}

@@ -16,7 +16,15 @@ export type Permission = keyof typeof PERMISSIONS;
 export function can(
   user: Pick<User, "role"> | null | undefined,
   permission: Permission,
+  resource?: { status?: string },
 ): boolean {
   const roles: readonly User["role"][] = PERMISSIONS[permission];
-  return !!user && roles.includes(user.role);
+  if (!user || !roles.includes(user.role)) return false;
+  if (
+    permission === "report.viewSigned" &&
+    resource?.status &&
+    resource.status !== "signed"
+  )
+    return false;
+  return true;
 }

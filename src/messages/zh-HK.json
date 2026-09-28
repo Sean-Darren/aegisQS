@@ -6,5 +6,94 @@
   "Mock": {
     "loading": "AegisQS",
     "error": "AegisQS"
+  },
+  "Common": {
+    "close": "關閉",
+    "retry": "重試",
+    "loading": "載入中…",
+    "view": "查看"
+  },
+  "Status": {
+    "severity": {
+      "critical": "極嚴重",
+      "high": "高",
+      "medium": "中",
+      "low": "低"
+    },
+    "band": {
+      "critical": "極高風險",
+      "high": "高風險",
+      "moderate": "中等風險",
+      "low": "低風險"
+    },
+    "insufficientData": "基準數據不足"
+  },
+  "Shell": {
+    "product": "AegisQS",
+    "workspace": "工料測量工作區",
+    "project": "項目",
+    "selectProject": "選擇項目",
+    "jobStatus": "分析狀態",
+    "jobPlaceholder": "目前沒有進行中的分析",
+    "notifications": "通知",
+    "notificationsPlaceholder": "沒有新通知",
+    "role": "預覽角色",
+    "roleSenior": "高級工料測量師",
+    "roleJunior": "助理工料測量師",
+    "roleOwner": "業主檢視者",
+    "roleAdmin": "管理員",
+    "signedOnly": "已簽署報告可透過分享連結查看。",
+    "sessionError": "無法載入工作階段，請重試。",
+    "stagePreTender": "招標前",
+    "stageTender": "招標",
+    "stagePostAward": "批出後"
+  },
+  "Navigation": {
+    "projects": "項目",
+    "overview": "總覽",
+    "documents": "文件",
+    "scopeGaps": "工程範圍缺漏",
+    "risk": "風險",
+    "scope": "工程範圍",
+    "rates": "單價",
+    "boq": "工程量清單",
+    "flags": "異常標記",
+    "reports": "報告",
+    "audit": "審計紀錄",
+    "admin": "管理"
+  },
+  "Projects": {
+    "title": "項目",
+    "description": "檢視現有成本審核項目。",
+    "count": "{count} 個投標者",
+    "stage": "階段",
+    "empty": "目前沒有可用項目。",
+    "error": "無法載入項目，請重試。",
+    "open": "開啟項目",
+    "created": "建立於 {date}"
+  },
+  "Login": {
+    "title": "登入 AegisQS",
+    "description": "使用模擬工作區檢視項目資料。",
+    "continue": "前往項目"
+  },
+  "Evidence": {
+    "title": "異常標記證據",
+    "missing": "缺少證據 — 請向管理員報告。",
+    "empty": "選擇異常標記以檢視來源證據。",
+    "error": "無法載入異常標記證據，請重試。",
+    "source": "來源",
+    "excerpt": "摘錄",
+    "confidence": "可信度",
+    "calculation": "計算",
+    "page": "第 {page} 頁",
+    "document": "文件 {id}",
+    "openDocument": "開啟來源文件",
+    "noPage": "沒有頁碼資料。",
+    "readOnly": "此角色只能檢視證據。"
+  },
+  "Section": {
+    "placeholder": "此工作區部分正在準備中。",
+    "back": "返回項目"
   }
 }

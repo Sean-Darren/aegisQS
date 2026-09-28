@@ -11,13 +11,20 @@ import { Toast as Primitive } from "radix-ui";
 import { X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
+import { Link } from "@/i18n/navigation";
 type ToastMessage = {
   id: number;
   message: string;
   status: "success" | "error" | "info";
+  action?: { label: string; href: string };
 };
 const ToastContext = createContext<
-  ((message: string, status?: ToastMessage["status"]) => void) | null
+  | ((
+      message: string,
+      status?: ToastMessage["status"],
+      action?: ToastMessage["action"],
+    ) => void)
+  | null
 >(null);
 export function Toast({
   className,
@@ -37,10 +44,14 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<ToastMessage[]>([]);
   const t = useTranslations("Common");
   const show = useCallback(
-    (message: string, status: ToastMessage["status"] = "info") =>
+    (
+      message: string,
+      status: ToastMessage["status"] = "info",
+      action?: ToastMessage["action"],
+    ) =>
       setItems((old) => [
         ...old,
-        { id: Date.now() + old.length, message, status },
+        { id: Date.now() + old.length, message, status, action },
       ]),
     [],
   );
@@ -60,6 +71,14 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             }}
           >
             <Primitive.Description>{item.message}</Primitive.Description>
+            {item.action && (
+              <Link
+                href={item.action.href}
+                className="ml-3 rounded-sm font-semibold text-clay-800 underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-clay-600"
+              >
+                {item.action.label}
+              </Link>
+            )}
             <Primitive.Close
               aria-label={t("close")}
               className="ml-3 rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-clay-600"

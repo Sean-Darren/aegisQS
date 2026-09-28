@@ -60,6 +60,12 @@ export const documentHandlers = [
           "INVALID_TENDERER",
           "Tenderer does not belong to this project.",
         );
+      if (type.data === "priced_boq" && !tendererId)
+        return failure(
+          400,
+          "TENDERER_REQUIRED",
+          "Select a tenderer for the priced BOQ.",
+        );
       const doc = projectDocumentSchema.parse({
         id: nextId("D"),
         projectId,
@@ -92,6 +98,27 @@ export const documentHandlers = [
       return json(projectDocumentSchema, doc, 201);
     },
   ),
+  http.post("*/api/v1/documents/:documentId/reprocess", ({ params }) => {
+    const doc = db.documents.find((item) => item.id === params.documentId);
+    if (!doc) return failure(404, "NOT_FOUND", "Document not found.");
+    const denied = projectGuard(doc.projectId, "document.upload");
+    if (denied) return denied;
+    if (doc.parseStatus !== "failed")
+      return failure(
+        409,
+        "NOT_FAILED",
+        "Only failed document parsing can be retried.",
+      );
+    doc.parseStatus = "queued";
+    delete doc.parseError;
+    audit("document.reprocessing", "document", doc.id);
+    const timer = setTimeout(() => {
+      doc.parseStatus = "parsed";
+      unregister();
+    }, 1000);
+    const unregister = registerCleanup(() => clearTimeout(timer));
+    return json(projectDocumentSchema, doc, 202);
+  }),
   http.get("*/api/v1/documents/:documentId/file", ({ params }) => {
     const doc = db.documents.find((d) => d.id === params.documentId);
     if (!doc) return failure(404, "NOT_FOUND", "Document not found.");

@@ -31,3 +31,10 @@
 - Use the existing mock role helper for dev-only role switching and invalidate TanStack Query state on every switch; the backend remains authoritative for permissions.
 - Treat `?evidence=<flagId>` as the global drawer address. This foundation displays parsed flag evidence and source-document links; the PDF page overlay and disposition workflow belong to the later evidence feature.
 - Tender navigation exposes Risk, Scope, Rates, and BOQ as tabs. Owner viewers see the signed-report access message without project navigation; the expiring share-link portal remains future work.
+
+## 2026-09-28 — Document upload and analysis monitoring
+
+- Add the two user-approved REST operations to the §6 endpoint list: re-process a failed document and retry one failed auditor in a terminal job. Both return existing Zod contract shapes; no data fields change.
+- Use XHR for upload byte progress because browser `fetch` does not expose upload progress; send credentials and parse the completed response through the ProjectDocument schema. Keep all other requests on the typed fetch client.
+- Poll queued document parsing and active jobs as a recovery path when a WebSocket update is missed. The shared project socket updates the TanStack Query cache and drives the header and Documents matrix; jobs started in the workspace remain monitored when navigating to the portfolio and back.
+- The mock upload and analysis endpoints enforce a tenderer for priced BOQs and at least one parsed priced BOQ before analysis. Mock retries are limited to failed work and preserve the existing document and job IDs.

@@ -259,8 +259,10 @@ GET    /projects
 GET    /projects/:projectId
 GET    /projects/:projectId/documents
 POST   /projects/:projectId/documents              (multipart; fields: file, type, tendererId?)
+POST   /documents/:documentId/reprocess              (retry failed parsing; returns ProjectDocument)
 POST   /projects/:projectId/analysis-jobs
 GET    /analysis-jobs/:jobId
+POST   /analysis-jobs/:jobId/auditors/:tendererId/:auditor/retry   (retry failed auditor; returns AnalysisJob)
 GET    /projects/:projectId/tenderers
 GET    /projects/:projectId/bids
 GET    /projects/:projectId/kpis

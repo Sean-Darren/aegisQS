@@ -1,6 +1,9 @@
-import { getTranslations } from "next-intl/server";
-import { SectionPlaceholder } from "@/components/layout/section-placeholder";
-export default async function Page() {
-  const t = await getTranslations("Navigation");
-  return <SectionPlaceholder label={t("documents")} />;
+import { DocumentsWorkspace } from "@/features/documents";
+export default async function Page({
+  params,
+}: {
+  params: Promise<{ projectId: string }>;
+}) {
+  const { projectId } = await params;
+  return <DocumentsWorkspace projectId={projectId} />;
 }

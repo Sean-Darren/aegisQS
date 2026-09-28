@@ -7,6 +7,57 @@ import {
 import { db, nextId, now, publish, registerCleanup, audit } from "../store";
 import { provenance } from "../fixtures/data";
 export const ANALYSIS_DURATION_MS = 20000;
+export const AUDITOR_RETRY_DURATION_MS = 5000;
+export function retryFailedAuditor(
+  job: AnalysisJob,
+  tendererId: string,
+  auditor: AnalysisJob["progress"][number]["auditor"],
+) {
+  const progress = job.progress.find(
+    (item) => item.tendererId === tendererId && item.auditor === auditor,
+  );
+  if (
+    !progress ||
+    progress.status !== "failed" ||
+    !["partial", "failed"].includes(job.status)
+  )
+    return false;
+  progress.status = "running";
+  progress.pct = 0;
+  delete progress.error;
+  job.status = "running";
+  delete job.finishedAt;
+  let tick = 0;
+  const timer = setInterval(() => {
+    tick++;
+    progress.pct = Math.round((tick / 5) * 100);
+    progress.status = tick === 5 ? "succeeded" : "running";
+    publish(job.projectId, {
+      type: "job.progress",
+      jobId: job.id,
+      tendererId,
+      auditor,
+      status: progress.status,
+      pct: progress.pct,
+    });
+    if (tick === 5) {
+      clearInterval(timer);
+      unregister();
+      job.status = job.progress.every((item) => item.status === "succeeded")
+        ? "succeeded"
+        : "partial";
+      job.finishedAt = now();
+      audit("auditor.retried", "job", job.id, { tendererId, auditor });
+      publish(job.projectId, {
+        type: "job.completed",
+        jobId: job.id,
+        status: job.status,
+      });
+    }
+  }, AUDITOR_RETRY_DURATION_MS / 5);
+  const unregister = registerCleanup(() => clearInterval(timer));
+  return true;
+}
 export function startAnalysis(projectId: string): AnalysisJob {
   const job = analysisJobSchema.parse({
     id: nextId("J"),

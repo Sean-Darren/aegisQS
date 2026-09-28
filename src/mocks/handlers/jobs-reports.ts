@@ -2,6 +2,7 @@ import { http } from "msw";
 import { z } from "zod";
 import {
   analysisJobSchema,
+  auditorKindSchema,
   reportSchema,
   signReportInputSchema,
 } from "@/schemas";
@@ -15,13 +16,26 @@ import {
   signedDocumentIds,
 } from "../store";
 import { provenance } from "../fixtures/data";
-import { startAnalysis } from "../ws/simulation";
+import { retryFailedAuditor, startAnalysis } from "../ws/simulation";
 import { json, projectGuard, allowed, input, failure } from "./shared";
 export const jobReportHandlers = [
   http.post("*/api/v1/projects/:projectId/analysis-jobs", ({ params }) => {
     const id = String(params.projectId);
     const denied = projectGuard(id, "analysis.run");
     if (denied) return denied;
+    if (
+      !db.documents.some(
+        (document) =>
+          document.projectId === id &&
+          document.type === "priced_boq" &&
+          document.parseStatus === "parsed",
+      )
+    )
+      return failure(
+        409,
+        "PRICED_BOQ_REQUIRED",
+        "Upload and parse a priced BOQ before running analysis.",
+      );
     if (
       db.jobs.some(
         (j) => j.projectId === id && ["queued", "running"].includes(j.status),
@@ -40,6 +54,25 @@ export const jobReportHandlers = [
       ? json(analysisJobSchema, job)
       : failure(404, "NOT_FOUND", "Analysis job not found.");
   }),
+  http.post(
+    "*/api/v1/analysis-jobs/:jobId/auditors/:tendererId/:auditor/retry",
+    ({ params }) => {
+      const job = db.jobs.find((item) => item.id === params.jobId);
+      if (!job) return failure(404, "NOT_FOUND", "Analysis job not found.");
+      const denied = projectGuard(job.projectId, "analysis.run");
+      if (denied) return denied;
+      const auditor = auditorKindSchema.safeParse(params.auditor);
+      if (!auditor.success)
+        return failure(400, "INVALID_AUDITOR", "Select a valid auditor.");
+      if (!retryFailedAuditor(job, String(params.tendererId), auditor.data))
+        return failure(
+          409,
+          "NOT_FAILED",
+          "Only a failed auditor in a finished job can be retried.",
+        );
+      return json(analysisJobSchema, job, 202);
+    },
+  ),
   http.get("*/api/v1/projects/:projectId/reports", ({ params }) => {
     const id = String(params.projectId);
     const denied = projectGuard(id, "report.viewSigned");

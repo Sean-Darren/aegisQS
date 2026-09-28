@@ -6,7 +6,7 @@ import { useRouter } from "@/i18n/navigation";
 import { Link } from "@/i18n/navigation";
 import { can } from "@/lib/auth/permissions";
 import { useMockRoleSwitcher } from "@/lib/auth/session";
-import type { Project, Role, User } from "@/schemas";
+import type { AnalysisJob, Project, Role, User } from "@/schemas";
 import {
   IconButton,
   Tooltip,
@@ -20,17 +20,32 @@ export function Header({
   user,
   projects,
   projectId,
+  job,
   primaryAction,
 }: {
   user?: User;
   projects: Project[];
   projectId?: string;
+  job?: AnalysisJob;
   primaryAction?: ReactNode;
 }) {
   const t = useTranslations("Shell");
   const router = useRouter();
   const switchRole = useMockRoleSwitcher();
   const project = projects.find((item) => item.id === projectId);
+  const overallPct = job?.progress.length
+    ? Math.round(
+        job.progress.reduce((sum, item) => sum + item.pct, 0) /
+          job.progress.length,
+      )
+    : 0;
+  const jobLabel = !job
+    ? t("jobPlaceholder")
+    : ["running", "queued"].includes(job.status)
+      ? t("jobProgress", { pct: overallPct })
+      : job.status === "succeeded"
+        ? t("jobSucceeded")
+        : t("jobFinishedWithErrors");
   return (
     <header className="flex min-h-16 flex-wrap items-center gap-4 border-b border-line bg-panel px-5 py-3">
       <Link
@@ -68,13 +83,16 @@ export function Header({
         {primaryAction}
         <Tooltip>
           <TooltipTrigger asChild>
-            <span>
-              <IconButton label={t("jobStatus")}>
-                <CircleDashed size={18} strokeWidth={1.5} />
-              </IconButton>
+            <span
+              role="status"
+              aria-live="polite"
+              className="inline-flex items-center gap-1 text-xs text-muted-ink"
+            >
+              <CircleDashed size={16} strokeWidth={1.5} aria-hidden="true" />
+              <span className="num text-right">{jobLabel}</span>
             </span>
           </TooltipTrigger>
-          <TooltipContent>{t("jobPlaceholder")}</TooltipContent>
+          <TooltipContent>{t("jobStatus")}</TooltipContent>
         </Tooltip>
         <Tooltip>
           <TooltipTrigger asChild>

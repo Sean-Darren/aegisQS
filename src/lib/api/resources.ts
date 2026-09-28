@@ -39,6 +39,12 @@ export function createResources(
         form,
       );
     },
+    reprocessDocument: (documentId: string) =>
+      client.post(
+        `/documents/${id(documentId)}/reprocess`,
+        s.projectDocumentSchema,
+        {},
+      ),
     runAnalysis: (projectId: string) =>
       client.post(
         `${project(projectId)}/analysis-jobs`,
@@ -47,6 +53,12 @@ export function createResources(
       ),
     job: (jobId: string) =>
       client.get(`/analysis-jobs/${id(jobId)}`, s.analysisJobSchema),
+    retryAuditor: (jobId: string, tendererId: string, auditor: s.AuditorKind) =>
+      client.post(
+        `/analysis-jobs/${id(jobId)}/auditors/${id(tendererId)}/${id(auditor)}/retry`,
+        s.analysisJobSchema,
+        {},
+      ),
     tenderers: (projectId: string) =>
       client.get(`${project(projectId)}/tenderers`, z.array(s.tendererSchema)),
     bids: (projectId: string) =>

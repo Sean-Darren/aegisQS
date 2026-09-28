@@ -6,6 +6,11 @@ test("senior QS can finalize and sign, junior QS can only propose", () => {
   expect(can({ role: "junior_qs" }, "flag.propose")).toBe(true);
   expect(can({ role: "junior_qs" }, "flag.finalize")).toBe(false);
   expect(can({ role: "junior_qs" }, "report.sign")).toBe(false);
+  for (const role of ["senior_qs", "junior_qs"] as const) {
+    expect(can({ role }, "document.upload")).toBe(true);
+    expect(can({ role }, "analysis.run")).toBe(true);
+  }
+  expect(can({ role: "admin" }, "analysis.run")).toBe(false);
 });
 test("owner and admin roles cannot sign; anonymous access is denied", () => {
   expect(can({ role: "owner_viewer" }, "report.sign")).toBe(false);

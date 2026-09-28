@@ -1,6 +1,9 @@
-import { getTranslations } from "next-intl/server";
-import { SectionPlaceholder } from "@/components/layout/section-placeholder";
-export default async function Page() {
-  const t = await getTranslations("Navigation");
-  return <SectionPlaceholder label={t("risk")} />;
+import { TenderOverview } from "@/features/tender-overview";
+export default async function Page({
+  params,
+}: {
+  params: Promise<{ projectId: string }>;
+}) {
+  const { projectId } = await params;
+  return <TenderOverview projectId={projectId} />;
 }

@@ -40,7 +40,9 @@ export const flagDecisionSchema = dispositionInputSchema.extend({
   by: z.string(),
   at: isoDateTimeSchema,
 });
-export const flagSchema = z.object({
+// Keep the canonical contract strict. The response schema admits an invalid empty
+// evidence list so the UI can show the required "evidence missing" state.
+export const flagResponseSchema = z.object({
   id: z.string(),
   projectId: z.string(),
   tendererId: z.string().optional(),
@@ -55,12 +57,15 @@ export const flagSchema = z.object({
   threshold: z
     .object({ kind: z.enum(["sigma", "percent"]), value: z.number() })
     .optional(),
-  evidence: z.array(evidenceSchema).min(1),
+  evidence: z.array(evidenceSchema),
   status: flagStatusSchema,
   proposal: flagDecisionSchema.optional(),
   decision: flagDecisionSchema.optional(),
   assigneeId: z.string().optional(),
   createdAt: isoDateTimeSchema,
+});
+export const flagSchema = flagResponseSchema.extend({
+  evidence: z.array(evidenceSchema).min(1),
 });
 export const flagFiltersSchema = z.object({
   severity: severitySchema.optional(),

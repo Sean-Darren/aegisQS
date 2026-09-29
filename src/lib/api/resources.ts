@@ -83,9 +83,10 @@ export function createResources(
     flags: (projectId: string, filters: s.FlagFilters = {}) =>
       client.get(
         `${project(projectId)}/flags${query(filters)}`,
-        z.array(s.flagSchema),
+        z.array(s.flagResponseSchema),
       ),
-    flag: (flagId: string) => client.get(`/flags/${id(flagId)}`, s.flagSchema),
+    flag: (flagId: string) =>
+      client.get(`/flags/${id(flagId)}`, s.flagResponseSchema),
     propose: (flagId: string, body: s.DispositionInput) =>
       client.post(`/flags/${id(flagId)}/proposal`, s.flagSchema, body),
     decide: (flagId: string, body: s.DispositionInput) =>

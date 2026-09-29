@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { queryKeys, resources } from "@/lib/api";
+import { FlagEvidenceContent } from "@/features/evidence";
 import {
   ErrorState,
   Drawer,
@@ -29,6 +30,19 @@ export function EvidenceDrawer() {
     if (flagId && !focusBeforeOpen.current)
       focusBeforeOpen.current = document.activeElement as HTMLElement;
   }, [flagId]);
+  useEffect(() => {
+    if (!flagId) return;
+    const onEscape = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      const next = new URLSearchParams(window.location.search);
+      next.delete("evidence");
+      router.replace(`${pathname}${next.size ? `?${next}` : ""}`, {
+        scroll: false,
+      });
+    };
+    document.addEventListener("keydown", onEscape, true);
+    return () => document.removeEventListener("keydown", onEscape, true);
+  }, [flagId, pathname, router]);
   function close() {
     const next = new URLSearchParams(params.toString());
     next.delete("evidence");
@@ -46,82 +60,41 @@ export function EvidenceDrawer() {
       <DrawerContent
         onCloseAutoFocus={(event) => {
           event.preventDefault();
-          focusBeforeOpen.current?.focus();
+          if (focusBeforeOpen.current?.isConnected) {
+            focusBeforeOpen.current.focus();
+          } else if (flagId) {
+            document
+              .querySelector<HTMLElement>(`[data-evidence-trigger="${flagId}"]`)
+              ?.focus();
+          }
           focusBeforeOpen.current = null;
         }}
       >
-        <div className="border-b border-line p-6 pr-12">
-          <DrawerTitle className="text-xl font-semibold">
+        <div className="border-b border-line p-5 pr-12">
+          <DrawerTitle className="text-lg font-semibold">
             {t("title")}
           </DrawerTitle>
         </div>
-        <div className="flex-1 space-y-5 overflow-y-auto p-6">
+        <div className="flex-1 overflow-y-auto">
           {flag.isPending && (
-            <>
+            <div className="space-y-4 p-5">
               <Skeleton className="h-7 w-3/4" />
-              <Skeleton className="h-24 w-full" />
-            </>
+              <Skeleton className="h-[440px] w-full" />
+            </div>
           )}
           {flag.isError && (
-            <ErrorState
-              message={t("error")}
-              action={{
-                label: common("retry"),
-                onClick: () => void flag.refetch(),
-              }}
-            />
+            <div className="p-5">
+              <ErrorState
+                message={t("error")}
+                action={{
+                  label: common("retry"),
+                  onClick: () => void flag.refetch(),
+                }}
+              />
+            </div>
           )}
           {flag.data && (
-            <>
-              <div>
-                <h2 className="text-lg font-semibold">{flag.data.title}</h2>
-                <p className="mt-2 text-muted-ink">{flag.data.description}</p>
-              </div>
-              {flag.data.evidence.length === 0 ? (
-                <ErrorState message={t("missing")} />
-              ) : (
-                flag.data.evidence.map((evidence) => (
-                  <section
-                    key={evidence.id}
-                    className="rounded-lg border border-line bg-surface p-4"
-                  >
-                    <h3 className="font-semibold">{t("source")}</h3>
-                    <p className="mt-2 text-sm text-muted-ink">
-                      {t("document", { id: evidence.documentId })}
-                      {evidence.page
-                        ? ` · ${t("page", { page: evidence.page })}`
-                        : ""}
-                    </p>
-                    <p className="mt-4 text-sm font-medium">{t("excerpt")}</p>
-                    <blockquote className="mt-1 border-l-2 border-clay-600 pl-3 text-sm">
-                      {evidence.excerpt}
-                    </blockquote>
-                    {evidence.calculation && (
-                      <div className="mt-4">
-                        <p className="text-sm font-medium">
-                          {t("calculation")}
-                        </p>
-                        <p className="num text-right text-sm">
-                          {evidence.calculation.expression} ={" "}
-                          {evidence.calculation.result}
-                        </p>
-                      </div>
-                    )}
-                    <a
-                      className="mt-4 inline-block rounded-sm text-sm font-semibold text-clay-800 underline focus-visible:outline-2 focus-visible:outline-clay-600"
-                      target="_blank"
-                      rel="noreferrer"
-                      href={`/api/v1/documents/${encodeURIComponent(evidence.documentId)}/file`}
-                    >
-                      {t("openDocument")}
-                    </a>
-                  </section>
-                ))
-              )}
-              <p className="num text-right text-sm text-muted-ink">
-                {t("confidence")}: {(flag.data.confidence * 100).toFixed(1)}%
-              </p>
-            </>
+            <FlagEvidenceContent key={flag.data.id} flag={flag.data} />
           )}
         </div>
       </DrawerContent>

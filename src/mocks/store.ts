@@ -6,7 +6,11 @@ import {
   type Role,
   type WsEvent,
 } from "@/schemas";
-export const db = createFixtures();
+const fixtureOptions = {
+  rateGridRowCount:
+    process.env.NEXT_PUBLIC_MOCK_GRID_ROWS === "5000" ? 5000 : 3000,
+} as const;
+export const db = createFixtures(fixtureOptions);
 export const signedDocumentIds = new Set<string>();
 export const signedFlagIds = new Set<string>();
 export const uploadedFiles = new Map<string, Blob>();
@@ -79,7 +83,7 @@ export function resetMockState() {
   uploadedFiles.clear();
   signedFlagIds.clear();
   signedDocumentIds.clear();
-  Object.assign(db, createFixtures());
+  Object.assign(db, createFixtures(fixtureOptions));
   currentRole = "senior_qs";
   sequence = 0;
 }

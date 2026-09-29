@@ -37,3 +37,53 @@ test("risk overview shows contract values and opens cited evidence", async ({
   ).toBeVisible();
   expect(errors).toEqual([]);
 });
+
+test("score detail compares tenderers and opens a signal flag", async ({
+  page,
+}) => {
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await page.goto("/en/projects/P-001/tender/risk");
+  await page.getByRole("button", { name: "Explain score" }).first().click();
+  await expect(page).toHaveURL(/tenderer=T-001/);
+  await page.reload();
+  await expect(
+    page.getByRole("heading", {
+      name: "Compliance Score for BuildCorp HK Ltd.",
+    }),
+  ).toBeVisible();
+  await expect(page.getByText("Static weights")).toBeVisible();
+  const scoreTable = page.getByRole("table", {
+    name: "Signal contribution, weight, and raw value for each tenderer",
+  });
+  await expect(scoreTable.getByRole("row")).toHaveCount(8);
+  await page.getByLabel("Compare with tenderer").selectOption("T-002");
+  await expect(page).toHaveURL(/compare=T-002/);
+  await expect(
+    scoreTable.getByRole("columnheader", { name: "Apex Foundations" }),
+  ).toBeVisible();
+  await page
+    .getByRole("button", { name: /Unit rate requires review/ })
+    .first()
+    .click();
+  await expect(page).toHaveURL(/evidence=F-/);
+  await expect(
+    page.getByRole("dialog", { name: "Flag evidence" }),
+  ).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+test("a signal without benchmark data shows no point contribution", async ({
+  page,
+}) => {
+  await page.goto("/en/projects/P-001/tender/risk?tenderer=T-006");
+  const scoreTable = page.getByRole("table", {
+    name: "Signal contribution, weight, and raw value for each tenderer",
+  });
+  await expect(
+    scoreTable.getByRole("row", { name: /News sentiment/ }),
+  ).toContainText("Insufficient benchmark data");
+  await expect(
+    scoreTable.getByRole("row", { name: /News sentiment/ }),
+  ).not.toContainText("points");
+});

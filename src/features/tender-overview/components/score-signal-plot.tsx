@@ -10,10 +10,12 @@ export default function ScoreSignalPlot({
   items,
   signalKeys,
   labels,
+  barValues,
 }: {
   items: RankedTenderer[];
   signalKeys: SignalKey[];
   labels: Record<SignalKey, string>;
+  barValues: Record<string, Record<SignalKey, string>>;
 }) {
   const option = useMemo<EChartsOption>(() => {
     const css = getComputedStyle(document.documentElement);
@@ -28,7 +30,7 @@ export default function ScoreSignalPlot({
     );
     return {
       animation: false,
-      grid: { top: 16, right: 72, bottom: 34, left: 200 },
+      grid: { top: 16, right: 148, bottom: 34, left: 200 },
       xAxis: {
         type: "value",
         min: 0,
@@ -55,16 +57,20 @@ export default function ScoreSignalPlot({
           show: true,
           position: "right" as const,
           color: token("--ink"),
-          formatter: (params: { value?: number }) =>
-            typeof params.value === "number" ? params.value.toFixed(1) : "",
+          formatter: (params: { value: unknown; dataIndex: number }) =>
+            typeof params.value === "number"
+              ? `${params.value.toFixed(1)} · ${barValues[item.tenderer.id][signalKeys[params.dataIndex]]}`
+              : "",
         },
         data: signalKeys.map((key) => {
-          const signal = item.score.signals.find((entry) => entry.signal === key);
+          const signal = item.score.signals.find(
+            (entry) => entry.signal === key,
+          );
           return signal?.dataSufficient ? signal.contribution : null;
         }),
       })),
     };
-  }, [items, signalKeys, labels]);
+  }, [items, signalKeys, labels, barValues]);
   return (
     <ReactECharts
       theme={registerAegisTheme()}

@@ -39,6 +39,17 @@ export function ScoreDetailPanel({
   const number = new Intl.NumberFormat(locale === "en" ? "en-HK" : locale, {
     maximumFractionDigits: 3,
   });
+  const barValues = Object.fromEntries(
+    items.map((item) => [
+      item.tenderer.id,
+      Object.fromEntries(
+        item.score.signals.map((signal) => [
+          signal.signal,
+          `${formatPercent(signal.weight, locale)} · ${number.format(signal.rawValue)}`,
+        ]),
+      ),
+    ]),
+  ) as Record<string, Record<SignalKey, string>>;
   return (
     <section
       id="score-detail"
@@ -47,7 +58,11 @@ export function ScoreDetailPanel({
     >
       <div className="flex flex-wrap items-start justify-between gap-4 border-b border-line pb-4">
         <div>
-          <h2 id="score-detail-heading" className="text-lg font-semibold">
+          <h2
+            id="score-detail-heading"
+            tabIndex={-1}
+            className="text-lg font-semibold outline-none"
+          >
             {t("title", { name: primary.tenderer.name })}
           </h2>
           <p className="mt-1 text-sm text-muted-ink">{t("description")}</p>
@@ -59,7 +74,10 @@ export function ScoreDetailPanel({
       </div>
       <div className="mt-5 grid gap-4 md:grid-cols-2">
         {items.map((item) => (
-          <div key={item.tenderer.id} className="rounded-md border border-line p-4">
+          <div
+            key={item.tenderer.id}
+            className="rounded-md border border-line p-4"
+          >
             <div className="flex flex-wrap items-start justify-between gap-3">
               <h3 className="font-semibold">{item.tenderer.name}</h3>
               <RiskBandBadge band={riskBandFor(item.score.score)} />
@@ -97,7 +115,10 @@ export function ScoreDetailPanel({
       <div className="mt-5 flex flex-wrap items-end justify-between gap-3">
         <h3 className="text-base font-semibold">{t("breakdown")}</h3>
         <div>
-          <label htmlFor="score-compare" className="block text-[13px] font-medium">
+          <label
+            htmlFor="score-compare"
+            className="block text-[13px] font-medium"
+          >
             {t("compareWith")}
           </label>
           <select
@@ -119,7 +140,10 @@ export function ScoreDetailPanel({
       </div>
       <div className="mt-4 flex flex-wrap gap-4 text-xs text-muted-ink">
         {items.map((item, index) => (
-          <span key={item.tenderer.id} className="inline-flex items-center gap-2">
+          <span
+            key={item.tenderer.id}
+            className="inline-flex items-center gap-2"
+          >
             <span
               className={index === 0 ? "size-3 bg-clay-600" : "size-3 bg-ink"}
               aria-hidden="true"
@@ -128,68 +152,79 @@ export function ScoreDetailPanel({
           </span>
         ))}
       </div>
-      <div className="mt-2 h-[390px] min-w-0 overflow-hidden" aria-hidden="true">
-        <ScoreSignalPlot items={items} signalKeys={signalKeys} labels={labels} />
+      <p className="mt-2 text-xs text-muted-ink">{t("barCaption")}</p>
+      <div
+        className="mt-2 h-[390px] min-w-0 overflow-hidden"
+        aria-hidden="true"
+      >
+        <ScoreSignalPlot
+          items={items}
+          signalKeys={signalKeys}
+          labels={labels}
+          barValues={barValues}
+        />
       </div>
-      <table className="num mt-4 w-full border-collapse text-sm">
-        <caption className="mb-2 text-left text-xs text-muted-ink">
-          {t("tableCaption")}
-        </caption>
-        <thead className="bg-stone-50 text-[13px] text-muted-ink">
-          <tr>
-            <th scope="col" className="px-3 py-2 text-left font-medium">
-              {t("signal")}
-            </th>
-            {items.map((item) => (
-              <th
-                key={item.tenderer.id}
-                scope="col"
-                className="px-3 py-2 text-right font-medium"
-              >
-                {item.tenderer.name}
+      <div className="mt-4 overflow-x-auto">
+        <table className="num w-full min-w-[640px] border-collapse text-sm">
+          <caption className="mb-2 text-left text-xs text-muted-ink">
+            {t("tableCaption")}
+          </caption>
+          <thead className="bg-stone-50 text-[13px] text-muted-ink">
+            <tr>
+              <th scope="col" className="px-3 py-2 text-left font-medium">
+                {t("signal")}
               </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {signalKeys.map((key) => (
-            <tr key={key} className="border-b border-line align-top">
-              <th scope="row" className="px-3 py-3 text-left font-medium">
-                {labels[key]}
-              </th>
-              {items.map((item) => {
-                const signal = item.score.signals.find(
-                  (entry) => entry.signal === key,
-                );
-                return (
-                  <td key={item.tenderer.id} className="px-3 py-3 text-right">
-                    {signal?.dataSufficient ? (
-                      <>
-                        <span className="font-semibold">
-                          {t("points", {
-                            points: number.format(signal.contribution),
-                          })}
-                        </span>
-                        <span className="block text-xs text-muted-ink">
-                          {t("signalValues", {
-                            weight: formatPercent(signal.weight, locale),
-                            raw: number.format(signal.rawValue),
-                          })}
-                        </span>
-                      </>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 text-muted-ink">
-                        <CircleDashed size={14} aria-hidden="true" />
-                        {t("insufficient")}
-                      </span>
-                    )}
-                  </td>
-                );
-              })}
+              {items.map((item) => (
+                <th
+                  key={item.tenderer.id}
+                  scope="col"
+                  className="px-3 py-2 text-right font-medium"
+                >
+                  {item.tenderer.name}
+                </th>
+              ))}
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {signalKeys.map((key) => (
+              <tr key={key} className="border-b border-line align-top">
+                <th scope="row" className="px-3 py-3 text-left font-medium">
+                  {labels[key]}
+                </th>
+                {items.map((item) => {
+                  const signal = item.score.signals.find(
+                    (entry) => entry.signal === key,
+                  );
+                  return (
+                    <td key={item.tenderer.id} className="px-3 py-3 text-right">
+                      {signal?.dataSufficient ? (
+                        <>
+                          <span className="font-semibold">
+                            {t("points", {
+                              points: number.format(signal.contribution),
+                            })}
+                          </span>
+                          <span className="block text-xs text-muted-ink">
+                            {t("signalValues", {
+                              weight: formatPercent(signal.weight, locale),
+                              raw: number.format(signal.rawValue),
+                            })}
+                          </span>
+                        </>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 text-muted-ink">
+                          <CircleDashed size={14} aria-hidden="true" />
+                          {t("insufficient")}
+                        </span>
+                      )}
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
       <section className="mt-6" aria-labelledby="signal-flags-heading">
         <h3 id="signal-flags-heading" className="text-base font-semibold">
           {t("relatedFlags")}

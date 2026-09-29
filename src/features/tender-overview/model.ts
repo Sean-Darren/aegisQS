@@ -86,7 +86,10 @@ export function benchmarkCurve(distribution: PriceDistribution) {
 }
 
 export function scoreContributionTotal(score: ComplianceScore) {
-  return score.signals.reduce((total, signal) => total + signal.contribution, 0);
+  return score.signals.reduce(
+    (total, signal) => total + signal.contribution,
+    0,
+  );
 }
 
 export function sortedSignalKeys(scores: ComplianceScore[]): SignalKey[] {
@@ -94,8 +97,8 @@ export function sortedSignalKeys(scores: ComplianceScore[]): SignalKey[] {
     Math.max(
       ...scores.map(
         (score) =>
-          score.signals.find((entry) => entry.signal === signal)?.contribution ??
-          0,
+          score.signals.find((entry) => entry.signal === signal)
+            ?.contribution ?? 0,
       ),
     );
   return scores[0].signals

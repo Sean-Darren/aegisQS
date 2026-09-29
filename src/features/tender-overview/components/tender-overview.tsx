@@ -1,5 +1,5 @@
 "use client";
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import dynamic from "next/dynamic";
 import { useLocale, useTranslations } from "next-intl";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -118,7 +118,6 @@ function TendererCard({
         size="sm"
         className="mt-4"
         onClick={() => onShowScore(item.tenderer.id)}
-        aria-controls="score-detail"
       >
         {t("explainScore")}
       </Button>
@@ -152,6 +151,7 @@ export function TenderOverview({ projectId }: { projectId: string }) {
   const pathname = usePathname();
   const router = useRouter();
   const params = useSearchParams();
+  const selectedId = params.get("tenderer");
   const latest = useLatestProjectJob(projectId);
   const completed =
     latest.job.data?.status === "succeeded" ||
@@ -175,6 +175,11 @@ export function TenderOverview({ projectId }: { projectId: string }) {
     () => new Map(ranked.map((item) => [item.tenderer.id, item])),
     [ranked],
   );
+  useEffect(() => {
+    if (selectedId && overview.data) {
+      document.getElementById("score-detail-heading")?.focus();
+    }
+  }, [selectedId, overview.data]);
   const pointLabels = useMemo(
     () =>
       Object.fromEntries(
@@ -195,7 +200,10 @@ export function TenderOverview({ projectId }: { projectId: string }) {
     next.set("evidence", flag.id);
     router.push(`${pathname}?${next}`, { scroll: false });
   }
-  function updateScoreSelection(tendererId: string | null, compareId?: string | null) {
+  function updateScoreSelection(
+    tendererId: string | null,
+    compareId?: string | null,
+  ) {
     const next = new URLSearchParams(params.toString());
     if (tendererId) next.set("tenderer", tendererId);
     else next.delete("tenderer");
@@ -256,10 +264,10 @@ export function TenderOverview({ projectId }: { projectId: string }) {
   const hasDistribution =
     distribution.benchmarkSigmaHKD > 0 && distribution.points.length > 0;
   const number = (value: number) => String(value).padStart(2, "0");
-  const selectedId = params.get("tenderer");
   const selected = selectedId ? byId.get(selectedId) : undefined;
   const compareId = params.get("compare");
-  const comparison = compareId && compareId !== selectedId ? byId.get(compareId) : undefined;
+  const comparison =
+    compareId && compareId !== selectedId ? byId.get(compareId) : undefined;
   return (
     <div className="mx-auto max-w-[1600px] space-y-6">
       <header className="flex flex-wrap items-end justify-between gap-3">

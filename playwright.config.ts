@@ -8,10 +8,14 @@ export default defineConfig({
   use: { baseURL: "http://127.0.0.1:3100", trace: "retain-on-failure" },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
   webServer: {
-    command: "npm run dev -- --hostname 127.0.0.1 --port 3100",
+    command: "npm run dev -- --webpack --hostname 127.0.0.1 --port 3100",
     url: "http://127.0.0.1:3100/en",
     reuseExistingServer: false,
-    env: { NEXT_PUBLIC_API_MOCKING: "enabled" },
+    env: {
+      NEXT_PUBLIC_API_MOCKING: "enabled",
+      AEGISQS_NEXT_DIST_DIR:
+        process.env.AEGISQS_NEXT_DIST_DIR || ".next-playwright",
+    },
     timeout: 120000,
   },
 });

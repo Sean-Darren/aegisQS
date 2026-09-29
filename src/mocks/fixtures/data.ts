@@ -30,7 +30,9 @@ function seededRandom(seed: number) {
     return seed / 4294967296;
   };
 }
-export function createFixtures() {
+export function createFixtures({
+  rateGridRowCount = 3000,
+}: { rateGridRowCount?: 3000 | 5000 } = {}) {
   const random = seededRandom(20260928);
   const names = [
     "BuildCorp HK Ltd.",
@@ -189,7 +191,7 @@ export function createFixtures() {
     }),
   );
   const rows = z.array(s.rateGridRowSchema).parse(
-    Array.from({ length: 3000 }, (_, i) => {
+    Array.from({ length: rateGridRowCount }, (_, i) => {
       const flagged = i % 20 === 0;
       const flag = flagged ? flags[i / 20] : undefined;
       const sufficient = flagged || i % 37 !== 1;

@@ -4,6 +4,7 @@ export const karla = Karla({
   weight: "variable",
   variable: "--font-karla",
   display: "swap",
+  preload: false,
 });
 export const notoSansHK = Noto_Sans_HK({
   weight: ["400", "500", "700"],

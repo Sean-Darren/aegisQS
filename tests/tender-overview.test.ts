@@ -4,7 +4,10 @@ import {
   benchmarkCurve,
   highestSeverityFlag,
   rankTenderers,
+  scoreContributionTotal,
+  sortedSignalKeys,
 } from "@/features/tender-overview/model";
+import { riskBandFor } from "@/lib/config";
 
 test("ranks parsed bids by Compliance Score and retains cited evidence", () => {
   const fixtures = createFixtures();
@@ -48,4 +51,31 @@ test("highest-severity flag ignores entries without evidence", () => {
   expect(
     highestSeverityFlag([noEvidence, ...fixture.flags], tendererId)?.id,
   ).not.toBe("unusable");
+});
+
+test("seven signal contributions explain every displayed score within 0.1 point", () => {
+  for (const score of createFixtures().scores) {
+    expect(score.signals).toHaveLength(7);
+    expect(
+      Math.abs(scoreContributionTotal(score) - score.score),
+    ).toBeLessThanOrEqual(0.1);
+    expect(riskBandFor(score.score)).toBe(score.band);
+  }
+});
+
+test("comparison signal order follows greatest point impact", () => {
+  const { scores } = createFixtures();
+  const keys = sortedSignalKeys([scores[0], scores[1]]);
+  expect(keys).toHaveLength(7);
+  const impacts = keys.map((key) =>
+    Math.max(
+      ...scores
+        .slice(0, 2)
+        .map(
+          (score) =>
+            score.signals.find((entry) => entry.signal === key)!.contribution,
+        ),
+    ),
+  );
+  expect(impacts).toEqual([...impacts].sort((a, b) => b - a));
 });

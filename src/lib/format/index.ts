@@ -1,4 +1,9 @@
 export type FormatLocale = "en" | "zh-HK";
+export function formatNumber(value: number, locale: FormatLocale = "en") {
+  return new Intl.NumberFormat(locale === "en" ? "en-HK" : locale, {
+    maximumFractionDigits: 2,
+  }).format(value);
+}
 function finite(value: number) {
   if (!Number.isFinite(value))
     throw new RangeError("A finite number is required");

@@ -1,6 +1,9 @@
-import { getTranslations } from "next-intl/server";
-import { SectionPlaceholder } from "@/components/layout/section-placeholder";
-export default async function Page() {
-  const t = await getTranslations("Navigation");
-  return <SectionPlaceholder label={t("scopeGaps")} />;
+import { ScopeWorkspace } from "@/features/scope-gaps";
+export default async function Page({
+  params,
+}: {
+  params: Promise<{ projectId: string }>;
+}) {
+  const { projectId } = await params;
+  return <ScopeWorkspace projectId={projectId} />;
 }

@@ -12,7 +12,13 @@ const EvidencePdf = dynamic(
   { ssr: false },
 );
 
-export function EvidenceViewer({ evidence }: { evidence: Evidence }) {
+export function EvidenceViewer({
+  evidence,
+  highlightText,
+}: {
+  evidence: Evidence;
+  highlightText?: string;
+}) {
   const t = useTranslations("Evidence");
   const [zoom, setZoom] = useState(1);
   const pdf = useEvidenceDocument(evidence.documentId, !!evidence.page);
@@ -101,6 +107,7 @@ export function EvidenceViewer({ evidence }: { evidence: Evidence }) {
         zoom={zoom}
         loading={t("pdfLoading")}
         error={t("pdfError")}
+        highlightText={highlightText}
       />
     </div>
   );

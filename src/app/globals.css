@@ -1,5 +1,11 @@
 @import "tailwindcss";
 
+.scope-finding-highlight {
+  background: var(--limewash);
+  box-shadow: 0 2px 0 var(--clay-600);
+  color: var(--ink);
+}
+
 :root {
   /* shadcn contract — every 21st.dev component reads these */
   --background: #f7f5f2;

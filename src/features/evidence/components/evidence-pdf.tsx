@@ -1,5 +1,6 @@
 "use client";
 import { Document, Page, pdfjs } from "react-pdf";
+import "react-pdf/dist/Page/TextLayer.css";
 import type { Evidence } from "@/schemas";
 
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
@@ -14,6 +15,7 @@ export function EvidencePdf({
   zoom,
   loading,
   error,
+  highlightText,
 }: {
   file: Blob;
   page: number;
@@ -21,7 +23,21 @@ export function EvidencePdf({
   zoom: number;
   loading: string;
   error: string;
+  highlightText?: string;
 }) {
+  function escapeHtml(value: string) {
+    return value.replace(
+      /[&<>"']/g,
+      (char) =>
+        ({
+          "&": "&amp;",
+          "<": "&lt;",
+          ">": "&gt;",
+          '"': "&quot;",
+          "'": "&#39;",
+        })[char] ?? char,
+    );
+  }
   return (
     <div className="overflow-auto rounded-md border border-line bg-stone-50 p-3">
       <Document file={file} loading={loading} error={error} suspense={false}>
@@ -31,7 +47,18 @@ export function EvidencePdf({
             width={480}
             scale={zoom}
             renderAnnotationLayer={false}
-            renderTextLayer={false}
+            renderTextLayer={!!highlightText}
+            customTextRenderer={
+              highlightText
+                ? ({ str }) => {
+                    const at = str
+                      .toLocaleLowerCase()
+                      .indexOf(highlightText.toLocaleLowerCase());
+                    if (at < 0) return escapeHtml(str);
+                    return `${escapeHtml(str.slice(0, at))}<mark class="scope-finding-highlight">${escapeHtml(str.slice(at, at + highlightText.length))}</mark>${escapeHtml(str.slice(at + highlightText.length))}`;
+                  }
+                : undefined
+            }
             loading={loading}
             error={error}
             suspense={false}

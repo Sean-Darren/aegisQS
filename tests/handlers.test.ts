@@ -34,7 +34,10 @@ test("every read endpoint returns its parsed contract", async () => {
   ]);
   expect(projects).toHaveLength(1);
   expect(project.id).toBe(pid);
-  expect(documents).toHaveLength(12);
+  expect(documents).toHaveLength(13);
+  expect(
+    documents.filter((document) => document.type === "inspection_report"),
+  ).toHaveLength(1);
   expect(tenderers).toHaveLength(12);
   expect(bids).toHaveLength(12);
   expect(kpis.avgRateVarianceZ).toBe(0.42);

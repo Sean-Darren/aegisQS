@@ -132,6 +132,17 @@ export function createFixtures({
       uploadedBy: "user-senior",
       uploadedAt: FIXTURE_TIME,
     })),
+    {
+      id: "D-013",
+      projectId,
+      type: "inspection_report",
+      fileName: "sample-inspection-report.pdf",
+      version: 1,
+      pageCount: 1,
+      parseStatus: "parsed",
+      uploadedBy: "user-senior",
+      uploadedAt: FIXTURE_TIME,
+    },
   ]);
   const flags = z.array(s.flagSchema).parse(
     citations.map((citation, i) => {
@@ -254,9 +265,14 @@ export function createFixtures({
       id: `SG-${i + 1}`,
       projectId,
       finding: {
-        ref: `Finding ${i + 1}`,
-        text: "Confirm the extent of repair before award.",
-        documentId: "D-001",
+        ref: `F-0${i + 1}`,
+        text: [
+          "External wall repair extent is confirmed.",
+          "Waterproofing detail remains vague.",
+          "Drainage replacement scope is missing.",
+          "Provisional sum allowance needs itemisation.",
+        ][i],
+        documentId: "D-013",
         page: 1,
       },
       ...(status !== "missing"

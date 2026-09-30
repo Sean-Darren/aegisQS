@@ -12,6 +12,7 @@ import {
   signedDocumentIds,
 } from "../store";
 import { samplePdfBase64 } from "../fixtures/pdf";
+import { inspectionPdfBase64 } from "../fixtures/inspection-pdf";
 import { json, projectGuard, allowed, failure } from "./shared";
 export const documentHandlers = [
   http.get(
@@ -131,7 +132,16 @@ export const documentHandlers = [
     const body =
       uploadedFiles.get(doc.id) ??
       new Blob(
-        [Uint8Array.from(atob(samplePdfBase64), (char) => char.charCodeAt(0))],
+        [
+          Uint8Array.from(
+            atob(
+              doc.type === "inspection_report"
+                ? inspectionPdfBase64
+                : samplePdfBase64,
+            ),
+            (char) => char.charCodeAt(0),
+          ),
+        ],
         { type: "application/pdf" },
       );
     return new Response(body, {

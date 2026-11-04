@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
 import { Download } from "lucide-react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Button, EmptyState, ErrorState, Skeleton } from "@/components/ui";
 import { resources } from "@/lib/api";
@@ -23,12 +23,13 @@ const entityTypes = auditEventSchema.shape.entityType.options;
 export function AuditPage({ projectId }: { projectId: string }) {
   const t = useTranslations("Audit");
   const common = useTranslations("Common");
-  const router = useRouter();
-  const pathname = usePathname();
   const searchParams = useSearchParams();
   const query = useAuditEvents(projectId);
   const { hasNextPage, isFetchingNextPage, isError, fetchNextPage } = query;
-  const [filters, setFilters] = useState<AuditFilters>(initialAuditFilters);
+  const [filters, setFilters] = useState<AuditFilters>({
+    ...initialAuditFilters,
+    actor: searchParams.get("actor") ?? "",
+  });
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState(false);
   const filtering = Object.values(filters).some(
@@ -55,11 +56,6 @@ export function AuditPage({ projectId }: { projectId: string }) {
     value: AuditFilters[K],
   ) {
     setFilters((current) => ({ ...current, [key]: value }));
-  }
-  function openDetail(id: string) {
-    const next = new URLSearchParams(searchParams.toString());
-    next.set("detail", id);
-    router.push(`${pathname}?${next}`, { scroll: false });
   }
   async function exportCsv() {
     setExporting(true);
@@ -246,11 +242,7 @@ export function AuditPage({ projectId }: { projectId: string }) {
         {!query.isPending &&
         (!collecting || !filtering) &&
         visible.length > 0 ? (
-          <AuditTimeline
-            events={visible}
-            projectId={projectId}
-            onOpenDetail={openDetail}
-          />
+          <AuditTimeline events={visible} projectId={projectId} />
         ) : null}
         {query.isError && query.data ? (
           <ErrorState

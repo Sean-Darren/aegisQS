@@ -34,11 +34,18 @@ export interface ParsedWorkbook {
 export async function parseWorkbook(
   bytes: ArrayBuffer,
   versionId: string,
-  mapping: ColumnMapping = defaultMapping,
+  mapping?: ColumnMapping,
 ): Promise<ParsedWorkbook> {
   const { default: ExcelJS } = await import("exceljs");
   const book = new ExcelJS.Workbook();
   await book.xlsx.load(bytes);
+  mapping ??= {
+    ...defaultMapping,
+    sheet:
+      book.getWorksheet(defaultMapping.sheet)?.name ??
+      book.worksheets[0]?.name ??
+      defaultMapping.sheet,
+  };
   const sheet = book.getWorksheet(mapping.sheet);
   if (!sheet) throw new Error(`Mapped sheet ${mapping.sheet} does not exist.`);
   const checks: WorkbookCheck[] = [];
@@ -278,13 +285,53 @@ export function diffWorkbooks(
   target: BoqItem[],
 ): WorkbookDiff {
   const rows: WorkbookDiff["rows"] = [];
-  const key = (i: BoqItem) => `${i.sheet}:${i.row}`;
-  const before = new Map(base.map((i) => [key(i), i]));
-  const after = new Map(target.map((i) => [key(i), i]));
-  for (const k of new Set([...before.keys(), ...after.keys()])) {
-    const a = before.get(k),
-      b = after.get(k),
-      item = (b ?? a)!;
+  const key = (i: BoqItem) => `${i.sheet}:${i.itemRef}`;
+  const used = new Set<BoqItem>();
+  const buckets = new Map<string, BoqItem[]>();
+  const physicalRows = new Map(base.map((i) => [`${i.sheet}:${i.row}`, i]));
+  for (const item of base) {
+    const items = buckets.get(key(item)) ?? [];
+    items.push(item);
+    buckets.set(key(item), items);
+  }
+
+  const pairs: Array<[BoqItem | undefined, BoqItem | undefined]> = [];
+  const unmatched: BoqItem[] = [];
+  const counts = (items: BoqItem[]) => {
+    const result = new Map<string, number>();
+    for (const item of items)
+      result.set(key(item), (result.get(key(item)) ?? 0) + 1);
+    return result;
+  };
+  const baseCounts = counts(base),
+    targetCounts = counts(target);
+  for (const b of target) {
+    const candidates = (buckets.get(key(b)) ?? []).filter((a) => !used.has(a));
+    const a =
+      candidates.find((a) => a.description === b.description) ?? candidates[0];
+    if (a) {
+      used.add(a);
+      pairs.push([a, b]);
+    } else unmatched.push(b);
+  }
+  for (const b of unmatched) {
+    // Duplicate-reference checks identify corrupted references. Preserve the same
+    // physical source row in that exceptional case rather than inventing a VE row.
+    const physical = physicalRows.get(`${b.sheet}:${b.row}`);
+    const a =
+      physical &&
+      !used.has(physical) &&
+      physical.description === b.description &&
+      ((targetCounts.get(key(b)) ?? 0) > 1 ||
+        (baseCounts.get(key(physical)) ?? 0) > 1)
+        ? physical
+        : undefined;
+    if (a) used.add(a);
+    pairs.push([a, b]);
+  }
+  for (const a of base) if (!used.has(a)) pairs.push([a, undefined]);
+  for (const [a, b] of pairs) {
+    const item = (b ?? a)!;
     const fields: WorkbookDiff["rows"][number]["fields"] = [];
     for (const field of [
       "quantity",

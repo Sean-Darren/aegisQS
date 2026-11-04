@@ -105,3 +105,8 @@ export function formatRevisionLabel(label: string) {
   if (!label.trim()) throw new RangeError("A revision label is required");
   return `Rev ${label.trim()}`;
 }
+
+export function formatSignedCurrency(value: number) {
+  const rounded = Math.round(finite(value) * 100) / 100;
+  return `${rounded < 0 ? "−" : "+"}${formatCurrency(Math.abs(rounded))}`;
+}

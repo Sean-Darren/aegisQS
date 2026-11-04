@@ -45,4 +45,32 @@ Disable `NEXT_PUBLIC_API_MOCKING` and rebuild/restart Next. Serve `/api/v1` and 
 
 Run `npm run typecheck`, `npm run lint`, `npm test`, `npm run build`, and `npm run test:e2e`. Browser tests cover the connected comparison/costing flow, conflicts, role controls, linked sources, focus restoration, the shell, real mock workbook parsing and axe checks on the new screens in both locales. PDF rendering loads client-side only. Hub rows virtualize through the existing shared grid component.
 
-Documents, drawing comparison/review, variations, the portfolio, login and audit are implemented. Linked BOQ rows, workbook versions and material forecasts have read-only detail views. The full workbook workspace, material market/planner, procurement, project overview and admin screens remain explicit migration placeholders for their later tasks.
+Documents, drawing comparison/review, variations, the portfolio, login and audit are implemented. Linked BOQ rows, workbook versions and material forecasts have read-only detail views. Procurement, project overview and admin screens remain explicit migration placeholders for their later tasks.
+
+## Workbook upload and review
+
+Open `/en/projects/P-001/workbooks` and choose **Upload workbook**, or open the seeded **Contract BOQ** (`WB-001`). Only `.xlsx` and `.xlsm` files are accepted. New uploads show byte progress, then parsing/checking status; the shared project socket announces check completion. Leaving the page does not stop processing.
+
+First upload opens the three-step mapping wizard: sheet/header and 15-row preview, suggested A–F field mappings, then five parsed items. Missing or duplicated required columns block saving. **Edit mapping** opens it again for QS roles. Checks are grouped by severity and rule; **Show in sheet** selects and scrolls to the cited cell, while its corner marker opens a linkable check drawer. Ignore requires a reason; resolved/ignored checks can be reopened.
+
+Sheet and Items virtualize rows. The browser test uploads 5,000 BOQ lines and verifies the final row, fewer than 50 mounted rows, no cell editor and an average scrolling frame interval below 50 ms. Downloads return original bytes or an annotated copy; Smart QS never edits the source workbook. Versions are discovered through existing document-version EntityLinks because the API has no workbook-version-list endpoint. The Diff tab compares any two versions; its default is previous → current.
+
+## Workbook differences
+
+Open a workbook and choose **Diff**. Select base/target versions, inspect added/removed/changed counts and signed item-amount change, then filter by kind, section or positive amount delta. The fixture comparison has 3 added VE-007 rows, 2 changed rates and a total change of **+HK$123,014.55**. Other changed rows expose the seeded formula/amount/reference problems. Missing/formula-error item amounts count as zero in these parsed totals; review Checks before relying on them.
+
+VE chips open the matching variation. The totals step chart and its keyboard-accessible data table select a workbook version. **Export filtered CSV** exports the current filters. No workbook cells are edited. Matching follows sheet + item reference, with distinct duplicate occurrences preserved; a known duplicate-reference corruption may be reconciled to its same source row instead of counted as an added/removed VE item.
+
+## Material prices and forecasts
+
+Open `/en/materials`, filter categories or search, then **View forecast**. `/en/materials/rebar` shows observed prices, a dashed median forecast, an 80% p10–p90 band and a 95% p2.5–p97.5 band. Both bands are stacked from their own lower bounds, not from zero. The vertical line marks the latest observed period rather than inventing a current market price.
+
+The 3/6/12-month selector changes the visible chart window and its table equivalent only. The model remains the supplied 12-month forecast; +3/+6-month glance cards stay tied to the material’s latest observed period. Every forecast median appears with its likely range. The model card reports name/version, training cut-off, mean absolute percentage backtest error and AI-labelled drivers. Backtest error strictly above 10% shows low confidence; the threshold lives in config.
+
+**Plan a purchase** opens the shared planner for QS roles. Choose the project, quantity, need-by date and lead time; the latest order date updates live. Existing project needs and the latest saved advice prefill the inputs. A missing lead time must be entered rather than assumed. Viewer has no planning action. Existing material record drawers reuse the same forecast components and offer the full-page link; long detail content scrolls inside the drawer.
+
+### Procurement flow
+
+Open `/en/projects/P-001/procurement`. The rebar need links to VE-007 and starts at 4.2 tonnes. Choose **Get advice**, retain the seeded 1 June 2027 need-by date and eight-week lead time, and submit. The mock returns **Buy in window · Feb–Mar 2027**, expected cost HK$27,300 and expected saving +HK$1,470, with the supplied p10–p90 cost range and a saving range that can include a loss. These are synthetic demo forecasts, not purchase instructions.
+
+**View selected advice on forecast** opens `/en/materials/rebar?project=P-001&advice=<id>`. The selected advice supplies the window band and the latest-order/need-by lines. Change the chart horizon to inspect the visible months; dates outside it stay in the advice card. Advice IDs are mock-session records and reset on a fresh mock backend. The exposure chart combines needs per material, sorts by p90 and includes a collapsible table. BOQ and variation source chips open their existing records.

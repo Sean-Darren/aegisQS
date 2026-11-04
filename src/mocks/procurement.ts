@@ -4,6 +4,7 @@ import {
   type PriceForecast,
   type ProcurementAdvice,
 } from "@/schemas";
+import { latestOrderDate } from "@/lib/procurement/latest-order-date";
 const round = (n: number) => Math.round(n * 100) / 100;
 export function calculateAdvice(input: {
   id: string;
@@ -27,10 +28,7 @@ export function calculateAdvice(input: {
     throw new RangeError(
       "Quantity must be positive and lead time nonnegative.",
     );
-  const deadline = new Date(neededBy);
-  if (!Number.isFinite(deadline.getTime()))
-    throw new RangeError("A valid need-by date is required.");
-  deadline.setTime(deadline.getTime() - leadTimeWeeks * 7 * 86400000);
+  const deadline = new Date(latestOrderDate(neededBy, leadTimeWeeks));
   if (deadline.getTime() < Date.parse(createdAt))
     throw new RangeError(
       "The latest order date is in the past. Review the need-by date or lead time.",

@@ -16,13 +16,12 @@ import {
   formatCurrency,
   formatDate,
   formatFileSize,
-  formatPeriod,
-  formatRange,
   formatUnitRate,
   type FormatLocale,
 } from "@/lib/format";
 import { LinkedRecords, recordHref } from "./linked-records";
 import type { BoqItem, WorkbookVersion } from "@/schemas";
+import { MaterialForecastPage } from "@/features/materials";
 import { useState } from "react";
 
 function VersionRecord({ id, projectId }: { id: string; projectId: string }) {
@@ -124,72 +123,6 @@ function ItemRecord({ id, projectId }: { id: string; projectId: string }) {
     </div>
   );
 }
-function MaterialRecord({ id }: { id: string }) {
-  const t = useTranslations("Records");
-  const locale = useLocale() as FormatLocale;
-  const materials = useQuery({
-    queryKey: queryKeys.materials(),
-    queryFn: () => resources.materials(),
-  });
-  const query = useQuery({
-    queryKey: queryKeys.forecast(id),
-    queryFn: () => resources.forecast(id),
-  });
-  if (query.isPending || materials.isPending)
-    return <Skeleton className="h-64 w-full" />;
-  if (query.isError || materials.isError)
-    return <ErrorState message={t("error")} />;
-  const material = materials.data.find((m) => m.id === id),
-    forecast = query.data;
-  if (!material) return <EmptyState message={t("notFound")} />;
-  return (
-    <div className="space-y-4">
-      <h2 className="text-xl font-semibold">{material.name}</h2>
-      <p className="tabular-nums">
-        {formatUnitRate(material.latestPrice, material.unit)} ·{" "}
-        {formatPeriod(material.latestPeriod, locale)}
-      </p>
-      <p className="text-sm">{material.source}</p>
-      <h3 className="font-semibold">{t("forecast")}</h3>
-      <p className="text-sm tabular-nums">
-        {forecast.model.name} · {forecast.model.version} ·{" "}
-        {t("trainedThrough", {
-          period: formatPeriod(forecast.model.trainedThrough, locale),
-        })}{" "}
-        · {t("backtest", { error: forecast.model.backtestMapePct })}
-      </p>
-      <table className="w-full text-sm tabular-nums">
-        <caption className="text-left text-muted-ink">
-          {t("forecastUnit", { unit: material.unit })}
-        </caption>
-        <thead>
-          <tr>
-            <th scope="col" className="p-2 text-left">
-              {t("period")}
-            </th>
-            <th scope="col" className="p-2 text-right">
-              {t("median")}
-            </th>
-            <th scope="col" className="p-2 text-right">
-              {t("likelyRange")}
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {forecast.forecast.map((p) => (
-            <tr key={p.period} className="border-t border-line">
-              <th scope="row" className="p-2 text-left font-normal">
-                {formatPeriod(p.period, locale)}
-              </th>
-              <td className="p-2 text-right">{formatCurrency(p.p50)}</td>
-              <td className="p-2 text-right">{formatRange(p.p10, p.p90)}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
 function WorkbookRecord({ id, projectId }: { id: string; projectId: string }) {
   const t = useTranslations("Records");
   const query = useQuery({
@@ -265,6 +198,7 @@ export function RecordDetail({
     return <VersionRecord id={id} projectId={projectId} />;
   if (type === "workbook")
     return <WorkbookRecord id={id} projectId={projectId} />;
-  if (type === "material") return <MaterialRecord id={id} />;
+  if (type === "material")
+    return <MaterialForecastPage materialId={id} compact />;
   return <EmptyState message={t("notFound")} />;
 }

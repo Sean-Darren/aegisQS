@@ -2,6 +2,59 @@ import { z } from "zod";
 import * as s from "@/schemas";
 import { state, currentUser } from "../store";
 import { route, reply, requireProject, paged } from "./shared";
+function belongsToProject(event: s.AuditEvent, projectId: string): boolean {
+  const document = (id: string) =>
+    state.documents.some((d) => d.id === id && d.projectId === projectId);
+  const workbook = (id: string) =>
+    state.workbooks.some((w) => w.id === id && w.projectId === projectId);
+  const version = (id: string) => {
+    const v = state.workbookVersions.find((v) => v.id === id);
+    return !!v && workbook(v.workbookId);
+  };
+  switch (event.entityType) {
+    case "project":
+      return event.entityId === projectId;
+    case "document":
+      return document(event.entityId);
+    case "document_version": {
+      const v = state.versions.find((v) => v.id === event.entityId);
+      return !!v && document(v.documentId);
+    }
+    case "comparison":
+      return state.comparisons.some(
+        (c) => c.id === event.entityId && c.projectId === projectId,
+      );
+    case "change": {
+      const c = state.changes.find((c) => c.id === event.entityId);
+      return (
+        !!c &&
+        state.comparisons.some(
+          (v) => v.id === c.comparisonId && v.projectId === projectId,
+        )
+      );
+    }
+    case "variation":
+      return state.variations.some(
+        (v) => v.id === event.entityId && v.projectId === projectId,
+      );
+    case "workbook":
+      return workbook(event.entityId);
+    case "workbook_version":
+      return version(event.entityId);
+    case "check": {
+      const c = state.checks.find((c) => c.id === event.entityId);
+      return !!c && version(c.versionId);
+    }
+    case "procurement":
+      return state.procurement.some(
+        (a) => a.id === event.entityId && a.projectId === projectId,
+      );
+    case "user":
+      return state.projects.some(
+        (p) => p.id === projectId && p.memberIds.includes(event.entityId),
+      );
+  }
+}
 export const projectHandlers = [
   route("get", "/me", () => reply(s.userSchema, currentUser())),
   route("get", "/projects", () =>
@@ -34,8 +87,9 @@ export const projectHandlers = [
         ).length,
       },
       recentActivity: state.auditEvents
+        .filter((e) => belongsToProject(e, id))
         .toSorted((a, b) => b.at.localeCompare(a.at))
-        .slice(0, 5),
+        .slice(0, 15),
     });
   }),
   route("get", "/projects/:projectId/audit-events", ({ params, request }) => {
@@ -45,6 +99,7 @@ export const projectHandlers = [
       state.auditEvents
         .filter(
           (e) =>
+            belongsToProject(e, String(params.projectId)) &&
             (!q.get("entityType") || e.entityType === q.get("entityType")) &&
             (!q.get("entityId") || e.entityId === q.get("entityId")) &&
             (!q.get("actorId") || e.actorId === q.get("actorId")) &&

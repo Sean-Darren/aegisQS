@@ -8,6 +8,12 @@ import { ErrorState, Skeleton } from "@/components/ui";
 export function recordHref(projectId: string, type: string, id: string) {
   const root = `/projects/${projectId}`;
   switch (type) {
+    case "project":
+      return `${root}/overview`;
+    case "procurement":
+      return `${root}/procurement?advice=${encodeURIComponent(id)}`;
+    case "user":
+      return `${root}/audit?actor=${encodeURIComponent(id)}`;
     case "document":
       return `${root}/documents/${id}`;
     case "variation":
@@ -17,7 +23,7 @@ export function recordHref(projectId: string, type: string, id: string) {
     case "material":
       return `/materials?detail=material:${encodeURIComponent(id)}`;
     case "workbook":
-      return `${root}/workbooks?detail=workbook:${encodeURIComponent(id)}`;
+      return `${root}/workbooks/${encodeURIComponent(id)}`;
     default:
       return `${root}/documents?detail=${type}:${encodeURIComponent(id)}`;
   }

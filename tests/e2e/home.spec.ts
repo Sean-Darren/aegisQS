@@ -9,7 +9,10 @@ test("remaining shell routes and detail URL work", async ({ page }) => {
   ).toBeVisible();
   await page.getByRole("link", { name: "Open project" }).click();
   await expect(
-    page.getByRole("heading", { name: "Overview", exact: true }),
+    page.getByRole("heading", {
+      name: "Central Market Rehab Phase 2",
+      exact: true,
+    }),
   ).toBeVisible();
   await page.getByRole("link", { name: "Documents", exact: true }).click();
   await expect(
@@ -26,6 +29,9 @@ test("remaining shell routes and detail URL work", async ({ page }) => {
   ).toBeVisible();
   await page.goto("/en/projects/P-001/documents?detail=document:D-1");
   await expect(page.getByRole("dialog")).toBeVisible();
+  await expect(
+    page.getByRole("dialog").getByRole("heading", { level: 1 }),
+  ).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(page.getByRole("dialog")).not.toBeVisible();
   await expect(page).not.toHaveURL(/detail=/);

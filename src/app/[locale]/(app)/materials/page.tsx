@@ -1,4 +1,4 @@
-import { ComingPage } from "@/components/layout/coming-page";
+import { MaterialsPage } from "@/features/materials";
 export default function Page() {
-  return <ComingPage section="materials" />;
+  return <MaterialsPage />;
 }

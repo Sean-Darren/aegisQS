@@ -1,4 +1,9 @@
-import { ComingPage } from "@/components/layout/coming-page";
-export default function Page() {
-  return <ComingPage section="overview" />;
+import { OverviewPage } from "@/features/overview";
+export default async function Page({
+  params,
+}: {
+  params: Promise<{ projectId: string }>;
+}) {
+  const { projectId } = await params;
+  return <OverviewPage projectId={projectId} />;
 }

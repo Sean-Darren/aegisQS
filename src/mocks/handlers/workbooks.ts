@@ -38,17 +38,19 @@ async function upload(wb: s.Workbook, form: FormData) {
   let parsed: ParsedWorkbook;
   const versionId = nextId("WV");
   try {
-    parsed = await parseWorkbook(
-      file.bytes,
-      versionId,
-      wb.mapping ?? defaultMapping,
-    );
+    parsed = await parseWorkbook(file.bytes, versionId, wb.mapping);
   } catch {
     throw new MockError(
       400,
       "This workbook could not be parsed. Upload a valid .xlsx file and check its sheet mapping.",
     );
   }
+  wb.mapping ??= {
+    ...defaultMapping,
+    sheet: parsed.sheetNames.includes(defaultMapping.sheet)
+      ? defaultMapping.sheet
+      : parsed.sheetNames[0],
+  };
   const prior = state.workbookVersions.filter((v) => v.workbookId === wb.id);
   const number = prior.length
     ? Math.max(...prior.map((v) => v.versionNumber)) + 1
@@ -87,9 +89,12 @@ async function upload(wb: s.Workbook, form: FormData) {
   }, 1000);
   schedule(() => {
     version.status = "checked";
-    version.checkSummary = summarizeChecks(parsed.checks);
-    version.totals = parsed.totals;
-    state.checks.push(...parsed.checks);
+    const finalParsed = state.parsed[version.id] ?? parsed;
+    version.checkSummary = summarizeChecks(finalParsed.checks);
+    version.totals = finalParsed.totals;
+    state.checks = state.checks
+      .filter((c) => c.versionId !== version.id)
+      .concat(finalParsed.checks);
     audit(
       "workbook.checked",
       "workbook_version",
@@ -144,7 +149,6 @@ export const workbookHandlers = [
         documentId: doc.id,
         name: input.name,
         kind: input.kind,
-        mapping: defaultMapping,
         updatedAt: now(),
       };
       state.documents.push(doc);

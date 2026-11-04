@@ -1,3 +1,4 @@
+import { rowsCsv } from "@/lib/export/csv";
 import type { AuditEvent } from "@/schemas";
 
 export type AuditFilters = {
@@ -40,8 +41,6 @@ export function filterAuditEvents(events: AuditEvent[], filters: AuditFilters) {
   });
 }
 
-const csvCell = (value: string) => `"${value.replaceAll('"', '""')}"`;
-
 export function auditEventsCsv(events: AuditEvent[], headings: string[]) {
   const rows = events.map((event) => [
     event.id,
@@ -54,7 +53,7 @@ export function auditEventsCsv(events: AuditEvent[], headings: string[]) {
     event.summary,
     event.details ? JSON.stringify(event.details) : "",
   ]);
-  return `\uFEFF${[headings, ...rows].map((row) => row.map(csvCell).join(",")).join("\r\n")}\r\n`;
+  return rowsCsv(headings, rows);
 }
 
 export async function fetchAllAuditEvents(

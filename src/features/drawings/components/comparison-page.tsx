@@ -1,4 +1,5 @@
 "use client";
+import { EntityActivity } from "@/components/records/entity-activity";
 import { useSearchParams } from "next/navigation";
 import { useCallback, useRef, useState } from "react";
 import dynamic from "next/dynamic";
@@ -508,6 +509,13 @@ function ComparisonWorkspace({
           )}
         </aside>
       </div>
+      <EntityActivity
+        projectId={comparison.projectId}
+        entities={[
+          { type: "comparison", id: comparison.id },
+          ...changes.map((c) => ({ type: "change" as const, id: c.id })),
+        ]}
+      />
     </div>
   );
 }

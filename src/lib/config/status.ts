@@ -23,6 +23,19 @@ import {
   Type,
 } from "lucide-react";
 export const statusVocabulary = {
+  workbookDiffKind: {
+    added: { icon: Plus, tone: "added", labelKey: "workbookDiffKind.added" },
+    removed: {
+      icon: Minus,
+      tone: "removed",
+      labelKey: "workbookDiffKind.removed",
+    },
+    changed: {
+      icon: PenLine,
+      tone: "caution",
+      labelKey: "workbookDiffKind.changed",
+    },
+  },
   changeKind: {
     added: { icon: Plus, tone: "added", labelKey: "changeKind.added" },
     removed: { icon: Minus, tone: "removed", labelKey: "changeKind.removed" },

@@ -33,6 +33,7 @@ export function useMonitorProject() {
 export function AppShell({ children }: { children: ReactNode }) {
   const t = useTranslations("Shell");
   const drawing = useTranslations("Drawing");
+  const workbookCopy = useTranslations("Workbooks");
   const toast = useToast();
 
   const session = useSession();
@@ -49,6 +50,18 @@ export function AppShell({ children }: { children: ReactNode }) {
     ? params.projectId
     : undefined;
   useProjectEvents(projectId ?? "", (event) => {
+    if (event.type === "workbook.checked")
+      toast(
+        workbookCopy(
+          "completed",
+          event.checkSummary ?? { errors: 0, warnings: 0, info: 0 },
+        ),
+        "success",
+        {
+          label: workbookCopy("open"),
+          href: `/projects/${projectId}/workbooks/${event.workbookId}?version=${event.versionId}`,
+        },
+      );
     if (event.type === "comparison.completed")
       toast(
         event.status === "succeeded"

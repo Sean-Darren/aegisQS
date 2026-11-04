@@ -1,5 +1,5 @@
 "use client";
-import type { ComponentProps } from "react";
+import { useEffect, useRef, type ComponentProps } from "react";
 import ReactEChartsCore from "echarts-for-react/lib/core";
 import * as echarts from "echarts/core";
 import { BarChart, LineChart, ScatterChart } from "echarts/charts";
@@ -27,5 +27,29 @@ echarts.use([
 type ChartProps = Omit<ComponentProps<typeof ReactEChartsCore>, "echarts">;
 
 export function AegisEChart(props: ChartProps) {
-  return <ReactEChartsCore echarts={echarts} {...props} />;
+  const ready = useRef(false);
+  useEffect(
+    () => () => {
+      ready.current = false;
+    },
+    [],
+  );
+  return (
+    <ReactEChartsCore
+      echarts={echarts}
+      {...props}
+      // The library creates a temporary instance, then replaces it after `finished`.
+      // Updating that temporary instance can dispose it during setOption. Its async
+      // initializer reads the latest props, so early updates can safely wait.
+      shouldSetOption={(previous, next) =>
+        ready.current && (props.shouldSetOption?.(previous, next) ?? true)
+      }
+      onChartReady={(instance) => {
+        if (!instance.isDisposed()) {
+          ready.current = true;
+          props.onChartReady?.(instance);
+        }
+      }}
+    />
+  );
 }

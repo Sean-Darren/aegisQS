@@ -195,3 +195,20 @@ body {
     white-space: normal;
   }
 }
+
+@keyframes revision-cloud-appear {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.revision-clouds {
+  animation: revision-cloud-appear 300ms ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .revision-clouds {
+    animation: none;
+  }
+}

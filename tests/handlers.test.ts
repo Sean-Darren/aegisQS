@@ -205,7 +205,7 @@ test("review, cost, decision and procurement mutations remain typed and audited"
     },
   ]);
   expect(priced.indicativeCost?.total).toBe(7000);
-  expect(priced.indicativeCost?.basis).toContain("Synthetic demo range");
+  expect(priced.indicativeCost?.basis).toContain("Contract BOQ rates");
   expect(priced.indicativeCost!.low).toBeLessThan(7000);
   expect(priced.indicativeCost!.high).toBeGreaterThan(7000);
   await expect(

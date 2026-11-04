@@ -1,3 +1,4 @@
+import { variationRangeRule } from "@/lib/config/variation";
 import { z } from "zod";
 import * as s from "@/schemas";
 import { state, audit, now, currentUser } from "../store";
@@ -166,23 +167,16 @@ export const variationHandlers = [
       }
       const total =
         Math.round(costLines.reduce((sum, l) => sum + l.amount, 0) * 100) / 100;
-      const previous = v.indicativeCost;
-      const lowRatio =
-          previous && previous.total !== 0
-            ? previous.low / previous.total
-            : 171000 / 186400,
-        highRatio =
-          previous && previous.total !== 0
-            ? previous.high / previous.total
-            : 203000 / 186400;
-      const ends = [total * lowRatio, total * highRatio].sort((a, b) => a - b);
+      const ends = [
+        total * variationRangeRule.lowFactor,
+        total * variationRangeRule.highFactor,
+      ].sort((a, b) => a - b);
       v.costLines = costLines;
       v.indicativeCost = {
         total,
         low: Math.round(ends[0] * 100) / 100,
         high: Math.round(ends[1] * 100) / 100,
-        basis:
-          "Synthetic demo range; QS review required. QS-entered quantities × stated rates.",
+        basis: variationRangeRule.basis,
       };
       for (const line of costLines) {
         const item = state.items.find(

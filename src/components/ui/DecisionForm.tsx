@@ -51,7 +51,7 @@ export function DecisionForm({
       <label className="block">
         {reasonLabel}
         <textarea
-          required
+          required={minReasonLength > 0}
           minLength={minReasonLength}
           value={reason}
           onChange={(e) => setReason(e.target.value)}

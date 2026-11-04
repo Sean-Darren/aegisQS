@@ -11,12 +11,13 @@ import { Toast as Primitive } from "radix-ui";
 import { X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
+import { Button } from "./button";
 import { Link } from "@/i18n/navigation";
 type ToastMessage = {
   id: number;
   message: string;
   status: "success" | "error" | "info";
-  action?: { label: string; href: string };
+  action?: { label: string; href?: string; onClick?: () => void };
 };
 const ToastContext = createContext<
   | ((
@@ -71,14 +72,18 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             }}
           >
             <Primitive.Description>{item.message}</Primitive.Description>
-            {item.action && (
+            {item.action?.href ? (
               <Link
                 href={item.action.href}
                 className="ml-3 rounded-sm font-semibold text-clay-800 underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-clay-600"
               >
                 {item.action.label}
               </Link>
-            )}
+            ) : item.action ? (
+              <Button variant="ghost" onClick={item.action.onClick}>
+                {item.action.label}
+              </Button>
+            ) : null}
             <Primitive.Close
               aria-label={t("close")}
               className="ml-3 rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-clay-600"

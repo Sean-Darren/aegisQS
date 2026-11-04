@@ -1,4 +1,5 @@
 "use client";
+import { useRef } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
 import "react-pdf/dist/Page/TextLayer.css";
 import type { BBox } from "@/schemas";
@@ -17,6 +18,10 @@ export function PdfCanvas({
   loading,
   error,
   highlightText,
+  width = 480,
+  pixelRatio,
+  onCanvas,
+  framed = true,
 }: {
   file: Blob;
   page: number;
@@ -25,7 +30,12 @@ export function PdfCanvas({
   loading: string;
   error: string;
   highlightText?: string;
+  width?: number;
+  pixelRatio?: number;
+  onCanvas?: (canvas: HTMLCanvasElement) => void;
+  framed?: boolean;
 }) {
+  const canvas = useRef<HTMLCanvasElement>(null);
   function escapeHtml(value: string) {
     return value.replace(
       /[&<>"']/g,
@@ -40,12 +50,23 @@ export function PdfCanvas({
     );
   }
   return (
-    <div className="overflow-auto rounded-md border border-line bg-stone-50 p-3">
+    <div
+      className={
+        framed
+          ? "overflow-auto border border-line bg-viewer-bg p-3"
+          : "relative"
+      }
+    >
       <Document file={file} loading={loading} error={error} suspense={false}>
         <div className="relative mx-auto w-fit bg-panel">
           <Page
             pageNumber={page}
-            width={480}
+            width={width}
+            canvasRef={canvas}
+            devicePixelRatio={pixelRatio}
+            onRenderSuccess={() => {
+              if (canvas.current) onCanvas?.(canvas.current);
+            }}
             scale={zoom}
             renderAnnotationLayer={false}
             renderTextLayer={!!highlightText}

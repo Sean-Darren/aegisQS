@@ -16,12 +16,14 @@ export function Combobox({
   onValueChange,
   options,
   disabled = false,
+  onSearchChange,
 }: {
   label: string;
   value: string;
   onValueChange: (value: string) => void;
   options: readonly ComboboxOption[];
   disabled?: boolean;
+  onSearchChange?: (query: string) => void;
 }) {
   const t = useTranslations("Primitives");
   const id = useId();
@@ -70,6 +72,7 @@ export function Combobox({
             onClick={() => setOpen(true)}
             onChange={(event) => {
               setQuery(event.target.value);
+              onSearchChange?.(event.target.value);
               setActive(0);
               setOpen(true);
             }}

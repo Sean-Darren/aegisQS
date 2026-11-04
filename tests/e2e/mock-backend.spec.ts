@@ -27,6 +27,7 @@ test("browser mocks parse a real uploaded workbook and refresh Documents through
     if (!response.ok) throw new Error(await response.text());
     return (await response.json()) as { id: string; currentVersionId: string };
   });
+  await page.getByLabel("Search documents").fill("Browser uploaded BOQ");
   await expect(
     page.getByText("Browser uploaded BOQ", { exact: true }),
   ).toBeVisible();

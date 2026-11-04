@@ -1,5 +1,8 @@
 "use client";
 import { useRef, useEffect } from "react";
+import dynamic from "next/dynamic";
+import { useProjectDocuments } from "@/lib/api/use-records";
+import { useParams } from "next/navigation";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import {
@@ -7,14 +10,30 @@ import {
   DrawerContent,
   DrawerTitle,
   DrawerDescription,
-  EmptyState,
 } from "@/components/ui";
+const DocumentDetail = dynamic(
+  () => import("@/features/documents").then((m) => m.DocumentDetail),
+  { ssr: false },
+);
+const RecordDetail = dynamic(
+  () =>
+    import("@/components/records/record-detail").then((m) => m.RecordDetail),
+  { ssr: false },
+);
 export function DetailDrawer() {
-  const t = useTranslations("Migration");
+  const t = useTranslations("Records");
   const params = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
   const detail = params.get("detail");
+  const route = useParams<{ projectId?: string }>();
+  const records = useProjectDocuments(
+    detail?.startsWith("document_version:") ? (route.projectId ?? "") : "",
+  );
+  const [type, ...parts] = (detail ?? "").split(":");
+  const id = parts.join(":");
+  const version = records.allVersions.find((v) => v.id === id);
+  const documentId = type === "document" ? id : version?.documentId;
   const trigger = useRef<HTMLElement | null>(null);
   useEffect(() => {
     if (detail) return;
@@ -47,8 +66,21 @@ export function DetailDrawer() {
       >
         <div className="p-5">
           <DrawerTitle>{t("detail")}</DrawerTitle>
-          <DrawerDescription>{t("coming")}</DrawerDescription>
-          <EmptyState message={t("coming")} />
+          <DrawerDescription>{t("description")}</DrawerDescription>
+          {documentId ? (
+            <DocumentDetail
+              key={detail}
+              documentId={documentId}
+              versionId={type === "document_version" ? id : undefined}
+            />
+          ) : (
+            <RecordDetail
+              key={detail}
+              type={type}
+              id={id}
+              projectId={route.projectId ?? ""}
+            />
+          )}
         </div>
       </DrawerContent>
     </Drawer>

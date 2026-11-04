@@ -6,7 +6,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { useParams } from "next/navigation";
+import { useParams, usePathname } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { can } from "@/lib/auth/permissions";
@@ -14,6 +14,7 @@ import { useSession } from "@/lib/auth/session";
 import { queryKeys, resources } from "@/lib/api";
 import { useProjectEvents } from "@/lib/ws";
 
+import { useToast } from "@/components/ui/toast";
 import { ErrorState, Skeleton } from "@/components/ui";
 import { Header } from "./header";
 import { LeftNav } from "./left-nav";
@@ -31,6 +32,8 @@ export function useMonitorProject() {
 }
 export function AppShell({ children }: { children: ReactNode }) {
   const t = useTranslations("Shell");
+  const drawing = useTranslations("Drawing");
+  const toast = useToast();
 
   const session = useSession();
   const [primaryAction, setPrimaryAction] = useState<ReactNode>();
@@ -41,10 +44,23 @@ export function AppShell({ children }: { children: ReactNode }) {
     enabled: can(session.data, "project.view"),
   });
   const params = useParams<{ projectId?: string }>();
+  const comparing = usePathname().includes("/drawings/compare/");
   const projectId = can(session.data, "project.view")
     ? params.projectId
     : undefined;
-  useProjectEvents(projectId ?? "");
+  useProjectEvents(projectId ?? "", (event) => {
+    if (event.type === "comparison.completed")
+      toast(
+        event.status === "succeeded"
+          ? drawing("ready", { count: event.changeCount })
+          : drawing("error"),
+        event.status === "succeeded" ? "success" : "error",
+        {
+          label: drawing("openComparison"),
+          href: `/projects/${projectId}/drawings/compare/${event.comparisonId}`,
+        },
+      );
+  });
   return (
     <MonitorProjectContext.Provider value={setActiveProjectId}>
       <HeaderActionContext.Provider value={setPrimaryAction}>
@@ -70,11 +86,22 @@ export function AppShell({ children }: { children: ReactNode }) {
                 primaryAction={primaryAction}
               />
             )}
-            <main id="main-content" className="min-w-0 flex-1 p-6 lg:p-8">
+            <main
+              id="main-content"
+              className={
+                comparing ? "min-w-0 flex-1 p-4" : "min-w-0 flex-1 p-6 lg:p-8"
+              }
+            >
               {session.isError ? (
                 <ErrorState message={t("sessionError")} />
               ) : (
-                <div className="mx-auto w-full max-w-[1600px]">{children}</div>
+                <div
+                  className={
+                    comparing ? "w-full" : "mx-auto w-full max-w-[1600px]"
+                  }
+                >
+                  {children}
+                </div>
               )}
             </main>
           </div>

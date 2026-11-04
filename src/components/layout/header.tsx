@@ -1,4 +1,5 @@
 "use client";
+import { JobStatus } from "./job-status";
 import type { ReactNode } from "react";
 import { Bell, CircleDashed } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -29,7 +30,6 @@ export function Header({
   const t = useTranslations("Shell");
   const router = useRouter();
   const switchRole = useMockRoleSwitcher();
-  const jobLabel = t("jobPlaceholder");
   return (
     <header className="flex min-h-14 flex-wrap items-center gap-4 border-b border-line bg-panel px-5 py-2.5">
       <Link
@@ -74,7 +74,7 @@ export function Header({
               className="inline-flex items-center gap-1 text-xs text-muted-ink"
             >
               <CircleDashed size={16} strokeWidth={1.5} aria-hidden="true" />
-              <span className="num text-right">{jobLabel}</span>
+              <JobStatus projectId={projectId} />
             </span>
           </TooltipTrigger>
           <TooltipContent>{t("jobStatus")}</TooltipContent>
@@ -97,7 +97,6 @@ export function Header({
               value={user.role}
               onChange={async (event) => {
                 await switchRole(event.target.value as Role);
-                router.push("/projects");
               }}
               className="h-9 rounded-md border border-line-strong bg-panel px-2 text-sm text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-clay-600"
             >

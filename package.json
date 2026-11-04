@@ -12,6 +12,7 @@
     "mock:files": "node --experimental-default-type=module --experimental-strip-types scripts/make-mock-drawings.ts && node --experimental-default-type=module --experimental-strip-types scripts/make-mock-workbooks.ts"
   },
   "dependencies": {
+    "@hookform/resolvers": "^7.0.2",
     "@tanstack/react-query": "^5.104.0",
     "@tanstack/react-virtual": "^3.14.13",
     "class-variance-authority": "^0.7.1",
@@ -26,7 +27,9 @@
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "react-dropzone": "^20.1.4",
+    "react-hook-form": "^7.91.0",
     "react-pdf": "^11.0.0",
+    "react-zoom-pan-pinch": "^4.2.0",
     "tailwind-merge": "^3.7.0",
     "zod": "^4.6.5"
   },

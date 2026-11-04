@@ -1,72 +1,204 @@
 "use client";
-import { useTranslations } from "next-intl";
-import { Link } from "@/i18n/navigation";
-import { EmptyState, ErrorState, Skeleton, StatusChip } from "@/components/ui";
-import { useDocuments } from "../api";
+import { useState } from "react";
+import { useTranslations, useLocale } from "next-intl";
+import { Link, useRouter } from "@/i18n/navigation";
+import {
+  EmptyState,
+  ErrorState,
+  Skeleton,
+  StatusChip,
+  Button,
+} from "@/components/ui";
+import { VirtualTable } from "@/components/grid";
+import { useProjectDocuments } from "@/lib/api/use-records";
+import { useSession } from "@/lib/auth/session";
+import { can } from "@/lib/auth/permissions";
+import {
+  formatDate,
+  formatRevisionLabel,
+  type FormatLocale,
+} from "@/lib/format";
+import { documentCategorySchema } from "@/schemas";
+import { inputStyle } from "@/components/ui/form-styles";
+import { UploadQueue } from "./upload-queue";
 export function DocumentsPage({ projectId }: { projectId: string }) {
-  const t = useTranslations("Documents");
-  const common = useTranslations("Common");
-  const query = useDocuments(projectId);
+  const t = useTranslations("Hub");
+  const locale = useLocale() as FormatLocale;
+  const session = useSession();
+  const router = useRouter();
+  const { documents, allVersions, versions } = useProjectDocuments(projectId);
+  const [category, setCategory] = useState("");
+  const [search, setSearch] = useState("");
+  const [conflicts, setConflicts] = useState(false);
+  const [upload, setUpload] = useState(false);
+  const data = documents.data ?? [];
+  const visible = data.filter(
+    (d) =>
+      (!category || d.category === category) &&
+      (!conflicts || d.hasConflict) &&
+      `${d.docNumber} ${d.title}`.toLowerCase().includes(search.toLowerCase()),
+  );
+  const fields = [
+    "number",
+    "title",
+    "category",
+    "discipline",
+    "revision",
+    "status",
+    "updated",
+    "uploader",
+  ];
   return (
-    <section className="space-y-5">
-      <h1 className="text-2xl font-semibold">{t("title")}</h1>
-      {query.isPending && <Skeleton className="h-64 w-full" />}
-      {query.isError && (
+    <div className="space-y-5">
+      <header className="flex justify-between gap-3">
+        <h1 className="text-2xl font-semibold">{t("register")}</h1>
+        {can(session.data, "document.upload") && (
+          <Button onClick={() => setUpload((v) => !v)}>{t("upload")}</Button>
+        )}
+      </header>
+      {upload && can(session.data, "document.upload") && (
+        <UploadQueue projectId={projectId} />
+      )}
+      <div className="flex flex-wrap gap-2">
+        <Button
+          variant={category === "" ? "primary" : "outline"}
+          onClick={() => setCategory("")}
+        >
+          {t("all")} <span className="tabular-nums">{data.length}</span>
+        </Button>
+        {documentCategorySchema.options.map((c) => (
+          <Button
+            key={c}
+            variant={category === c ? "primary" : "outline"}
+            onClick={() => setCategory(c)}
+          >
+            {t(`categories.${c}`)}{" "}
+            <span className="tabular-nums">
+              {data.filter((d) => d.category === c).length}
+            </span>
+          </Button>
+        ))}
+      </div>
+      <div className="flex flex-wrap gap-5">
+        <label className="min-w-64">
+          {t("search")}
+          <input
+            className={inputStyle}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </label>
+        <label className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            checked={conflicts}
+            onChange={(e) => setConflicts(e.target.checked)}
+          />
+          {t("conflictsOnly")}
+        </label>
+      </div>
+      {documents.isPending && <Skeleton className="h-96 w-full" />}
+      {documents.isError && (
         <ErrorState
           message={t("error")}
           action={{
-            label: common("retry"),
-            onClick: () => void query.refetch(),
+            label: t("retry"),
+            onClick: () => void documents.refetch(),
           }}
         />
       )}
-      {query.data?.length === 0 && <EmptyState message={t("empty")} />}
-      {!!query.data?.length && (
-        <div className="overflow-auto rounded-lg border border-line bg-panel">
-          <table className="w-full text-left text-sm tabular-nums">
-            <thead className="bg-stone-50 text-muted-ink">
-              <tr>
-                {["number", "title", "category", "versions", "status"].map(
-                  (key) => (
-                    <th
-                      key={key}
-                      scope="col"
-                      className={`px-4 py-3 font-medium ${key === "versions" ? "text-right" : ""}`}
-                    >
-                      {t(key)}
-                    </th>
-                  ),
-                )}
-              </tr>
-            </thead>
-            <tbody>
-              {query.data.map((doc) => (
-                <tr key={doc.id} className="border-t border-line">
-                  <th scope="row" className="px-4 py-3 font-medium">
+      {versions.some((q) => q.isError) && (
+        <ErrorState
+          message={t("versionError")}
+          action={{
+            label: t("retry"),
+            onClick: () =>
+              versions.forEach((q) => {
+                if (q.isError) void q.refetch();
+              }),
+          }}
+        />
+      )}
+      {documents.data && visible.length === 0 && (
+        <EmptyState message={data.length ? t("noMatches") : t("empty")} />
+      )}
+      {visible.length > 0 && (
+        <div className="rounded-lg border border-line bg-panel">
+          <VirtualTable
+            label={t("register")}
+            rows={visible}
+            rowHeight={48}
+            onRowClick={(doc) =>
+              router.push(
+                `/projects/${projectId}/documents?detail=document:${doc.id}`,
+                { scroll: false },
+              )
+            }
+            columns="120px minmax(200px,2fr) 130px 140px 90px 130px 150px 120px"
+            header={
+              <>
+                {fields.map((f) => (
+                  <div
+                    role="columnheader"
+                    className="px-3 py-3 text-xs font-medium text-muted-ink"
+                    key={f}
+                  >
+                    {t(f)}
+                  </div>
+                ))}
+              </>
+            }
+            renderRow={(doc) => {
+              const current = allVersions.find(
+                (v) => v.id === doc.currentVersionId,
+              );
+              const cell = "truncate border-t border-line px-3 py-3 text-sm";
+              return (
+                <>
+                  <div role="cell" className={cell}>
                     <Link
-                      href={`/projects/${projectId}/documents?detail=document:${encodeURIComponent(doc.id)}`}
-                      className="rounded-sm text-clay-700 underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-clay-600"
+                      href={`/projects/${projectId}/documents?detail=document:${doc.id}`}
+                      className="rounded-sm text-clay-700 underline focus-visible:outline-2 focus-visible:outline-clay-600"
                     >
                       {doc.docNumber}
                     </Link>
-                  </th>
-                  <td className="px-4 py-3">{doc.title}</td>
-                  <td className="px-4 py-3">
+                  </div>
+                  <div role="cell" className={cell} title={doc.title}>
+                    {doc.title}
+                  </div>
+                  <div role="cell" className={cell}>
                     {t(`categories.${doc.category}`)}
-                  </td>
-                  <td className="px-4 py-3 text-right">{doc.versionCount}</td>
-                  <td className="px-4 py-3">
+                  </div>
+                  <div role="cell" className={cell}>
+                    {doc.discipline
+                      ? t(`disciplines.${doc.discipline}`)
+                      : t("notSpecified")}
+                  </div>
+                  <div role="cell" className={`${cell} tabular-nums`}>
+                    {current ? formatRevisionLabel(current.label) : "…"}
+                  </div>
+                  <div role="cell" className={cell}>
                     <StatusChip
                       domain="versionStatus"
                       value={doc.hasConflict ? "conflict" : "current"}
+                      compact
                     />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                  </div>
+                  <div
+                    role="cell"
+                    className={`${cell} tabular-nums text-right`}
+                  >
+                    {formatDate(doc.updatedAt, locale)}
+                  </div>
+                  <div role="cell" className={cell}>
+                    {current?.uploadedBy ?? "…"}
+                  </div>
+                </>
+              );
+            }}
+          />
         </div>
       )}
-    </section>
+    </div>
   );
 }

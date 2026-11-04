@@ -7,11 +7,17 @@ export function VirtualTable<T>({
   renderRow,
   label,
   rowHeight = 36,
+  header,
+  columns,
+  onRowClick,
 }: {
   rows: T[];
   renderRow: (row: T, index: number) => ReactNode;
   label: string;
   rowHeight?: number;
+  header?: ReactNode;
+  columns?: string;
+  onRowClick?: (row: T) => void;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   // TanStack Virtual owns mutable measurements; React Compiler must skip this hook.
@@ -26,21 +32,50 @@ export function VirtualTable<T>({
     <div
       ref={ref}
       role="table"
+      tabIndex={0}
       aria-label={label}
-      aria-rowcount={rows.length}
-      className="tabular-nums overflow-auto"
+      aria-rowcount={rows.length + (header ? 1 : 0)}
+      className="tabular-nums overflow-auto focus-visible:outline-2 focus-visible:outline-clay-600"
       style={{ height: 480 }}
     >
+      {header && (
+        <div
+          role="row"
+          className="sticky top-0 z-10 bg-stone-50"
+          style={{
+            display: "grid",
+            gridTemplateColumns: columns,
+            minWidth: columns ? 1000 : undefined,
+          }}
+        >
+          {header}
+        </div>
+      )}
       <div
         role="rowgroup"
-        style={{ height: virtual.getTotalSize(), position: "relative" }}
+        style={{
+          height: virtual.getTotalSize(),
+          position: "relative",
+          minWidth: columns ? 1000 : undefined,
+        }}
       >
         {virtual.getVirtualItems().map((item) => (
           <div
             role="row"
-            aria-rowindex={item.index + 1}
+            aria-rowindex={item.index + (header ? 2 : 1)}
             key={item.key}
+            className={onRowClick ? "cursor-pointer" : undefined}
+            onClick={(event) => {
+              if (
+                !(event.target as HTMLElement).closest(
+                  "a,button,input,select,textarea",
+                )
+              )
+                onRowClick?.(rows[item.index]);
+            }}
             style={{
+              display: columns ? "grid" : undefined,
+              gridTemplateColumns: columns,
               position: "absolute",
               top: 0,
               width: "100%",

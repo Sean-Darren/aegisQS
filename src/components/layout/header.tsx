@@ -6,48 +6,32 @@ import { useRouter } from "@/i18n/navigation";
 import { Link } from "@/i18n/navigation";
 import { can } from "@/lib/auth/permissions";
 import { useMockRoleSwitcher } from "@/lib/auth/session";
-import type { AnalysisJob, Project, Role, User } from "@/schemas";
+import type { Project, Role, User } from "@/schemas";
 import {
   IconButton,
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui";
-import { StageStepper } from "./stage-stepper";
 
-const roles: Role[] = ["senior_qs", "junior_qs", "owner_viewer", "admin"];
+const roles: Role[] = ["senior_qs", "qs", "viewer", "admin"];
 export function Header({
   user,
   projects,
   projectId,
-  job,
   primaryAction,
 }: {
   user?: User;
   projects: Project[];
   projectId?: string;
-  job?: AnalysisJob;
   primaryAction?: ReactNode;
 }) {
   const t = useTranslations("Shell");
   const router = useRouter();
   const switchRole = useMockRoleSwitcher();
-  const project = projects.find((item) => item.id === projectId);
-  const overallPct = job?.progress.length
-    ? Math.round(
-        job.progress.reduce((sum, item) => sum + item.pct, 0) /
-          job.progress.length,
-      )
-    : 0;
-  const jobLabel = !job
-    ? t("jobPlaceholder")
-    : ["running", "queued"].includes(job.status)
-      ? t("jobProgress", { pct: overallPct })
-      : job.status === "succeeded"
-        ? t("jobSucceeded")
-        : t("jobFinishedWithErrors");
+  const jobLabel = t("jobPlaceholder");
   return (
-    <header className="flex min-h-16 flex-wrap items-center gap-4 border-b border-line bg-panel px-5 py-3">
+    <header className="flex min-h-14 flex-wrap items-center gap-4 border-b border-line bg-panel px-5 py-2.5">
       <Link
         href="/projects"
         className="shrink-0 rounded-sm text-lg font-bold tracking-tight text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-clay-600"
@@ -60,9 +44,13 @@ export function Header({
           <select
             aria-label={t("selectProject")}
             value={projectId ?? ""}
-            onChange={(event) =>
-              router.push(`/projects/${event.target.value}/overview`)
-            }
+            onChange={(event) => {
+              const selected = projects.find(
+                (item) => item.id === event.target.value,
+              );
+              if (!selected) return;
+              router.push(`/projects/${selected.id}/overview`);
+            }}
             className="h-9 max-w-56 rounded-md border border-line-strong bg-panel px-3 text-sm text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-clay-600"
           >
             <option value="" disabled>
@@ -75,9 +63,6 @@ export function Header({
             ))}
           </select>
         </label>
-      )}
-      {project && can(user, "project.view") && (
-        <StageStepper projectId={project.id} stage={project.stage} />
       )}
       <div className="ml-auto flex items-center gap-2">
         {primaryAction}
@@ -121,10 +106,10 @@ export function Header({
                   {t(
                     role === "senior_qs"
                       ? "roleSenior"
-                      : role === "junior_qs"
-                        ? "roleJunior"
-                        : role === "owner_viewer"
-                          ? "roleOwner"
+                      : role === "qs"
+                        ? "roleQs"
+                        : role === "viewer"
+                          ? "roleViewer"
                           : "roleAdmin",
                   )}
                 </option>

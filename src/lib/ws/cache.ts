@@ -1,75 +1,81 @@
 import type { QueryClient } from "@tanstack/react-query";
-import {
-  type AnalysisJob,
-  type Flag,
-  flagFiltersSchema,
-  auditorStatusSchema,
-  type WsEvent,
-} from "@/schemas";
 import { queryKeys } from "@/lib/api/query-keys";
+import type {
+  WsEvent,
+  DrawingComparison,
+  DrawingRegisterEntry,
+  WorkbookVersion,
+} from "@/schemas";
+export function refreshProject(client: QueryClient, projectId: string) {
+  void client.invalidateQueries({ queryKey: queryKeys.project(projectId) });
+  void client.invalidateQueries({
+    predicate: (q) => {
+      const data = q.state.data;
+      return (
+        !!data &&
+        typeof data === "object" &&
+        "projectId" in data &&
+        data.projectId === projectId
+      );
+    },
+  });
+}
 export function applyProjectEvent(
   client: QueryClient,
   projectId: string,
   event: WsEvent,
 ) {
-  if (event.type === "flag.created") {
-    if (event.flag.projectId !== projectId) return;
-    client.setQueryData(queryKeys.flag(event.flag.id), event.flag);
-    for (const query of client
-      .getQueryCache()
-      .findAll({ queryKey: queryKeys.flags(projectId) })) {
-      const filters = flagFiltersSchema.safeParse(query.queryKey[3] ?? {});
-      if (!filters.success) continue;
-      const matches = Object.entries(filters.data).every(
-        ([key, value]) =>
-          value === undefined ||
-          event.flag[key as keyof typeof filters.data] === value,
-      );
-      client.setQueryData<Flag[]>(query.queryKey, (old) =>
-        !old
-          ? old
-          : matches
-            ? [...old.filter((flag) => flag.id !== event.flag.id), event.flag]
-            : old.filter((flag) => flag.id !== event.flag.id),
-      );
-    }
-    void client.invalidateQueries({ queryKey: queryKeys.flags(projectId) });
-    void client.invalidateQueries({ queryKey: queryKeys.reports(projectId) });
-    return;
-  }
-  const key = queryKeys.job(event.jobId);
-  const old = client.getQueryData<AnalysisJob>(key);
-  if (old && old.projectId !== projectId) return;
-  if (event.type === "job.progress") {
-    const status = auditorStatusSchema.safeParse(event.status);
-    if (!status.success || !old) {
-      void client.invalidateQueries({ queryKey: key });
-      return;
-    }
-    client.setQueryData<AnalysisJob>(key, (job) => {
-      if (!job || ["succeeded", "failed", "partial"].includes(job.status))
-        return job;
-      return {
-        ...job,
-        status: "running",
-        progress: job.progress.map((progress) =>
-          progress.tendererId === event.tendererId &&
-          progress.auditor === event.auditor
-            ? {
-                ...progress,
-                status: status.data,
-                pct: Math.max(progress.pct, event.pct),
-              }
-            : progress,
-        ),
-      };
-    });
-  } else {
-    client.setQueryData<AnalysisJob>(key, (job) =>
-      job ? { ...job, status: event.status } : job,
+  if (
+    event.type === "comparison.progress" ||
+    event.type === "comparison.completed"
+  ) {
+    const update = (previous: DrawingComparison | undefined) =>
+      previous
+        ? {
+            ...previous,
+            status: event.status,
+            progressPct:
+              event.type === "comparison.progress" ? event.progressPct : 100,
+          }
+        : previous;
+    client.setQueryData<DrawingComparison>(
+      queryKeys.comparison(event.comparisonId),
+      update,
     );
-    // The completed event contains no finishedAt or result payload: refetch authoritative data.
-    void client.invalidateQueries({ queryKey: key });
-    void client.invalidateQueries({ queryKey: queryKeys.project(projectId) });
+    client.setQueryData<DrawingRegisterEntry[]>(
+      queryKeys.drawings(projectId),
+      (previous) =>
+        previous?.map((entry) =>
+          entry.latestComparison?.id === event.comparisonId
+            ? { ...entry, latestComparison: update(entry.latestComparison) }
+            : entry,
+        ),
+    );
+    if (event.type === "comparison.completed") {
+      void client.invalidateQueries({
+        queryKey: queryKeys.comparison(event.comparisonId),
+      });
+      refreshProject(client, projectId);
+    }
+  } else if (event.type === "document.version_added") {
+    void client.invalidateQueries({
+      queryKey: queryKeys.document(event.documentId),
+    });
+    refreshProject(client, projectId);
+  } else {
+    client.setQueryData<WorkbookVersion>(
+      queryKeys.workbookVersion(event.versionId),
+      (previous) =>
+        previous
+          ? { ...previous, status: "checked", checkSummary: event.checkSummary }
+          : previous,
+    );
+    void client.invalidateQueries({
+      queryKey: queryKeys.workbookVersion(event.versionId),
+    });
+    void client.invalidateQueries({
+      queryKey: queryKeys.workbook(event.workbookId),
+    });
+    refreshProject(client, projectId);
   }
 }

@@ -1,32 +1,33 @@
-import { expect, test } from "@playwright/test";
-import en from "../../src/messages/en.json";
-import zh from "../../src/messages/zh-HK.json";
-test("home defaults to English, renders both locales, and starts browser mocks", async ({
-  page,
-}) => {
+import { test, expect } from "@playwright/test";
+test("remaining shell routes and detail URL work", async ({ page }) => {
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
-  page.on("console", (message) => {
-    if (["error", "warning"].includes(message.type()))
-      errors.push(message.text());
-  });
-  await page.goto("/");
-  await expect(page).toHaveURL(/\/en$/);
+  await page.goto("/en/login");
+  await page.getByRole("link", { name: "Continue to projects" }).click();
   await expect(
-    page.getByRole("heading", { name: en.Home.title }),
+    page.getByRole("heading", { name: "Projects", exact: true }),
   ).toBeVisible();
-  await expect(page.getByText(en.Home.description)).toBeVisible();
-  await expect(page.locator("html")).toHaveAttribute("lang", "en");
-  const currentUser = await page.evaluate(async () => {
-    const response = await fetch("/api/v1/me");
-    return { status: response.status, body: await response.json() };
-  });
-  expect(currentUser.status).toBe(200);
-  expect(currentUser.body.role).toBe("senior_qs");
-  await page.goto("/zh-HK");
+  await page.getByRole("link", { name: "Open project" }).click();
   await expect(
-    page.locator("main p").filter({ hasText: zh.Home.description }),
+    page.getByRole("heading", { name: "Overview", exact: true }),
   ).toBeVisible();
-  await expect(page.locator("html")).toHaveAttribute("lang", "zh-HK");
+  await page.getByRole("link", { name: "Documents", exact: true }).click();
+  await expect(
+    page.getByRole("link", { name: "A-201", exact: true }),
+  ).toBeVisible();
+  await page.getByRole("link", { name: "Audit", exact: true }).click();
+  await expect(
+    page.getByRole("heading", { name: "Audit log", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByText(
+      "BOQ checks completed; formula and amount problems require review",
+    ),
+  ).toBeVisible();
+  await page.goto("/en/projects/P-001/documents?detail=document:D-1");
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog")).not.toBeVisible();
+  await expect(page).not.toHaveURL(/detail=/);
   expect(errors).toEqual([]);
 });

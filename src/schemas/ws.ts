@@ -1,21 +1,30 @@
 import { z } from "zod";
-import { auditorKindSchema } from "./enums";
-import { jobStatusSchema } from "./job";
-import { flagSchema } from "./flag";
+import { drawingComparisonSchema } from "./drawing";
+import { checkSummarySchema } from "./workbook";
 export const wsEventSchema = z.discriminatedUnion("type", [
   z.object({
-    type: z.literal("job.progress"),
-    jobId: z.string(),
-    tendererId: z.string(),
-    auditor: auditorKindSchema,
-    status: z.string(),
-    pct: z.number().min(0).max(100),
+    type: z.literal("comparison.progress"),
+    comparisonId: z.string(),
+    status: drawingComparisonSchema.shape.status,
+    progressPct: z.number().min(0).max(100),
   }),
   z.object({
-    type: z.literal("job.completed"),
-    jobId: z.string(),
-    status: jobStatusSchema,
+    type: z.literal("comparison.completed"),
+    comparisonId: z.string(),
+    status: z.enum(["succeeded", "failed"]),
+    changeCount: z.number().int().nonnegative(),
   }),
-  z.object({ type: z.literal("flag.created"), flag: flagSchema }),
+  z.object({
+    type: z.literal("document.version_added"),
+    documentId: z.string(),
+    versionId: z.string(),
+    conflict: z.boolean(),
+  }),
+  z.object({
+    type: z.literal("workbook.checked"),
+    workbookId: z.string(),
+    versionId: z.string(),
+    checkSummary: checkSummarySchema.optional(),
+  }),
 ]);
 export type WsEvent = z.infer<typeof wsEventSchema>;

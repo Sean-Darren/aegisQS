@@ -18,10 +18,10 @@ export function DialogContent({
   const t = useTranslations("Common");
   return (
     <Primitive.Portal>
-      <Primitive.Overlay className="fixed inset-0 z-40 bg-ink/40 data-[state=open]:animate-[fade-in_120ms_ease-out]" />
+      <Primitive.Overlay className="fixed inset-0 z-40 bg-ink/40" />
       <Primitive.Content
         className={cn(
-          "floating-layer fixed left-1/2 top-1/2 z-50 w-[min(32rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 rounded-lg border border-line bg-panel p-5 text-ink focus:outline-none",
+          "floating-layer fixed left-1/2 top-1/2 z-50 w-[min(32rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 rounded-lg border border-line bg-panel p-5 text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-clay-600",
           className,
         )}
         {...props}

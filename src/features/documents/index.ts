@@ -1,3 +1,2 @@
-export * from "./api";
-export * from "./validation";
-export * from "./components";
+export { DocumentsPage } from "./components/documents-page";
+export { useDocuments } from "./api";

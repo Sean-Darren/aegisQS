@@ -88,6 +88,25 @@ export function createApiClient(baseUrl = "/api/v1") {
       nextCursor: response.headers.get("X-Next-Cursor") ?? undefined,
     };
   }
+  async function send<S extends z.ZodType>(
+    method: string,
+    path: string,
+    schema: S,
+    body: unknown,
+    options: ApiRequestOptions = {},
+  ) {
+    const multipart = body instanceof FormData;
+    const headers = new Headers(options.headers);
+    if (!multipart) headers.set("Content-Type", "application/json");
+    return (
+      await request(path, schema, {
+        ...options,
+        method,
+        headers,
+        body: multipart ? body : JSON.stringify(body),
+      })
+    ).data;
+  }
   return {
     async get<S extends z.ZodType>(
       path: string,
@@ -97,6 +116,108 @@ export function createApiClient(baseUrl = "/api/v1") {
       return (await request(path, schema, options)).data;
     },
     page: request,
+    put: <S extends z.ZodType>(
+      path: string,
+      schema: S,
+      body: unknown,
+      options?: ApiRequestOptions,
+    ) => send("PUT", path, schema, body, options),
+    patch: <S extends z.ZodType>(
+      path: string,
+      schema: S,
+      body: unknown,
+      options?: ApiRequestOptions,
+    ) => send("PATCH", path, schema, body, options),
+    async upload<S extends z.ZodType>(
+      path: string,
+      schema: S,
+      body: FormData,
+      options: ApiRequestOptions & {
+        onProgress?: (percent: number) => void;
+      } = {},
+    ) {
+      const { onProgress, ...requestOptions } = options;
+      if (typeof XMLHttpRequest === "undefined" || !onProgress) {
+        onProgress?.(0);
+        const result = await send("POST", path, schema, body, requestOptions);
+        onProgress?.(100);
+        return result;
+      }
+      if (options.signal?.aborted)
+        throw new ApiError("Request cancelled.", "aborted");
+      return new Promise<z.infer<S>>((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        const abort = () => xhr.abort();
+        const cleanup = () =>
+          options.signal?.removeEventListener("abort", abort);
+        xhr.open(
+          "POST",
+          `${baseUrl.replace(/\/$/, "")}/${path.replace(/^\//, "")}`,
+        );
+        xhr.withCredentials = true;
+        new Headers(options.headers).forEach((value, key) =>
+          xhr.setRequestHeader(key, value),
+        );
+        xhr.upload.onprogress = (event) => {
+          if (event.lengthComputable)
+            onProgress(
+              Math.min(100, Math.round((event.loaded / event.total) * 100)),
+            );
+        };
+        xhr.onerror = () => {
+          cleanup();
+          reject(new ApiError("The API could not be reached.", "network"));
+        };
+        xhr.onabort = () => {
+          cleanup();
+          reject(new ApiError("Request cancelled.", "aborted"));
+        };
+        xhr.onload = () => {
+          cleanup();
+          try {
+            let data: unknown;
+            try {
+              data = JSON.parse(xhr.responseText);
+            } catch {
+              if (xhr.status >= 200 && xhr.status < 300)
+                throw new ApiError(
+                  "The API returned an unreadable response.",
+                  "validation",
+                  xhr.status,
+                );
+            }
+            if (xhr.status < 200 || xhr.status >= 300) {
+              const parsed = errorBodySchema.safeParse(data);
+              throw new ApiError(
+                parsed.success && parsed.data.message
+                  ? parsed.data.message
+                  : `Request failed with status ${xhr.status}.`,
+                "http",
+                xhr.status,
+                parsed.success ? parsed.data.code : undefined,
+                data,
+              );
+            }
+            const parsed = schema.safeParse(data);
+            if (!parsed.success)
+              throw new ApiError(
+                "The API response did not match its contract.",
+                "validation",
+                xhr.status,
+                "INVALID_RESPONSE",
+                parsed.error.issues,
+              );
+            onProgress(100);
+            resolve(parsed.data);
+          } catch (error) {
+            reject(error);
+          }
+        };
+        options.signal?.addEventListener("abort", abort, { once: true });
+        onProgress(0);
+        xhr.send(body);
+      });
+    },
     async post<S extends z.ZodType>(
       path: string,
       schema: S,

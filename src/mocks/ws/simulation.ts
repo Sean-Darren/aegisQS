@@ -1,132 +1,141 @@
-import {
-  analysisJobSchema,
-  auditorKindSchema,
-  flagSchema,
-  type AnalysisJob,
-} from "@/schemas";
-import { db, nextId, now, publish, registerCleanup, audit } from "../store";
-import { provenance } from "../fixtures/data";
-export const ANALYSIS_DURATION_MS = 20000;
-export const AUDITOR_RETRY_DURATION_MS = 5000;
-export function retryFailedAuditor(
-  job: AnalysisJob,
-  tendererId: string,
-  auditor: AnalysisJob["progress"][number]["auditor"],
+import type { DrawingComparison, DrawingChange } from "@/schemas";
+import { state, audit, nextId, now, currentUser } from "../store";
+import { emit, schedule } from "./events";
+import regions from "../fixtures/drawing-regions.json";
+import files from "../fixtures/drawing-files.json";
+export function startComparison(
+  projectId: string,
+  documentId: string,
+  baseVersionId: string,
+  targetVersionId: string,
 ) {
-  const progress = job.progress.find(
-    (item) => item.tendererId === tendererId && item.auditor === auditor,
-  );
-  if (
-    !progress ||
-    progress.status !== "failed" ||
-    !["partial", "failed"].includes(job.status)
-  )
-    return false;
-  progress.status = "running";
-  progress.pct = 0;
-  delete progress.error;
-  job.status = "running";
-  delete job.finishedAt;
-  let tick = 0;
-  const timer = setInterval(() => {
-    tick++;
-    progress.pct = Math.round((tick / 5) * 100);
-    progress.status = tick === 5 ? "succeeded" : "running";
-    publish(job.projectId, {
-      type: "job.progress",
-      jobId: job.id,
-      tendererId,
-      auditor,
-      status: progress.status,
-      pct: progress.pct,
-    });
-    if (tick === 5) {
-      clearInterval(timer);
-      unregister();
-      job.status = job.progress.every((item) => item.status === "succeeded")
-        ? "succeeded"
-        : "partial";
-      job.finishedAt = now();
-      audit("auditor.retried", "job", job.id, { tendererId, auditor });
-      publish(job.projectId, {
-        type: "job.completed",
-        jobId: job.id,
-        status: job.status,
-      });
-    }
-  }, AUDITOR_RETRY_DURATION_MS / 5);
-  const unregister = registerCleanup(() => clearInterval(timer));
-  return true;
-}
-export function startAnalysis(projectId: string): AnalysisJob {
-  const job = analysisJobSchema.parse({
-    id: nextId("J"),
+  const actor = currentUser();
+  const comparison: DrawingComparison = {
+    id: nextId("CMP"),
     projectId,
+    documentId,
+    baseVersionId,
+    targetVersionId,
     status: "queued",
-    startedAt: now(),
-    progress: db.tenderers
-      .filter((t) => t.projectId === projectId)
-      .flatMap((t) =>
-        auditorKindSchema.options.map((auditor) => ({
-          tendererId: t.id,
-          auditor,
-          status: "queued",
-          pct: 0,
-        })),
-      ),
-    modelVersion: provenance.modelVersion,
-    toolSchemaVersion: provenance.toolSchemaVersion,
+    progressPct: 0,
+    alignment: {
+      dx: 0,
+      dy: 0,
+      scale: 1,
+      rotationDeg: 0,
+      method: "auto",
+      quality: 0.96,
+    },
+    pageCount: 1,
+    changeCounts: {
+      added: 0,
+      removed: 0,
+      modified: 0,
+      dimension: 0,
+      annotation: 0,
+    },
+    modelVersion: "mock-drawing-1.0",
+    createdAt: now(),
+  };
+  state.comparisons.push(comparison);
+  audit(
+    "comparison.started",
+    "comparison",
+    comparison.id,
+    "Revision comparison queued",
+  );
+  emit(projectId, {
+    type: "comparison.progress",
+    comparisonId: comparison.id,
+    status: "queued",
+    progressPct: 0,
   });
-  db.jobs.push(job);
-  db.projects.find((p) => p.id === projectId)!.latestJobId = job.id;
-  let tick = 0;
-  const timer = setInterval(() => {
-    tick++;
-    job.status = "running";
-    for (const progress of job.progress) {
-      const offset = auditorKindSchema.options.indexOf(progress.auditor);
-      progress.pct = Math.min(
-        100,
-        Math.max(0, Math.round(((tick - offset) / (20 - offset)) * 100)),
-      );
-      progress.status =
-        progress.pct === 100
-          ? "succeeded"
-          : progress.pct === 0
-            ? "queued"
-            : "running";
-      publish(projectId, { type: "job.progress", jobId: job.id, ...progress });
-    }
-    if ([5, 10, 15].includes(tick)) {
-      const source = db.flags[tick / 5 - 1];
-      const { decision: _decision, proposal: _proposal, ...base } = source;
-      void _decision;
-      void _proposal;
-      const flag = flagSchema.parse({
-        ...base,
-        id: nextId("F"),
-        status: "open",
-        createdAt: now(),
-      });
-      db.flags.push(flag);
-      audit("flag.created", "flag", flag.id);
-      publish(projectId, { type: "flag.created", flag });
-    }
-    if (tick === 20) {
-      clearInterval(timer);
-      unregister();
-      job.status = "succeeded";
-      job.finishedAt = new Date(
-        Date.parse(job.startedAt) + ANALYSIS_DURATION_MS,
-      ).toISOString();
-      audit("job.completed", "job", job.id);
-      publish(projectId, {
-        type: "job.completed",
-        jobId: job.id,
-        status: job.status,
-      });
-    }
-  }, ANALYSIS_DURATION_MS / 20);
-  const unregister = registerCleanup(() => clearInterval(timer));
-  return job;
+  for (const [ms, status, pct] of [
+    [1500, "aligning", 20],
+    [4500, "detecting", 60],
+    [10000, "succeeded", 100],
+  ] as const)
+    schedule(() => {
+      comparison.status = status;
+      comparison.progressPct = pct;
+      if (status === "succeeded") {
+        const base = state.versions.find((v) => v.id === baseVersionId)!,
+          target = state.versions.find((v) => v.id === targetVersionId)!;
+        const templates =
+          base.sha256 === files["A-201-B"].sha256 &&
+          target.sha256 === files["A-201-C"].sha256
+            ? regions.a201
+            : base.sha256 === files["S-110-P1"].sha256 &&
+                target.sha256 === files["S-110-P2"].sha256
+              ? regions.s110
+              : [];
+        if (!templates.length) {
+          comparison.status = "failed";
+          comparison.error =
+            "No deterministic detection fixture exists for this pair. Use the generated A-201 B → C or S-110 P1 → P2 files.";
+          comparison.finishedAt = now();
+          audit(
+            "comparison.failed",
+            "comparison",
+            comparison.id,
+            "No mock detection fixture for this revision pair",
+            undefined,
+            actor,
+          );
+          emit(projectId, {
+            type: "comparison.completed",
+            comparisonId: comparison.id,
+            status: "failed",
+            changeCount: 0,
+          });
+          return;
+        }
+        for (const [i, template] of templates.entries()) {
+          const change: DrawingChange = {
+            ...template,
+            kind: template.kind as DrawingChange["kind"],
+            id: nextId("CH"),
+            comparisonId: comparison.id,
+            number: i + 1,
+            page: 1,
+            confidence: i === 3 ? 0.58 : 0.94,
+            status: "new",
+          };
+          state.changes.push(change);
+          comparison.changeCounts[change.kind]++;
+          state.links.push(
+            {
+              from: { type: "change", id: change.id },
+              to: { type: "document_version", id: baseVersionId },
+            },
+            {
+              from: { type: "change", id: change.id },
+              to: { type: "document_version", id: targetVersionId },
+            },
+          );
+        }
+        comparison.finishedAt = now();
+        audit(
+          "comparison.completed",
+          "comparison",
+          comparison.id,
+          `Comparison ready — ${templates.length} changes found`,
+          undefined,
+          actor,
+        );
+        emit(projectId, {
+          type: "comparison.completed",
+          comparisonId: comparison.id,
+          status: "succeeded",
+          changeCount: templates.length,
+        });
+      } else
+        emit(projectId, {
+          type: "comparison.progress",
+          comparisonId: comparison.id,
+          status,
+          progressPct: pct,
+        });
+    }, ms);
+  return comparison;
 }

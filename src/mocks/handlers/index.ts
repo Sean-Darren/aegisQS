@@ -1,12 +1,16 @@
 import { projectHandlers } from "./projects";
-import { flagHandlers } from "./flags";
 import { documentHandlers } from "./documents";
-import { jobReportHandlers } from "./jobs-reports";
+import { drawingHandlers } from "./drawings";
+import { variationHandlers } from "./variations";
+import { workbookHandlers } from "./workbooks";
+import { materialHandlers } from "./materials";
 import { wsHandlers } from "../ws";
 export const handlers = [
   ...projectHandlers,
-  ...flagHandlers,
   ...documentHandlers,
-  ...jobReportHandlers,
+  ...drawingHandlers,
+  ...variationHandlers,
+  ...workbookHandlers,
+  ...materialHandlers,
   ...wsHandlers,
 ];

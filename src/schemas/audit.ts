@@ -1,21 +1,26 @@
 import { z } from "zod";
-import { roleSchema, isoDateTimeSchema } from "./enums";
+import { roleSchema, isoDateSchema } from "./enums";
 export const auditEventSchema = z.object({
   id: z.string(),
-  at: isoDateTimeSchema,
+  at: isoDateSchema,
   actorId: z.string(),
   actorRole: roleSchema,
   action: z.string(),
   entityType: z.enum([
     "project",
     "document",
-    "job",
-    "flag",
-    "report",
-    "config",
+    "document_version",
+    "comparison",
+    "change",
+    "variation",
+    "workbook",
+    "workbook_version",
+    "check",
+    "procurement",
     "user",
   ]),
   entityId: z.string(),
+  summary: z.string(),
   details: z.record(z.string(), z.unknown()).optional(),
 });
 export type AuditEvent = z.infer<typeof auditEventSchema>;

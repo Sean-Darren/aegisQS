@@ -1,45 +1,28 @@
 "use client";
 import { useEffect, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import type { AnalysisJob, WsEvent } from "@/schemas";
-import { queryKeys } from "@/lib/api/query-keys";
-import { applyProjectEvent } from "./cache";
+import type { WsEvent } from "@/schemas";
 import { connectProjectSocket } from "./client";
-/** Mount under a QueryClientProvider. Owns connection cleanup when the project changes. */
+import { applyProjectEvent, refreshProject } from "./cache";
+/** The only application socket subscriber; cache updates are independent of page components. */
 export function useProjectEvents(
   projectId: string,
-  options?: {
-    onCompleted?: (event: Extract<WsEvent, { type: "job.completed" }>) => void;
-  },
+  onEvent?: (event: WsEvent) => void,
 ) {
   const client = useQueryClient();
-  const completed = useRef(options?.onCompleted);
+  const callback = useRef(onEvent);
   useEffect(() => {
-    completed.current = options?.onCompleted;
-  }, [options?.onCompleted]);
+    callback.current = onEvent;
+  }, [onEvent]);
   useEffect(() => {
     if (!projectId) return;
     return connectProjectSocket(projectId, {
       onEvent: (event) => {
         applyProjectEvent(client, projectId, event);
-        if (event.type === "job.completed") completed.current?.(event);
+        callback.current?.(event);
       },
-      onOpen: () => {
-        void client.invalidateQueries({
-          queryKey: queryKeys.jobs(),
-          predicate: (query) =>
-            (query.state.data as AnalysisJob | undefined)?.projectId ===
-            projectId,
-        });
-        void client.invalidateQueries({
-          queryKey: queryKeys.project(projectId),
-        });
-      },
-      onError: () => {
-        void client.invalidateQueries({
-          queryKey: queryKeys.project(projectId),
-        });
-      },
+      onOpen: () => refreshProject(client, projectId),
+      onError: () => refreshProject(client, projectId),
     });
   }, [client, projectId]);
 }

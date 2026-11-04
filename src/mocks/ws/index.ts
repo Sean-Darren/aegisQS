@@ -1,46 +1,44 @@
 import { ws } from "msw";
-import { can } from "@/lib/auth/permissions";
-import { db, subscribe, registerCleanup, currentUser } from "../store";
-import { wsEventSchema, type WsEvent } from "@/schemas";
-const connection = ws.link(/wss?:\/\/[^/]+\/ws(?:\?.*)?$/);
+import { listen } from "./events";
+import { state } from "../store";
+const projectSocket = ws.link(/\/ws$/);
 export const wsHandlers = [
-  connection.addEventListener("connection", ({ client }) => {
+  projectSocket.addEventListener("connection", ({ client }) => {
     const projectId = new URL(client.url).searchParams.get("projectId");
-    if (
-      !can(currentUser(), "project.view") ||
-      !projectId ||
-      !db.projects.some((project) => project.id === projectId)
-    ) {
-      client.close(1008, "Project access denied");
+    if (!state.projects.some((p) => p.id === projectId)) {
+      client.close(1008, "Unknown project");
       return;
     }
-    const send = (event: WsEvent) => {
-      if (!can(currentUser(), "project.view")) {
-        client.close(1008, "Project access denied");
-        return;
-      }
-      client.send(JSON.stringify(wsEventSchema.parse(event)));
-    };
-    const unsubscribe = subscribe(projectId, send);
-    const unregister = registerCleanup(() => {
-      clearTimeout(snapshot);
-      unsubscribe();
-      client.close(1000, "Mock state reset");
+    const unsubscribe = listen((id, event) => {
+      if (id === projectId) client.send(JSON.stringify(event));
     });
-    client.addEventListener("close", () => {
-      clearTimeout(snapshot);
-      unsubscribe();
-      unregister();
-    });
-    // A late subscriber receives the current state without restarting the job.
-    const snapshot = setTimeout(() => {
-      for (const job of db.jobs.filter(
-        (job) =>
-          job.projectId === projectId &&
-          ["running", "queued"].includes(job.status),
-      ))
-        for (const progress of job.progress)
-          send({ type: "job.progress", jobId: job.id, ...progress });
-    }, 0);
+    client.addEventListener("close", unsubscribe);
+    for (const comparison of state.comparisons.filter(
+      (c) => c.projectId === projectId,
+    ))
+      client.send(
+        JSON.stringify({
+          type: "comparison.progress",
+          comparisonId: comparison.id,
+          status: comparison.status,
+          progressPct: comparison.progressPct,
+        }),
+      );
+    for (const workbook of state.workbooks.filter(
+      (w) => w.projectId === projectId,
+    )) {
+      const version = state.workbookVersions.find(
+        (v) => v.id === workbook.currentVersionId,
+      );
+      if (version?.status === "checked")
+        client.send(
+          JSON.stringify({
+            type: "workbook.checked",
+            workbookId: workbook.id,
+            versionId: version.id,
+            checkSummary: version.checkSummary,
+          }),
+        );
+    }
   }),
 ];

@@ -30,11 +30,7 @@ export function connectProjectSocket(
       if (stopped) return;
       try {
         const parsed = wsEventSchema.parse(JSON.parse(String(event.data)));
-        if (
-          parsed.type !== "flag.created" ||
-          parsed.flag.projectId === projectId
-        )
-          options.onEvent(parsed);
+        options.onEvent(parsed);
       } catch (error) {
         options.onError?.(
           error instanceof Error ? error : new Error("Invalid WebSocket event"),

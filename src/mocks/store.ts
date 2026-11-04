@@ -1,89 +1,77 @@
-import { createFixtures, FIXTURE_TIME } from "./fixtures/data";
+import type { Role, AuditEvent, User } from "@/schemas";
 import { users } from "./fixtures/users";
-import {
-  auditEventSchema,
-  type AuditEvent,
-  type Role,
-  type WsEvent,
-} from "@/schemas";
-const fixtureOptions = {
-  rateGridRowCount:
-    process.env.NEXT_PUBLIC_MOCK_GRID_ROWS === "5000" ? 5000 : 3000,
-} as const;
-export const db = createFixtures(fixtureOptions);
-export const signedDocumentIds = new Set<string>();
-export const signedFlagIds = new Set<string>();
-export const uploadedFiles = new Map<string, Blob>();
-let currentRole: Role = "senior_qs";
-let sequence = 0;
-const cleanups = new Set<() => void>();
-const listeners = new Map<string, Set<(event: WsEvent) => void>>();
-export function currentUser() {
-  return users.find((user) => user.role === currentRole)!;
+import * as fixtures from "./fixtures/data";
+import { resetJobs } from "./ws/events";
+import type { ParsedWorkbook } from "./workbook-engine";
+function initial() {
+  return structuredClone({
+    projects: [fixtures.project],
+    documents: fixtures.documents,
+    versions: fixtures.versions,
+    conflicts: fixtures.conflicts,
+    comparisons: fixtures.comparisons,
+    changes: fixtures.changes,
+    variations: fixtures.variations,
+    workbooks: fixtures.workbooks,
+    workbookVersions: fixtures.workbookVersions,
+    checks: fixtures.checks,
+    items: fixtures.boqItems,
+    materials: fixtures.materials,
+    forecasts: fixtures.forecasts,
+    procurement: fixtures.procurement,
+    materialNeeds: fixtures.materialNeeds,
+    links: fixtures.links,
+    auditEvents: fixtures.auditEvents,
+    parsed: {
+      "WV-1": fixtures.parsedWorkbooks["boq-v1"],
+      "WV-2": fixtures.parsedWorkbooks["boq-v2"],
+    } as Record<string, ParsedWorkbook>,
+    filePaths: fixtures.filePaths,
+  });
 }
-// Dev/test control only, deliberately not an invented REST endpoint or auth token.
-export function setMockRole(role: Role) {
-  currentRole = role;
+export let state = initial();
+export const uploadedFiles = new Map<string, ArrayBuffer>();
+let role: Role = "senior_qs";
+let sequence = 1000;
+export function setMockRole(next: Role) {
+  role = next;
+}
+export function currentUser() {
+  return users.find((u) => u.role === role)!;
 }
 export function nextId(prefix: string) {
-  return `${prefix}-mock-${++sequence}`;
+  return `${prefix}-${++sequence}`;
 }
 export function now() {
   return new Date(
-    Date.parse(FIXTURE_TIME) + 200000 + sequence * 1000,
+    Date.parse(fixtures.fixtureTime) + sequence++ * 1000,
   ).toISOString();
-}
-export function registerCleanup(cleanup: () => void) {
-  cleanups.add(cleanup);
-  return () => cleanups.delete(cleanup);
-}
-export function subscribe(
-  projectId: string,
-  listener: (event: WsEvent) => void,
-) {
-  let subscribers = listeners.get(projectId);
-  if (!subscribers) {
-    subscribers = new Set();
-    listeners.set(projectId, subscribers);
-  }
-  subscribers.add(listener);
-  return () => {
-    subscribers.delete(listener);
-    if (!subscribers.size) listeners.delete(projectId);
-  };
-}
-export function publish(projectId: string, event: WsEvent) {
-  listeners.get(projectId)?.forEach((listener) => listener(event));
 }
 export function audit(
   action: string,
   entityType: AuditEvent["entityType"],
   entityId: string,
+  summary: string,
   details?: Record<string, unknown>,
+  user: User = currentUser(),
 ) {
-  const actor = currentUser();
-  const id = nextId("A");
-  db.auditEvents.push(
-    auditEventSchema.parse({
-      id,
-      at: now(),
-      actorId: actor.id,
-      actorRole: actor.role,
-      action,
-      entityType,
-      entityId,
-      details,
-    }),
-  );
+  state.auditEvents.push({
+    id: nextId("AE"),
+    at: now(),
+    actorId: user.id,
+    actorRole: user.role,
+    action,
+    entityType,
+    entityId,
+    summary,
+    details,
+  });
 }
-export function resetMockState() {
-  for (const cleanup of cleanups) cleanup();
-  cleanups.clear();
-  listeners.clear();
+export function resetStore() {
+  resetJobs();
+  state = initial();
   uploadedFiles.clear();
-  signedFlagIds.clear();
-  signedDocumentIds.clear();
-  Object.assign(db, createFixtures(fixtureOptions));
-  currentRole = "senior_qs";
-  sequence = 0;
+  role = "senior_qs";
+  sequence = 1000;
 }
+export const resetMockState = resetStore;

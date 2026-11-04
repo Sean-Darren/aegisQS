@@ -1,341 +1,648 @@
-import { z } from "zod";
 import * as s from "@/schemas";
-import { riskBandFor, thresholds } from "@/lib/config";
-import citations from "./pdf-evidence.json";
-export const FIXTURE_TIME = "2026-09-28T00:00:00.000Z";
-export const provenance = {
-  modelVersion: "mock-auditors-1.0",
-  toolSchemaVersion: "1.0",
-  benchmarkDataAsOf: "2026-06-30",
-};
-export const projectId = "P-001";
-export const trades = [
-  "preliminaries",
-  "concrete repair",
-  "waterproofing",
-  "external walls",
-  "windows",
-  "drainage",
-  "fire services",
-  "E&M",
-] as const;
-// Scenario-only information: the §6 Bid/ComplianceScore contracts have no VO-risk field.
-export const scenario = {
-  buildCorpVoRisk: "moderate",
-  allNamesFictional: true,
-} as const;
-function seededRandom(seed: number) {
-  return () => {
-    seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
-    return seed / 4294967296;
-  };
+import drawingFiles from "./drawing-files.json";
+import workbookFiles from "./workbook-files.json";
+import regions from "./drawing-regions.json";
+import workbookData from "./workbook-data.json";
+import { users } from "./users";
+import { seededRandom } from "./random";
+import { calculateAdvice } from "../procurement";
+import type { ParsedWorkbook } from "../workbook-engine";
+export const fixtureTime = "2026-11-04T00:00:00Z";
+export const project = s.projectSchema.parse({
+  id: "P-001",
+  code: "P-001",
+  name: "Central Market Rehab Phase 2",
+  createdAt: "2026-11-01T00:00:00Z",
+  memberIds: users.map((u) => u.id),
+});
+export const filePaths: Record<string, string> = {};
+export const documents: s.HubDocument[] = [];
+export const versions: s.DocumentVersion[] = [];
+export const conflicts: s.VersionConflict[] = [];
+function document(
+  id: string,
+  category: s.DocumentCategory,
+  docNumber: string,
+  title: string,
+  labels: string[],
+  fileKeys: string[],
+  discipline?: s.Discipline,
+) {
+  const entries = labels.map((label, i) => {
+    const file = (
+      { ...drawingFiles, ...workbookFiles } as Record<
+        string,
+        {
+          path: string;
+          sha256: string;
+          sizeBytes: number;
+          mimeType: string;
+          pageCount?: number;
+        }
+      >
+    )[fileKeys[i]];
+    const versionId = `${id}-v${i + 1}`;
+    filePaths[versionId] = file.path;
+    return s.documentVersionSchema.parse({
+      id: versionId,
+      documentId: id,
+      label,
+      fileName: file.path.split("/").at(-1),
+      mimeType: file.mimeType,
+      sizeBytes: file.sizeBytes,
+      sha256: file.sha256,
+      pageCount: file.pageCount,
+      status: i === labels.length - 1 ? "current" : "superseded",
+      issuedDate: "2026-11-01",
+      uploadedBy: users[0].id,
+      uploadedAt: fixtureTime,
+    });
+  });
+  versions.push(...entries);
+  documents.push(
+    s.hubDocumentSchema.parse({
+      id,
+      projectId: project.id,
+      category,
+      docNumber,
+      title,
+      discipline,
+      currentVersionId: entries.at(-1)!.id,
+      versionCount: entries.length,
+      hasConflict: false,
+      tags: [],
+      updatedAt: fixtureTime,
+    }),
+  );
 }
-export function createFixtures({
-  rateGridRowCount = 3000,
-}: { rateGridRowCount?: 3000 | 5000 } = {}) {
-  const random = seededRandom(20260928);
-  const names = [
-    "BuildCorp HK Ltd.",
-    "Apex Foundations",
-    "Harbour Renewal Ltd.",
-    "Summit Repair Works",
-    "Cedar Building Services",
-    "Beacon Rehabilitation",
-    "Stonebridge Projects",
-    "Larch Construction",
-    "Bayview Maintenance",
-    "Crown Facade Works",
-    "Elm Engineering",
-    "Seaward Contractors",
-  ];
-  const tenderers = z.array(s.tendererSchema).parse(
-    names.map((name, i) => ({
-      id: `T-${String(i + 1).padStart(3, "0")}`,
-      projectId,
-      name,
-      devbRegistered: true,
-      companyRegistryMatched: true,
-      activeLitigationCount: i === 1 ? 3 : 0,
-      adversePressFlags: i === 1 ? 2 : 0,
-    })),
+document(
+  "D-A201",
+  "drawing",
+  "A-201",
+  "Level 2 floor plan",
+  ["A", "B", "C"],
+  ["A-201-A", "A-201-B", "A-201-C"],
+  "architectural",
+);
+document(
+  "D-S110",
+  "drawing",
+  "S-110",
+  "Structural framing plan",
+  ["P1", "P2"],
+  ["S-110-P1", "S-110-P2"],
+  "structural",
+);
+document(
+  "D-BOQ",
+  "financial",
+  "BOQ-001",
+  "Contract BOQ",
+  ["1", "2"],
+  ["boq-v1", "boq-v2"],
+);
+const categories: s.DocumentCategory[] = [
+  "contract",
+  "site_record",
+  "financial",
+  "correspondence",
+  "drawing",
+];
+for (let i = 0; i < 37; i++) {
+  const category = categories[i % categories.length];
+  const number =
+    category === "contract"
+      ? `CON-${String(Math.floor(i / 5) + 1).padStart(3, "0")}`
+      : `${category.slice(0, 3).toUpperCase()}-${String(i + 1).padStart(3, "0")}`;
+  document(
+    `D-${i + 1}`,
+    category,
+    number,
+    `${category.replaceAll("_", " ")} record ${i + 1}`,
+    ["1"],
+    ["record"],
+    category === "drawing" ? "other" : undefined,
   );
-  const sigmas = [
-    0.04, -2.4, 2.2, -2.1, 0.5, 0.8, -0.5, 1.2, -1.1, 0.3, 1.5, -0.8,
-  ];
-  const scores = [94.2, 41.8, 55, 38, 86, 79, 82, 72, 88, 67, 91, 84];
-  const bids = z.array(s.bidSchema).parse(
-    tenderers.map((t, i) => ({
-      id: `B-${i + 1}`,
-      projectId,
-      tendererId: t.id,
-      totalValueHKD: Math.round(142400000 + sigmas[i] * 10000000),
-      provisionalSumHKD: Math.round(
-        (142400000 + sigmas[i] * 10000000) * (i === 1 ? 0.22 : 0.08),
-      ),
-    })),
+}
+const contract = documents.find((d) => d.docNumber === "CON-004")!;
+const original = versions.find((v) => v.id === contract.currentVersionId)!;
+original.label = "2";
+const conflictVersion = s.documentVersionSchema.parse({
+  ...original,
+  id: `${contract.id}-v2`,
+  fileName: "conditions-rev2-alternative.pdf",
+  sha256: drawingFiles["record-alternative"].sha256,
+  sizeBytes: drawingFiles["record-alternative"].sizeBytes,
+  status: "conflict",
+});
+versions.push(conflictVersion);
+filePaths[conflictVersion.id] = drawingFiles["record-alternative"].path;
+contract.versionCount++;
+contract.hasConflict = true;
+conflicts.push(
+  s.versionConflictSchema.parse({
+    id: "VC-001",
+    documentId: contract.id,
+    kind: "same_label_different_file",
+    versionIds: [original.id, conflictVersion.id],
+    detectedAt: fixtureTime,
+  }),
+);
+const duplicateDoc = documents.find((d) => d.docNumber === "CON-001")!;
+const duplicateBase = versions.find(
+  (v) => v.id === duplicateDoc.currentVersionId,
+)!;
+const duplicate = s.documentVersionSchema.parse({
+  ...duplicateBase,
+  id: `${duplicateDoc.id}-v2`,
+  status: "conflict",
+});
+versions.push(duplicate);
+filePaths[duplicate.id] = filePaths[duplicateBase.id];
+duplicateDoc.hasConflict = true;
+duplicateDoc.versionCount++;
+conflicts.push(
+  s.versionConflictSchema.parse({
+    id: "VC-002",
+    documentId: duplicateDoc.id,
+    kind: "duplicate_file",
+    versionIds: [duplicateBase.id, duplicate.id],
+    detectedAt: fixtureTime,
+  }),
+);
+const counts = (list: { kind: string }[]) =>
+  Object.fromEntries(
+    s.changeKindSchema.options.map((k) => [
+      k,
+      list.filter((c) => c.kind === k).length,
+    ]),
   );
-  const complianceScores = z.array(s.complianceScoreSchema).parse(
-    tenderers.map((t, i) => ({
-      bidId: bids[i].id,
-      tendererId: t.id,
-      projectId,
-      score: scores[i],
-      band: riskBandFor(scores[i]),
-      signals: s.signalKeySchema.options.map((signal, j) => ({
-        signal,
-        weight: j === 6 ? 0.1 : 0.15,
-        rawValue:
-          signal === "provisional_sum_concentration"
-            ? bids[i].provisionalSumHKD / bids[i].totalValueHKD
-            : Math.round(random() * 100) / 100,
-        contribution: scores[i] * (j === 6 ? 0.1 : 0.15),
-        dataSufficient: !(i === 5 && j === 6),
-      })),
-      scoringMode: "static",
-      configVersion: "static-1",
-      computedAt: FIXTURE_TIME,
-    })),
-  );
-  const projects = z.array(s.projectSchema).parse([
-    {
-      id: projectId,
-      code: projectId,
-      name: "Central Market Rehab Phase 2",
-      stage: "tender",
-      createdAt: FIXTURE_TIME,
-      tendererCount: 12,
-      latestJobId: "J-001",
+export const comparisons = [
+  s.drawingComparisonSchema.parse({
+    id: "CMP-A201",
+    projectId: project.id,
+    documentId: "D-A201",
+    baseVersionId: "D-A201-v2",
+    targetVersionId: "D-A201-v3",
+    status: "succeeded",
+    progressPct: 100,
+    alignment: {
+      dx: 0,
+      dy: 0,
+      scale: 1,
+      rotationDeg: 0,
+      method: "auto",
+      quality: 0.96,
     },
-  ]);
-  const documents = z.array(s.projectDocumentSchema).parse([
-    {
-      id: "D-001",
-      projectId,
-      type: "priced_boq",
-      tendererId: tenderers[0].id,
-      fileName: "sample-priced-boq.pdf",
-      version: 1,
-      pageCount: 10,
-      parseStatus: "parsed",
-      uploadedBy: "user-senior",
-      uploadedAt: FIXTURE_TIME,
+    pageCount: 1,
+    changeCounts: counts(regions.a201),
+    modelVersion: "mock-drawing-1.0",
+    createdAt: fixtureTime,
+    finishedAt: fixtureTime,
+  }),
+  s.drawingComparisonSchema.parse({
+    id: "CMP-S110",
+    projectId: project.id,
+    documentId: "D-S110",
+    baseVersionId: "D-S110-v1",
+    targetVersionId: "D-S110-v2",
+    status: "succeeded",
+    progressPct: 100,
+    alignment: {
+      dx: 0,
+      dy: 0,
+      scale: 1,
+      rotationDeg: 0,
+      method: "auto",
+      quality: 0.78,
     },
-    ...tenderers.slice(1).map((t, i) => ({
-      id: `D-${String(i + 2).padStart(3, "0")}`,
-      projectId,
-      tendererId: t.id,
-      type: "priced_boq",
-      fileName: `${t.id}-sample-priced-boq.pdf`,
-      version: 1,
-      pageCount: 10,
-      parseStatus: "parsed",
-      uploadedBy: "user-senior",
-      uploadedAt: FIXTURE_TIME,
-    })),
-    {
-      id: "D-013",
-      projectId,
-      type: "inspection_report",
-      fileName: "sample-inspection-report.pdf",
-      version: 1,
-      pageCount: 1,
-      parseStatus: "parsed",
-      uploadedBy: "user-senior",
-      uploadedAt: FIXTURE_TIME,
-    },
-  ]);
-  const flags = z.array(s.flagSchema).parse(
-    citations.map((citation, i) => {
-      const status = s.flagStatusSchema.options[i % 5];
-      const action =
-        status === "dismissed"
-          ? "dismiss"
-          : status === "escalated"
-            ? "escalate"
-            : "accept";
-      const decision = {
-        action,
-        by: "user-senior",
-        at: FIXTURE_TIME,
-        reason: "Reviewed the cited rate against the benchmark.",
-      };
-      const tendererId = tenderers[i % 12].id;
-      const row = i * 20;
-      const benchmark = 100 + (row % 100) * 12;
-      const rate = Math.round(benchmark * 0.7 * 100) / 100;
-      return {
-        id: `F-${String(i + 1).padStart(3, "0")}`,
-        projectId,
-        tendererId,
-        auditor: s.auditorKindSchema.options[i % 4],
-        signal: s.signalKeySchema.options[i % 7],
-        severity: s.severitySchema.options[i % 4],
-        confidence: 0.8 + (i % 10) / 100,
-        title: `Unit rate requires review: ${citation.boqItemRef}`,
-        description:
-          "The recorded rate is outside the configured benchmark tolerance. Review the cited document before deciding.",
-        boqItemRef: citation.boqItemRef,
-        zScore: -3,
-        threshold: { kind: "sigma", value: thresholds.sigma },
-        evidence: [
-          {
-            id: `E-${i + 1}`,
-            documentId: documents[i % 12].id,
-            ...citation,
-            calculation: {
-              expression: "(rate - benchmark) / sigma",
-              inputs: { rate, benchmark, sigma: benchmark * 0.1 },
-              result: -3,
-            },
-          },
-        ],
-        status,
-        ...(status === "proposed"
-          ? { proposal: { ...decision, by: "user-junior" } }
-          : {}),
-        ...(["accepted", "dismissed", "escalated"].includes(status)
-          ? { decision }
-          : {}),
-        assigneeId: "user-senior",
-        createdAt: FIXTURE_TIME,
-      };
-    }),
-  );
-  const rows = z.array(s.rateGridRowSchema).parse(
-    Array.from({ length: rateGridRowCount }, (_, i) => {
-      const flagged = i % 20 === 0;
-      const flag = flagged ? flags[i / 20] : undefined;
-      const sufficient = flagged || i % 37 !== 1;
-      const benchmark = 100 + (i % 100) * 12;
-      return {
-        boqItemRef: `BQ-${String(i + 1).padStart(4, "0")}`,
-        description: `${trades[i % 8]} work item ${i + 1}`,
-        trade: trades[i % 8],
-        unit: "m²",
-        quantity: 10 + Math.floor(random() * 500),
-        benchmarkSufficient: sufficient,
-        ...(sufficient ? { benchmarkRate: benchmark } : {}),
-        rates: Object.fromEntries(
-          tenderers.map((t, j) => {
-            const missing = (i + j) % 173 === 1;
-            const isFlag = flag?.tendererId === t.id;
-            const sigma = isFlag
-              ? -3
-              : Math.round((random() * 3 - 1.5) * 10) / 10;
-            return [
-              t.id,
-              {
-                rate:
-                  missing && !isFlag
-                    ? null
-                    : Math.round(benchmark * (1 + sigma * 0.1) * 100) / 100,
-                ...((sufficient && !missing) || isFlag
-                  ? { zScore: sigma }
-                  : {}),
-                ...(isFlag ? { flagId: flag.id } : {}),
-              },
-            ];
-          }),
-        ),
-      };
-    }),
-  );
-  const priceDistribution = s.priceDistributionSchema.parse({
-    benchmarkMeanHKD: 142400000,
-    benchmarkSigmaHKD: 10000000,
-    points: bids.map((bid, i) => ({
-      tendererId: bid.tendererId,
-      totalValueHKD: bid.totalValueHKD,
-      sigma: sigmas[i],
-      withinTolerance: Math.abs(sigmas[i]) <= thresholds.sigma,
-    })),
-    thresholdSigma: thresholds.sigma,
-  });
-  const kpis = s.projectKpisSchema.parse({
-    avgRateVarianceZ: 0.42,
-    highRiskBidCount: complianceScores.filter((score) =>
-      ["high", "critical"].includes(score.band),
-    ).length,
-    totalBidCount: 12,
-    recommendedTendererId: tenderers[0].id,
-    benchmarkDataAsOf: provenance.benchmarkDataAsOf,
-  });
-  const scopeGaps = z.array(s.scopeGapSchema).parse(
-    ["mapped", "vague", "missing", "oversized_ps"].map((status, i) => ({
-      id: `SG-${i + 1}`,
-      projectId,
-      finding: {
-        ref: `F-0${i + 1}`,
-        text: [
-          "External wall repair extent is confirmed.",
-          "Waterproofing detail remains vague.",
-          "Drainage replacement scope is missing.",
-          "Provisional sum allowance needs itemisation.",
-        ][i],
-        documentId: "D-013",
-        page: 1,
-      },
-      ...(status !== "missing"
-        ? { mappedBoqItemRef: flags[i].boqItemRef }
+    pageCount: 1,
+    changeCounts: counts(regions.s110),
+    modelVersion: "mock-drawing-1.0",
+    createdAt: fixtureTime,
+    finishedAt: fixtureTime,
+  }),
+];
+export const changes = [
+  ...regions.a201.map((c, i) =>
+    s.drawingChangeSchema.parse({
+      ...c,
+      id: `CH-A201-${i + 1}`,
+      comparisonId: "CMP-A201",
+      number: i + 1,
+      page: 1,
+      confidence: [0.96, 0.94, 0.87, 0.58][i],
+      status: i < 2 ? "potential_variation" : "new",
+      ...(i < 2
+        ? {
+            review: { by: users[1].id, at: fixtureTime },
+            variationEventId: "VE-007",
+          }
         : {}),
-      status,
-      ...(status !== "mapped" ? { flagId: flags[i].id } : {}),
-    })),
-  );
-  const jobs = z.array(s.analysisJobSchema).parse([
-    {
-      id: "J-001",
-      projectId,
-      status: "succeeded",
-      startedAt: FIXTURE_TIME,
-      finishedAt: FIXTURE_TIME,
-      progress: tenderers.flatMap((t) =>
-        s.auditorKindSchema.options.map((auditor) => ({
-          tendererId: t.id,
-          auditor,
-          status: "succeeded",
-          pct: 100,
-        })),
-      ),
-      modelVersion: provenance.modelVersion,
-      toolSchemaVersion: provenance.toolSchemaVersion,
+    }),
+  ),
+  ...regions.s110.map((c, i) =>
+    s.drawingChangeSchema.parse({
+      ...c,
+      id: `CH-S110-${i + 1}`,
+      comparisonId: "CMP-S110",
+      number: i + 1,
+      page: 1,
+      confidence: 0.9,
+      status: "new",
+    }),
+  ),
+];
+export const parsedWorkbooks = workbookData as unknown as Record<
+  string,
+  ParsedWorkbook
+>;
+export const workbooks = [
+  s.workbookSchema.parse({
+    id: "WB-001",
+    projectId: project.id,
+    documentId: "D-BOQ",
+    name: "Contract BOQ",
+    kind: "boq",
+    currentVersionId: "WV-2",
+    mapping: {
+      sheet: "BOQ",
+      headerRow: 1,
+      columns: {
+        itemRef: "A",
+        description: "B",
+        unit: "C",
+        quantity: "D",
+        rate: "E",
+        amount: "F",
+        section: "G",
+      },
     },
-  ]);
-  const reports = z.array(s.reportSchema).parse([
-    {
-      id: "R-001",
-      projectId,
-      version: 1,
-      status: "draft",
-      recommendedTendererId: tenderers[0].id,
-      ...provenance,
+    updatedAt: fixtureTime,
+  }),
+];
+export const workbookVersions = [1, 2].map((v) => {
+  const key = `boq-v${v}` as keyof typeof workbookFiles;
+  const f = workbookFiles[key];
+  const parsed = parsedWorkbooks[key];
+  return s.workbookVersionSchema.parse({
+    id: `WV-${v}`,
+    workbookId: "WB-001",
+    versionNumber: v,
+    fileName: `boq-v${v}.xlsx`,
+    sha256: f.sha256,
+    sizeBytes: f.sizeBytes,
+    sheetNames: parsed.sheetNames,
+    status: "checked",
+    checkSummary: {
+      errors: parsed.checks.filter((c) => c.severity === "error").length,
+      warnings: parsed.checks.filter((c) => c.severity === "warning").length,
+      info: 0,
     },
-  ]);
-  const auditEvents = z.array(s.auditEventSchema).parse(
-    Array.from({ length: 125 }, (_, i) => ({
-      id: `A-${String(i + 1).padStart(3, "0")}`,
-      at: new Date(Date.parse(FIXTURE_TIME) + i * 1000).toISOString(),
-      actorId: "user-senior",
-      actorRole: "senior_qs",
-      action: "document.reviewed",
-      entityType: "document",
-      entityId: documents[i % 12].id,
-      details: { sequence: i + 1 },
-    })),
+    totals: parsed.totals,
+    uploadedBy: users[1].id,
+    uploadedAt: fixtureTime,
+  });
+});
+export const boqItems = Object.values(parsedWorkbooks).flatMap((p) =>
+  p.items.map((i) => s.boqItemSchema.parse(i)),
+);
+export const checks = Object.values(parsedWorkbooks).flatMap((p) =>
+  p.checks.map((c) => s.workbookCheckSchema.parse(c)),
+);
+const costLines: s.CostLine[] = [
+  {
+    id: "CL-1",
+    boqItemRef: "3.2.14",
+    description: "High-tensile rebar",
+    unit: "tonne",
+    quantityDelta: 4.2,
+    rate: 7000,
+    rateSource: "contract_boq",
+    amount: 29400,
+    materialId: "rebar",
+  },
+  {
+    id: "CL-2",
+    boqItemRef: "2.1.08",
+    description: "Concrete to additional beams",
+    unit: "m³",
+    quantityDelta: 20,
+    rate: 3600,
+    rateSource: "contract_boq",
+    amount: 72000,
+    materialId: "concrete",
+  },
+  {
+    id: "CL-3",
+    boqItemRef: "2.4.03",
+    description: "Formwork to beam sides",
+    unit: "m²",
+    quantityDelta: 100,
+    rate: 850,
+    rateSource: "contract_boq",
+    amount: 85000,
+    materialId: "timber",
+  },
+];
+export const variations = [
+  s.variationEventSchema.parse({
+    id: "VE-007",
+    projectId: project.id,
+    ref: "VE-007",
+    title: "Slab opening and additional beam",
+    drawingNumber: "A-201",
+    sourceChangeIds: ["CH-A201-1", "CH-A201-2"],
+    comparisonId: "CMP-A201",
+    status: "potential",
+    costLines,
+    indicativeCost: {
+      total: 186400,
+      low: 171000,
+      high: 203000,
+      basis:
+        "QS-entered quantities × contract BOQ rates; indicative range for review.",
+    },
+    raisedBy: users[1].id,
+    raisedAt: fixtureTime,
+  }),
+  ...Array.from({ length: 5 }, (_, i) =>
+    s.variationEventSchema.parse({
+      id: `VE-00${i + 1}`,
+      projectId: project.id,
+      ref: `VE-00${i + 1}`,
+      title: `Structural change review ${i + 1}`,
+      drawingNumber: "S-110",
+      sourceChangeIds: ["CH-S110-1"],
+      comparisonId: "CMP-S110",
+      status: [
+        "under_review",
+        "confirmed",
+        "rejected",
+        "potential",
+        "under_review",
+      ][i],
+      costLines: [],
+      raisedBy: users[1].id,
+      raisedAt: fixtureTime,
+      ...([1, 2].includes(i)
+        ? {
+            decision: {
+              status: i === 1 ? "confirmed" : "rejected",
+              by: users[0].id,
+              at: fixtureTime,
+              reason: "Reviewed against the current construction drawings.",
+            },
+          }
+        : {}),
+    }),
+  ),
+];
+const random = seededRandom();
+const materialDefinitions = [
+  ["rebar", "High-tensile steel rebar", "tonne", "steel", 6850],
+  ["structural-steel", "Structural steel", "tonne", "steel", 8100],
+  ["concrete", "Ready-mixed concrete C35", "m³", "concrete", 1050],
+  ["cement", "Cement", "tonne", "cement", 980],
+  ["aggregate", "Aggregate", "tonne", "aggregate", 320],
+  ["timber", "Timber formwork", "m²", "timber", 210],
+  ["copper", "Copper cable", "tonne", "copper", 72000],
+  ["glass", "Float glass", "m²", "glass", 180],
+  ["waterproofing", "Waterproofing membrane", "m²", "waterproofing", 95],
+  ["diesel", "Diesel", "litre", "other", 18],
+] as const;
+const period = (offset: number) => {
+  const date = new Date(Date.UTC(2021, 10 + offset, 1));
+  return date.toISOString().slice(0, 7);
+};
+export const materials = materialDefinitions.map(
+  ([id, name, unit, category, price], i) =>
+    s.materialSchema.parse({
+      id,
+      code: `MAT-${String(i + 1).padStart(3, "0")}`,
+      name,
+      unit,
+      category,
+      source:
+        "C&SD / CEDD monthly average wholesale prices — synthetic demo data",
+      latestPrice: price,
+      latestPeriod: "2026-10",
+      change3mPct: 0,
+      trend: id === "concrete" ? "stable" : "rising",
+    }),
+);
+export const forecasts = materials.map((m) => {
+  const history = Array.from({ length: 60 }, (_, i) => ({
+    period: period(i),
+    price:
+      Math.round(m.latestPrice * (0.76 + i * 0.004 + random() * 0.015) * 100) /
+      100,
+  }));
+  history[59].price = m.latestPrice;
+  m.change3mPct =
+    Math.round((m.latestPrice / history[56].price - 1) * 1000) / 10;
+  return s.priceForecastSchema.parse({
+    materialId: m.id,
+    history,
+    forecast: Array.from({ length: 12 }, (_, i) => {
+      const p50 =
+        m.id === "rebar"
+          ? [
+              6900, 6800, 6650, 6500, 6500, 7261, 7380, 7450, 7510, 7600, 7700,
+              7800,
+            ][i]
+          : m.id === "concrete"
+            ? m.latestPrice
+            : Math.round(m.latestPrice * (1 + (i + 1) * 0.01));
+      const width = 0.04 + i * 0.007;
+      return {
+        period: period(60 + i),
+        p50,
+        p10: Math.round(p50 * (1 - width)),
+        p90: Math.round(p50 * (1 + width)),
+        p025: Math.round(p50 * (1 - width * 1.8)),
+        p975: Math.round(p50 * (1 + width * 1.8)),
+      };
+    }),
+    model: {
+      name: "Synthetic monthly materials model",
+      version: "demo-1.0",
+      trainedThrough: "2026-10",
+      horizonMonths: 12,
+      backtestMapePct: 4.8,
+      drivers: [
+        "Wholesale material prices",
+        "Tender price index",
+        "Wage index",
+      ],
+    },
+  });
+});
+export const procurement = ["rebar", "concrete", "copper"].map((id, i) =>
+  calculateAdvice({
+    id: `PA-${i + 1}`,
+    projectId: project.id,
+    material: materials.find((m) => m.id === id)!,
+    forecast: forecasts.find((f) => f.materialId === id)!,
+    quantity: id === "rebar" ? 4.2 : 100,
+    neededBy: "2027-06-01T00:00:00Z",
+    leadTimeWeeks: 8,
+    createdBy: users[1].id,
+    createdAt: fixtureTime,
+  }),
+);
+export const materialNeeds = [
+  s.projectMaterialNeedSchema.parse({
+    projectId: project.id,
+    materialId: "rebar",
+    quantity: 4.2,
+    neededBy: "2027-06-01T00:00:00Z",
+    source: "variation",
+    sourceRefs: ["VE-007"],
+    exposureHKD: {
+      p10: procurement[0].range.low,
+      p50: procurement[0].expectedCostInWindow,
+      p90: procurement[0].range.high,
+    },
+  }),
+  s.projectMaterialNeedSchema.parse({
+    projectId: project.id,
+    materialId: "concrete",
+    quantity: 100,
+    source: "boq",
+    sourceRefs: ["2.1.08"],
+    exposureHKD: { p10: 100000, p50: 105000, p90: 110000 },
+  }),
+];
+export const links: s.EntityLink[] = [
+  ...changes.map((c) =>
+    s.entityLinkSchema.parse({
+      from: { type: "change", id: c.id },
+      to: {
+        type: "document_version",
+        id: c.comparisonId === "CMP-A201" ? "D-A201-v3" : "D-S110-v2",
+      },
+    }),
+  ),
+  s.entityLinkSchema.parse({
+    from: { type: "variation", id: "VE-007" },
+    to: { type: "material", id: "rebar" },
+  }),
+  ...variations.flatMap((v) =>
+    v.sourceChangeIds.map((id) =>
+      s.entityLinkSchema.parse({
+        from: { type: "variation", id: v.id },
+        to: { type: "change", id },
+      }),
+    ),
+  ),
+  ...costLines.map((line) =>
+    s.entityLinkSchema.parse({
+      from: { type: "variation", id: "VE-007" },
+      to: {
+        type: "boq_item",
+        id: boqItems.find(
+          (i) =>
+            i.workbookVersionId === "WV-2" && i.itemRef === line.boqItemRef,
+        )!.id,
+      },
+    }),
+  ),
+  s.entityLinkSchema.parse({
+    from: { type: "workbook_version", id: "WV-2" },
+    to: { type: "document_version", id: "D-BOQ-v2" },
+  }),
+];
+export const auditEvents = [
+  [
+    "document.version_uploaded",
+    "document_version",
+    "D-A201-v3",
+    "Rev C uploaded; Rev B superseded",
+  ],
+  [
+    "comparison.completed",
+    "comparison",
+    "CMP-A201",
+    "Comparison ready — four changes found",
+  ],
+  [
+    "change.marked_potential_variation",
+    "change",
+    "CH-A201-1",
+    "Slab opening marked as a potential variation",
+  ],
+  [
+    "variation.raised",
+    "variation",
+    "VE-007",
+    "VE-007 raised from two drawing changes",
+  ],
+  [
+    "variation.cost_updated",
+    "variation",
+    "VE-007",
+    "Indicative cost HK$186,400 with range HK$171,000–203,000",
+  ],
+  [
+    "procurement.created",
+    "procurement",
+    "PA-1",
+    "Rebar advice saved for Feb–Mar 2027",
+  ],
+  [
+    "document.version_uploaded",
+    "document_version",
+    "D-BOQ-v2",
+    "BOQ version 2 uploaded",
+  ],
+  [
+    "workbook.checked",
+    "workbook_version",
+    "WV-2",
+    "BOQ checks completed; formula and amount problems require review",
+  ],
+].map((entry, i) =>
+  s.auditEventSchema.parse({
+    id: `AE-${i + 1}`,
+    at: new Date(Date.parse(fixtureTime) + i * 60000).toISOString(),
+    actorId: users[1].id,
+    actorRole: "qs",
+    action: entry[0],
+    entityType: entry[1],
+    entityId: entry[2],
+    summary: entry[3],
+  }),
+);
+
+// Complete the base/target and BOQ → workbook/material traceability graph.
+for (const change of changes) {
+  const comparison = comparisons.find((c) => c.id === change.comparisonId)!;
+  links.push(
+    s.entityLinkSchema.parse({
+      from: { type: "change", id: change.id },
+      to: { type: "document_version", id: comparison.baseVersionId },
+    }),
   );
-  return {
-    projects,
-    tenderers,
-    bids,
-    scores: complianceScores,
-    documents,
-    flags,
-    rows,
-    priceDistribution,
-    kpis,
-    scopeGaps,
-    jobs,
-    reports,
-    auditEvents,
-  };
 }
+for (const item of boqItems) {
+  links.push(
+    s.entityLinkSchema.parse({
+      from: { type: "boq_item", id: item.id },
+      to: { type: "workbook_version", id: item.workbookVersionId },
+    }),
+  );
+  if (item.materialId)
+    links.push(
+      s.entityLinkSchema.parse({
+        from: { type: "boq_item", id: item.id },
+        to: { type: "material", id: item.materialId },
+      }),
+    );
+}
+links.push(
+  s.entityLinkSchema.parse({
+    from: { type: "workbook_version", id: "WV-1" },
+    to: { type: "document_version", id: "D-BOQ-v1" },
+  }),
+);

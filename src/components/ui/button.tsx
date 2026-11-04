@@ -4,7 +4,7 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { Slot } from "radix-ui";
 import { cn } from "@/lib/utils";
 export const buttonVariants = cva(
-  "inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-md px-4 text-sm font-medium whitespace-nowrap transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-clay-600 disabled:cursor-not-allowed disabled:opacity-45 [&_svg]:size-4 [&_svg]:shrink-0",
+  "inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-md px-4 text-sm font-medium whitespace-nowrap transition-colors motion-reduce:transition-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-clay-600 disabled:cursor-not-allowed disabled:opacity-45 [&_svg]:size-4 [&_svg]:shrink-0",
   {
     variants: {
       variant: {
@@ -14,6 +14,8 @@ export const buttonVariants = cva(
         outline:
           "border border-line-strong bg-panel text-ink hover:bg-stone-50",
         ghost: "text-muted-ink hover:bg-stone-50 hover:text-ink",
+        "on-ink":
+          "bg-transparent text-limewash hover:bg-sidebar-hover focus-visible:outline-sidebar-ring",
         danger: "bg-risk text-primary-foreground hover:bg-risk/90",
       },
       size: {

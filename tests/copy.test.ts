@@ -4,7 +4,7 @@ import { expect, test } from "vitest";
 const directory = resolve(process.cwd(), "src/messages");
 const files = readdirSync(directory).filter((file) => file.endsWith(".json"));
 const banned =
-  /\b(fraud|fraudulent|corrupt|corruption|rigged|collusion|criminal|guilty|scam)\b/i;
+  /(guaranteed|certainly|will definitely|risk-free|100% accurate|fraud|fraudulent)/i;
 function strings(value: unknown, path = ""): [string, string][] {
   if (typeof value === "string") return [[path, value]];
   if (value && typeof value === "object")

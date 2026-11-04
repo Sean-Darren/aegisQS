@@ -1,130 +1,63 @@
-import { http } from "msw";
 import { z } from "zod";
 import * as s from "@/schemas";
-import { db, currentUser } from "../store";
-import { json, allowed, projectGuard, paginate, failure } from "./shared";
-const base = "*/api/v1";
+import { state, currentUser } from "../store";
+import { route, reply, requireProject, paged } from "./shared";
 export const projectHandlers = [
-  http.get(`${base}/me`, () => json(s.userSchema, currentUser())),
-  http.get(
-    `${base}/projects`,
-    () =>
-      allowed("project.view") ?? json(z.array(s.projectSchema), db.projects),
+  route("get", "/me", () => reply(s.userSchema, currentUser())),
+  route("get", "/projects", () =>
+    reply(
+      z.array(s.projectSchema),
+      state.projects.filter((p) => p.memberIds.includes(currentUser().id)),
+    ),
   ),
-  http.get(
-    `${base}/projects/:projectId`,
-    ({ params }) =>
-      projectGuard(String(params.projectId)) ??
-      json(
-        s.projectSchema,
-        db.projects.find((p) => p.id === params.projectId),
-      ),
+  route("get", "/projects/:projectId", ({ params }) =>
+    reply(s.projectSchema, requireProject(String(params.projectId))),
   ),
-  http.get(
-    `${base}/projects/:projectId/tenderers`,
-    ({ params }) =>
-      projectGuard(String(params.projectId)) ??
-      json(
-        z.array(s.tendererSchema),
-        db.tenderers.filter((t) => t.projectId === params.projectId),
-      ),
-  ),
-  http.get(
-    `${base}/projects/:projectId/bids`,
-    ({ params }) =>
-      projectGuard(String(params.projectId)) ??
-      json(
-        z.array(s.bidSchema),
-        db.bids.filter((b) => b.projectId === params.projectId),
-      ),
-  ),
-  http.get(
-    `${base}/projects/:projectId/kpis`,
-    ({ params }) =>
-      projectGuard(String(params.projectId)) ??
-      json(s.projectKpisSchema, db.kpis),
-  ),
-  http.get(
-    `${base}/projects/:projectId/scores`,
-    ({ params }) =>
-      projectGuard(String(params.projectId)) ??
-      json(
-        z.array(s.complianceScoreSchema),
-        db.scores.filter((s) => s.projectId === params.projectId),
-      ),
-  ),
-  http.get(
-    `${base}/projects/:projectId/price-distribution`,
-    ({ params }) =>
-      projectGuard(String(params.projectId)) ??
-      json(s.priceDistributionSchema, db.priceDistribution),
-  ),
-  http.get(
-    `${base}/projects/:projectId/scope-gaps`,
-    ({ params }) =>
-      projectGuard(String(params.projectId)) ??
-      json(
-        z.array(s.scopeGapSchema),
-        db.scopeGaps.filter((g) => g.projectId === params.projectId),
-      ),
-  ),
-  http.get(`${base}/projects/:projectId/rate-grid`, ({ params, request }) => {
-    const denied = projectGuard(String(params.projectId));
-    if (denied) return denied;
-    const query = new URL(request.url).searchParams;
-    const trade = query.get("trade") || undefined;
-    const flaggedOnly = query.get("flaggedOnly");
-    if (flaggedOnly && !["true", "false"].includes(flaggedOnly))
-      return failure(
-        400,
-        "INVALID_QUERY",
-        "flaggedOnly must be true or false.",
-      );
-    const rows = db.rows.filter(
-      (row) =>
-        (!trade || row.trade === trade) &&
-        (flaggedOnly !== "true" ||
-          Object.values(row.rates).some((rate) => rate.flagId)),
-    );
-    const page = paginate(
-      rows,
-      query.get("cursor"),
-      `rates:${params.projectId}:${trade ?? ""}:${flaggedOnly === "true"}`,
-    );
-    return page
-      ? json(s.rateGridPageSchema, {
-          rows: page.items,
-          totalRows: rows.length,
-          nextCursor: page.nextCursor,
-        })
-      : failure(
-          400,
-          "INVALID_CURSOR",
-          "Cursor is invalid for this rate-grid query.",
-        );
+  route("get", "/projects/:projectId/overview", ({ params }) => {
+    const id = String(params.projectId);
+    requireProject(id);
+    const docs = state.documents.filter((d) => d.projectId === id);
+    const wbIds = state.workbooks
+      .filter((w) => w.projectId === id)
+      .map((w) => w.id);
+    const versions = state.workbookVersions
+      .filter((v) => wbIds.includes(v.workbookId))
+      .map((v) => v.id);
+    return reply(s.projectOverviewSchema, {
+      counts: {
+        documents: docs.length,
+        drawings: docs.filter((d) => d.category === "drawing").length,
+        variations: state.variations.filter((v) => v.projectId === id).length,
+        workbooks: wbIds.length,
+        openChecks: state.checks.filter(
+          (c) => versions.includes(c.versionId) && c.status === "open",
+        ).length,
+      },
+      recentActivity: state.auditEvents
+        .toSorted((a, b) => b.at.localeCompare(a.at))
+        .slice(0, 5),
+    });
   }),
-  http.get(
-    `${base}/projects/:projectId/audit-events`,
-    ({ params, request }) => {
-      const denied = projectGuard(String(params.projectId));
-      if (denied) return denied;
-      const page = paginate(
-        db.auditEvents,
-        new URL(request.url).searchParams.get("cursor"),
-        `audit:${params.projectId}`,
-      );
-      return page
-        ? json(
-            z.array(s.auditEventSchema),
-            page.items,
-            200,
-            page.nextCursor ? { "X-Next-Cursor": page.nextCursor } : undefined,
-          )
-        : failure(
-            400,
-            "INVALID_CURSOR",
-            "Cursor is invalid for this audit query.",
-          );
-    },
-  ),
+  route("get", "/projects/:projectId/audit-events", ({ params, request }) => {
+    requireProject(String(params.projectId));
+    const q = new URL(request.url).searchParams;
+    return paged(
+      state.auditEvents
+        .filter(
+          (e) =>
+            (!q.get("entityType") || e.entityType === q.get("entityType")) &&
+            (!q.get("entityId") || e.entityId === q.get("entityId")) &&
+            (!q.get("actorId") || e.actorId === q.get("actorId")) &&
+            (!q.get("from") || e.at >= q.get("from")!) &&
+            (!q.get("to") ||
+              e.at <=
+                (q.get("to")!.length === 10
+                  ? `${q.get("to")}T23:59:59.999Z`
+                  : q.get("to")!)),
+        )
+        .toSorted((a, b) => b.at.localeCompare(a.at)),
+      q.get("cursor"),
+      3,
+    );
+  }),
 ];

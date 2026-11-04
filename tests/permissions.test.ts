@@ -1,29 +1,37 @@
 import { expect, test } from "vitest";
-import { can } from "@/lib/auth/permissions";
-test("senior QS can finalize and sign, junior QS can only propose", () => {
-  expect(can({ role: "senior_qs" }, "flag.finalize")).toBe(true);
-  expect(can({ role: "senior_qs" }, "report.sign")).toBe(true);
-  expect(can({ role: "junior_qs" }, "flag.propose")).toBe(true);
-  expect(can({ role: "junior_qs" }, "flag.finalize")).toBe(false);
-  expect(can({ role: "junior_qs" }, "report.sign")).toBe(false);
-  for (const role of ["senior_qs", "junior_qs"] as const) {
-    expect(can({ role }, "document.upload")).toBe(true);
-    expect(can({ role }, "analysis.run")).toBe(true);
+import { can, type Permission } from "@/lib/auth/permissions";
+const edit: Permission[] = [
+  "document.upload",
+  "comparison.run",
+  "change.review",
+  "variation.raise",
+  "variation.editCost",
+  "workbook.upload",
+  "workbook.editMapping",
+  "workbook.resolveCheck",
+  "procurement.plan",
+];
+test("QS can prepare work; only senior QS can decide variations and current versions", () => {
+  for (const permission of edit) {
+    expect(can({ role: "qs" }, permission)).toBe(true);
+    expect(can({ role: "senior_qs" }, permission)).toBe(true);
+    expect(can({ role: "viewer" }, permission)).toBe(false);
   }
-  expect(can({ role: "admin" }, "analysis.run")).toBe(false);
+  for (const permission of [
+    "document.setCurrent",
+    "variation.decide",
+  ] as const) {
+    expect(can({ role: "senior_qs" }, permission)).toBe(true);
+    expect(can({ role: "qs" }, permission)).toBe(false);
+    expect(can({ role: "viewer" }, permission)).toBe(false);
+    expect(can({ role: "admin" }, permission)).toBe(false);
+  }
 });
-test("owner and admin roles cannot sign; anonymous access is denied", () => {
-  expect(can({ role: "owner_viewer" }, "report.sign")).toBe(false);
-  expect(can({ role: "admin" }, "report.sign")).toBe(false);
-  expect(can(null, "project.view")).toBe(false);
-  expect(can({ role: "owner_viewer" }, "project.view")).toBe(false);
-  expect(can({ role: "owner_viewer" }, "report.viewSigned")).toBe(true);
-  expect(
-    can({ role: "owner_viewer" }, "report.viewSigned", { status: "draft" }),
-  ).toBe(false);
-  expect(
-    can({ role: "owner_viewer" }, "report.viewSigned", { status: "signed" }),
-  ).toBe(true);
-  expect(can({ role: "admin" }, "admin.manage")).toBe(true);
-  expect(can({ role: "admin" }, "flag.finalize")).toBe(false);
+test("all four roles can view projects; only admin manages the organization", () => {
+  for (const role of ["senior_qs", "qs", "viewer", "admin"] as const) {
+    expect(can({ role }, "project.view")).toBe(true);
+    expect(can({ role }, "admin.manage")).toBe(role === "admin");
+  }
+  expect(can(undefined, "project.view")).toBe(false);
+  expect(can(null, "variation.decide")).toBe(false);
 });

@@ -12,7 +12,6 @@ import { EmptyState, ErrorState, Skeleton } from "@/components/ui";
 export default function ProjectsPage() {
   const t = useTranslations("Projects");
   const common = useTranslations("Common");
-  const stages = useTranslations("Shell");
   const locale = useLocale() as FormatLocale;
   const session = useSession();
   const projects = useQuery({
@@ -48,10 +47,10 @@ export default function ProjectsPage() {
           {projects.data.map((project) => (
             <article
               key={project.id}
-              className="rounded-lg border border-line bg-panel p-5 transition-shadow hover:shadow-sm motion-reduce:transition-none"
+              className="rounded-lg border border-line bg-panel p-5"
             >
               <div className="flex items-start justify-between gap-3">
-                <span className="inline-flex size-9 items-center justify-center rounded-md bg-limewash text-clay-800">
+                <span className="inline-flex size-9 items-center justify-center rounded-md bg-stone-50 text-clay-800">
                   <FolderOpen size={18} strokeWidth={1.5} aria-hidden="true" />
                 </span>
                 <span className="num text-xs text-muted-ink">
@@ -59,20 +58,6 @@ export default function ProjectsPage() {
                 </span>
               </div>
               <h2 className="mt-5 text-lg font-semibold">{project.name}</h2>
-              <div className="mt-4 flex flex-wrap gap-2 text-xs text-muted-ink">
-                <span className="rounded-full bg-stone-50 px-2 py-1">
-                  {stages(
-                    project.stage === "pre_tender"
-                      ? "stagePreTender"
-                      : project.stage === "tender"
-                        ? "stageTender"
-                        : "stagePostAward",
-                  )}
-                </span>
-                <span className="num rounded-full bg-stone-50 px-2 py-1">
-                  {t("count", { count: project.tendererCount })}
-                </span>
-              </div>
               <div className="mt-5 flex items-end justify-between gap-2 border-t border-line pt-4">
                 <span className="text-xs text-muted-ink">
                   {t("created", {

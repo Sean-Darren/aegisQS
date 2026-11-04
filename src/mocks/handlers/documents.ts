@@ -1,154 +1,207 @@
-import { http } from "msw";
 import { z } from "zod";
-import { documentTypeSchema, projectDocumentSchema } from "@/schemas";
+import * as s from "@/schemas";
+import { state, currentUser, nextId, now, audit } from "../store";
 import {
-  db,
-  uploadedFiles,
-  currentUser,
-  nextId,
-  now,
-  audit,
-  registerCleanup,
-  signedDocumentIds,
-} from "../store";
-import { samplePdfBase64 } from "../fixtures/pdf";
-import { inspectionPdfBase64 } from "../fixtures/inspection-pdf";
-import { json, projectGuard, allowed, failure } from "./shared";
+  route,
+  reply,
+  requireProject,
+  requirePermission,
+  document,
+  find,
+  fileInput,
+  addVersion,
+  bytesFor,
+  fileReply,
+  MockError,
+} from "./shared";
+import { startComparison } from "../ws/simulation";
+import { emit } from "../ws/events";
 export const documentHandlers = [
-  http.get(
-    "*/api/v1/projects/:projectId/documents",
-    ({ params }) =>
-      projectGuard(String(params.projectId)) ??
-      json(
-        z.array(projectDocumentSchema),
-        db.documents.filter((doc) => doc.projectId === params.projectId),
+  route("get", "/projects/:projectId/documents", ({ params, request }) => {
+    const id = String(params.projectId);
+    requireProject(id);
+    const q = new URL(request.url).searchParams;
+    return reply(
+      z.array(s.hubDocumentSchema),
+      state.documents.filter(
+        (d) =>
+          d.projectId === id &&
+          (!q.get("category") || d.category === q.get("category")) &&
+          (!q.get("discipline") || d.discipline === q.get("discipline")) &&
+          (!q.get("conflict") ||
+            d.hasConflict === (q.get("conflict") === "true")) &&
+          `${d.docNumber} ${d.title}`
+            .toLowerCase()
+            .includes((q.get("q") ?? "").toLowerCase()),
       ),
-  ),
-  http.post(
-    "*/api/v1/projects/:projectId/documents",
+    );
+  }),
+  route(
+    "post",
+    "/projects/:projectId/documents",
     async ({ params, request }) => {
+      requirePermission("document.upload");
       const projectId = String(params.projectId);
-      const denied = projectGuard(projectId, "document.upload");
-      if (denied) return denied;
-      let form: FormData;
-      try {
-        form = await request.formData();
-      } catch {
-        return failure(400, "INVALID_BODY", "Expected multipart form data.");
+      requireProject(projectId);
+      const form = await request.formData();
+      const input = s.hubDocumentSchema
+        .pick({
+          category: true,
+          docNumber: true,
+          title: true,
+          discipline: true,
+        })
+        .extend({
+          label: z.string().min(1),
+          issuedDate: s.isoDateSchema.optional(),
+        })
+        .parse(Object.fromEntries(form));
+      const file = await fileInput(form);
+      let doc = state.documents.find(
+        (d) => d.projectId === projectId && d.docNumber === input.docNumber,
+      );
+      const existing = doc;
+      if (!doc) {
+        doc = {
+          id: nextId("D"),
+          projectId,
+          category: input.category,
+          docNumber: input.docNumber,
+          title: input.title,
+          discipline: input.discipline,
+          versionCount: 0,
+          hasConflict: false,
+          tags: [],
+          updatedAt: now(),
+        };
+        state.documents.push(doc);
       }
-      const file = form.get("file");
-      const type = documentTypeSchema.safeParse(form.get("type"));
-      const tendererId = form.get("tendererId");
+      const base = doc.currentVersionId;
+      const version = addVersion(doc, file, input.label, input.issuedDate);
       if (
-        !(file instanceof File) ||
-        !file.size ||
-        !type.success ||
-        (tendererId !== null && typeof tendererId !== "string")
+        existing &&
+        doc.category === "drawing" &&
+        base &&
+        version.status === "current"
       )
-        return failure(
-          400,
-          "INVALID_BODY",
-          "Provide a non-empty file and a valid document type.",
-        );
-      if (
-        tendererId &&
-        !db.tenderers.some(
-          (t) => t.projectId === projectId && t.id === tendererId,
-        )
-      )
-        return failure(
-          400,
-          "INVALID_TENDERER",
-          "Tenderer does not belong to this project.",
-        );
-      if (type.data === "priced_boq" && !tendererId)
-        return failure(
-          400,
-          "TENDERER_REQUIRED",
-          "Select a tenderer for the priced BOQ.",
-        );
-      const doc = projectDocumentSchema.parse({
-        id: nextId("D"),
-        projectId,
-        ...(tendererId ? { tendererId } : {}),
-        type: type.data,
-        fileName: file.name,
-        version:
-          1 +
-          db.documents
-            .filter(
-              (d) =>
-                d.projectId === projectId &&
-                d.tendererId === (tendererId || undefined) &&
-                d.type === type.data &&
-                d.fileName === file.name,
-            )
-            .reduce((max, d) => Math.max(max, d.version), 0),
-        parseStatus: "queued",
-        uploadedBy: currentUser().id,
-        uploadedAt: now(),
-      });
-      db.documents.push(doc);
-      uploadedFiles.set(doc.id, file);
-      audit("document.uploaded", "document", doc.id);
-      const timer = setTimeout(() => {
-        doc.parseStatus = "parsed";
-        unregister();
-      }, 1000);
-      const unregister = registerCleanup(() => clearTimeout(timer));
-      return json(projectDocumentSchema, doc, 201);
+        startComparison(projectId, doc.id, base, version.id);
+      return reply(s.hubDocumentSchema, doc, 201);
     },
   ),
-  http.post("*/api/v1/documents/:documentId/reprocess", ({ params }) => {
-    const doc = db.documents.find((item) => item.id === params.documentId);
-    if (!doc) return failure(404, "NOT_FOUND", "Document not found.");
-    const denied = projectGuard(doc.projectId, "document.upload");
-    if (denied) return denied;
-    if (doc.parseStatus !== "failed")
-      return failure(
-        409,
-        "NOT_FAILED",
-        "Only failed document parsing can be retried.",
-      );
-    doc.parseStatus = "queued";
-    delete doc.parseError;
-    audit("document.reprocessing", "document", doc.id);
-    const timer = setTimeout(() => {
-      doc.parseStatus = "parsed";
-      unregister();
-    }, 1000);
-    const unregister = registerCleanup(() => clearTimeout(timer));
-    return json(projectDocumentSchema, doc, 202);
+  route("get", "/documents/:documentId", ({ params }) =>
+    reply(s.hubDocumentSchema, document(String(params.documentId))),
+  ),
+  route("get", "/documents/:documentId/versions", ({ params }) => {
+    const doc = document(String(params.documentId));
+    return reply(
+      z.array(s.documentVersionSchema),
+      state.versions.filter((v) => v.documentId === doc.id).toReversed(),
+    );
   }),
-  http.get("*/api/v1/documents/:documentId/file", ({ params }) => {
-    const doc = db.documents.find((d) => d.id === params.documentId);
-    if (!doc) return failure(404, "NOT_FOUND", "Document not found.");
-    const denied = allowed("project.view");
-    if (
-      denied &&
-      (allowed("report.viewSigned") || !signedDocumentIds.has(doc.id))
-    )
-      return denied;
-    const body =
-      uploadedFiles.get(doc.id) ??
-      new Blob(
-        [
-          Uint8Array.from(
-            atob(
-              doc.type === "inspection_report"
-                ? inspectionPdfBase64
-                : samplePdfBase64,
-            ),
-            (char) => char.charCodeAt(0),
-          ),
-        ],
-        { type: "application/pdf" },
+  route(
+    "post",
+    "/documents/:documentId/versions",
+    async ({ params, request }) => {
+      requirePermission("document.upload");
+      const doc = document(String(params.documentId));
+      const form = await request.formData();
+      const input = z
+        .object({
+          label: z.string().min(1),
+          issuedDate: s.isoDateSchema.optional(),
+          notes: z.string().optional(),
+        })
+        .parse(Object.fromEntries(form));
+      const file = await fileInput(form);
+      const base = doc.currentVersionId;
+      const version = addVersion(
+        doc,
+        file,
+        input.label,
+        input.issuedDate,
+        input.notes,
       );
-    return new Response(body, {
-      headers: {
-        "Content-Type": body.type || "application/octet-stream",
-        "Content-Disposition": `inline; filename*=UTF-8''${encodeURIComponent(doc.fileName)}`,
-      },
-    });
+      if (doc.category === "drawing" && base && version.status === "current")
+        startComparison(doc.projectId, doc.id, base, version.id);
+      return reply(s.documentVersionSchema, version, 201);
+    },
+  ),
+  route(
+    "post",
+    "/documents/:documentId/current",
+    async ({ params, request }) => {
+      requirePermission("document.setCurrent");
+      const doc = document(String(params.documentId));
+      const { versionId, reason } = z
+        .object({ versionId: z.string(), reason: z.string().trim().min(1) })
+        .parse(await request.json());
+      const version = find(state.versions, versionId);
+      if (version.documentId !== doc.id)
+        throw new MockError(400, "The version belongs to another document.");
+      for (const v of state.versions.filter((v) => v.documentId === doc.id))
+        v.status = v.id === version.id ? "current" : "superseded";
+      for (const conflict of state.conflicts.filter(
+        (c) => c.documentId === doc.id && !c.resolution,
+      ))
+        conflict.resolution = {
+          keptVersionId: versionId,
+          by: currentUser().id,
+          at: now(),
+          reason,
+        };
+      doc.currentVersionId = versionId;
+      doc.hasConflict = false;
+      doc.updatedAt = now();
+      const linked = state.links.find(
+        (l) =>
+          l.from.type === "workbook_version" &&
+          l.to.type === "document_version" &&
+          l.to.id === versionId,
+      );
+      if (linked) {
+        const wv = find(state.workbookVersions, linked.from.id);
+        find(state.workbooks, wv.workbookId).currentVersionId = wv.id;
+      }
+      audit(
+        "document.current_set",
+        "document",
+        doc.id,
+        `Rev ${version.label} set as current`,
+        { reason },
+      );
+      emit(doc.projectId, {
+        type: "document.version_added",
+        documentId: doc.id,
+        versionId,
+        conflict: false,
+      });
+      return reply(s.hubDocumentSchema, doc);
+    },
+  ),
+  route("get", "/documents/:documentId/conflicts", ({ params }) => {
+    const doc = document(String(params.documentId));
+    return reply(
+      z.array(s.versionConflictSchema),
+      state.conflicts.filter((c) => c.documentId === doc.id),
+    );
+  }),
+  route("get", "/document-versions/:versionId/file", ({ params }) => {
+    const version = find(state.versions, String(params.versionId));
+    document(version.documentId);
+    return fileReply(bytesFor(version.id), version.mimeType, version.fileName);
+  }),
+  route("get", "/projects/:projectId/links", ({ params, request }) => {
+    requireProject(String(params.projectId));
+    const q = new URL(request.url).searchParams;
+    return reply(
+      z.array(s.entityLinkSchema),
+      state.links.filter((l) =>
+        [l.from, l.to].some(
+          (e) =>
+            (!q.get("type") || e.type === q.get("type")) &&
+            (!q.get("id") || e.id === q.get("id")),
+        ),
+      ),
+    );
   }),
 ];

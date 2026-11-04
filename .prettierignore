@@ -9,3 +9,7 @@ AGENTS.md
 DESIGN.md
 CLAUDE.md
 CONTRIBUTING.md
+src/mocks/fixtures/workbook-data.json
+src/mocks/fixtures/drawing-files.json
+src/mocks/fixtures/drawing-regions.json
+src/mocks/fixtures/workbook-files.json

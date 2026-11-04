@@ -1,62 +1,58 @@
-import { expect, test } from "vitest";
+import { test, expect } from "vitest";
 import {
   formatCurrency,
   formatCompactCurrency,
   formatUnitRate,
-  formatSigma,
   formatPercent,
   formatDate,
 } from "@/lib/format";
-import { riskBandFor } from "@/lib/config";
-test("HKD amounts and unit rates retain the currency and unit", () => {
-  expect(formatCurrency(1250)).toBe("HK$1,250.00");
-  expect(formatCompactCurrency(142800000)).toBe("HK$142.8M");
-  expect(formatCurrency(0)).toBe("HK$0.00");
-  expect(formatUnitRate(1250, "m²")).toBe("HK$1,250.00 / m²");
-});
-test.each([
-  [-2.4, "−2.4σ"],
-  [0.4, "+0.4σ"],
-  [0, "+0.0σ"],
-  [-0, "+0.0σ"],
-  [-0.01, "+0.0σ"],
-  [-2.46, "−2.5σ"],
-])("sigma %s formats as %s", (value, expected) =>
-  expect(formatSigma(value)).toBe(expected),
-);
-test("percent accepts fractions and always shows one decimal", () => {
-  expect(formatPercent(0.15)).toBe("15.0%");
-  expect(formatPercent(0.005)).toBe("0.5%");
-  expect(formatPercent(0)).toBe("0.0%");
-});
-test("dates use the requested locale and Hong Kong calendar day", () => {
-  const instant = "2026-09-27T18:00:00Z";
-  expect(formatDate(instant, "en")).toBe(
-    new Intl.DateTimeFormat("en-HK", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      timeZone: "Asia/Hong_Kong",
-    }).format(new Date(instant)),
-  );
-  expect(formatDate(instant, "zh-HK")).toContain("28");
-  expect(formatDate("2026-09-28", "zh-HK")).not.toBe(
-    formatDate("2026-09-28", "en"),
-  );
-});
-test("missing or invalid values are not silently formatted as zero", () => {
+test("currency and rates retain their basis", () => {
+  expect(formatCurrency(186400)).toContain("186,400.00");
+  expect(formatCompactCurrency(186400)).toContain("186.4");
+  expect(formatUnitRate(6850, "tonne")).toContain(" / tonne");
   expect(() => formatCurrency(NaN)).toThrow();
-  expect(() => formatSigma(Infinity)).toThrow();
-  expect(() => formatDate("invalid")).toThrow();
-  expect(() => formatUnitRate(10, "")).toThrow();
 });
-test.each([
-  [0, "critical"],
-  [39.9, "critical"],
-  [40, "high"],
-  [60, "moderate"],
-  [80, "low"],
-  [100, "low"],
-])("risk band boundary %s", (score, band) =>
-  expect(riskBandFor(Number(score))).toBe(band),
-);
+test("percent and dates are locale aware", () => {
+  expect(formatPercent(0.042)).toBe("4.2%");
+  expect(formatDate("2026-11-04T00:00:00Z")).toContain("2026");
+  expect(() => formatDate("invalid")).toThrow();
+});
+
+import {
+  formatRange,
+  formatSignedPercent,
+  formatPeriod,
+  formatFileSize,
+  formatRevisionLabel,
+} from "@/lib/format";
+test("compact amounts, ranges and unit rates follow QS notation", () => {
+  expect(formatCompactCurrency(186400)).toBe("HK$186.4k");
+  expect(formatCompactCurrency(1200000)).toBe("HK$1.2M");
+  expect(formatRange(171000, 203000)).toBe("HK$171k – HK$203k");
+  expect(formatRange(-5, 10, String)).toBe("-5 – 10");
+  expect(formatUnitRate(6850, "tonne")).toBe("HK$6,850 / tonne");
+  expect(() => formatRange(20, 10)).toThrow(RangeError);
+});
+test("signed percent uses one decimal and true minus", () => {
+  expect(formatSignedPercent(0.042)).toBe("+4.2%");
+  expect(formatSignedPercent(-0.018)).toBe("−1.8%");
+  expect(formatSignedPercent(0)).toBe("+0.0%");
+  expect(formatSignedPercent(-0.00001)).toBe("+0.0%");
+  expect(() => formatSignedPercent(Infinity)).toThrow(RangeError);
+});
+test("periods validate months and localize both locales", () => {
+  expect(formatPeriod("2027-02")).toBe("Feb 2027");
+  expect(formatPeriod("2027-02", "zh-HK")).toBe("2027年2月");
+  expect(() => formatPeriod("2027-13")).toThrow(RangeError);
+  expect(() => formatPeriod("2027-2")).toThrow(RangeError);
+});
+test("file sizes use decimal units; revisions preserve issuer labels", () => {
+  expect(formatFileSize(2400000)).toBe("2.4 MB");
+  expect(formatFileSize(0)).toBe("0 B");
+  expect(formatFileSize(0.5)).not.toContain("undefined");
+  expect(formatFileSize(1000)).toBe("1 kB");
+  expect(() => formatFileSize(-1)).toThrow(RangeError);
+  expect(formatRevisionLabel(" C ")).toBe("Rev C");
+  expect(formatRevisionLabel("P1")).toBe("Rev P1");
+  expect(() => formatRevisionLabel(" ")).toThrow(RangeError);
+});

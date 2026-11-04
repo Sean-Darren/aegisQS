@@ -1,22 +1,34 @@
 "use client";
 import { useTranslations } from "next-intl";
 import { usePathname } from "next/navigation";
+import {
+  LayoutDashboard,
+  Files,
+  DraftingCompass,
+  GitCompareArrows,
+  Table2,
+  CalendarRange,
+  History,
+  Layers,
+  FolderOpen,
+  Settings,
+  type LucideIcon,
+} from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
-
-const items = [
-  ["overview", "overview"],
-  ["documents", "documents"],
-  ["pre-tender/scope-gaps", "scopeGaps"],
-  ["tender/risk", "risk"],
-  ["tender/scope", "scope"],
-  ["tender/rates", "rates"],
-  ["tender/boq", "boq"],
-  ["flags", "flags"],
-  ["reports", "reports"],
-  ["audit", "audit"],
-] as const;
-
+import {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+} from "@/components/ui/tooltip";
+const items: readonly [string, LucideIcon][] = [
+  ["overview", LayoutDashboard],
+  ["documents", Files],
+  ["drawings", DraftingCompass],
+  ["variations", GitCompareArrows],
+  ["workbooks", Table2],
+  ["procurement", CalendarRange],
+];
 export function LeftNav({
   projectId,
   showAdmin,
@@ -26,36 +38,60 @@ export function LeftNav({
 }) {
   const t = useTranslations("Navigation");
   const pathname = usePathname();
-  const links: Array<[string, string]> = [["/projects", "projects"]];
+  const comparing = pathname.includes("/drawings/compare/");
+  const links: [string, string, LucideIcon][] = [
+    ["/projects", "projects", FolderOpen],
+  ];
   if (projectId)
     links.push(
       ...items.map(
-        ([path, label]) =>
-          [`/projects/${projectId}/${path}`, label] as [string, string],
+        ([key, icon]) =>
+          [`/projects/${projectId}/${key}`, key, icon] as [
+            string,
+            string,
+            LucideIcon,
+          ],
       ),
     );
-  if (showAdmin) links.push(["/admin", "admin"]);
+  links.push(["/materials", "materials", Layers]);
+  if (projectId) links.push([`/projects/${projectId}/audit`, "audit", History]);
+  if (showAdmin) links.push(["/admin", "admin", Settings]);
   return (
     <nav
       aria-label={t("projects")}
-      className="flex min-w-48 flex-col gap-1 border-r border-sidebar-border bg-sidebar px-3 py-5 text-sidebar-foreground"
+      data-collapsed={comparing}
+      className="app-sidebar flex shrink-0 flex-col gap-1 border-r border-sidebar-border bg-sidebar px-2 py-5 text-sidebar-foreground"
     >
-      {links.map(([href, label]) => {
-        const selected = pathname.endsWith(href);
+      {links.map(([href, label, Icon]) => {
+        const selected =
+          pathname.endsWith(href) ||
+          (label !== "projects" && pathname.includes(`${href}/`));
         return (
-          <Link
-            key={href}
-            href={href}
-            aria-current={selected ? "page" : undefined}
-            className={cn(
-              "rounded-md px-3 py-2 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sidebar-ring",
-              selected
-                ? "bg-sidebar-accent font-semibold text-sidebar-accent-foreground"
-                : "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-            )}
-          >
-            {t(label)}
-          </Link>
+          <Tooltip key={href}>
+            <TooltipTrigger asChild>
+              <Link
+                href={href}
+                aria-current={selected ? "page" : undefined}
+                className={cn(
+                  "relative flex min-h-10 items-center gap-3 rounded-md px-3 py-2 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sidebar-ring",
+                  label === "materials" &&
+                    "mt-3 border-t border-sidebar-border pt-4",
+                  selected
+                    ? "bg-sidebar-accent font-semibold before:absolute before:inset-y-2 before:left-0 before:w-[3px] before:bg-lichen"
+                    : "hover:bg-sidebar-accent",
+                )}
+              >
+                <Icon
+                  size={20}
+                  strokeWidth={1.5}
+                  aria-hidden="true"
+                  className="shrink-0"
+                />
+                <span className="sidebar-label">{t(label)}</span>
+              </Link>
+            </TooltipTrigger>
+            <TooltipContent side="right">{t(label)}</TooltipContent>
+          </Tooltip>
         );
       })}
     </nav>

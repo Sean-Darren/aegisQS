@@ -1,6 +1,5 @@
 import { z } from "zod";
 import { roleSchema } from "./enums";
-export { roleSchema } from "./enums";
 export const userSchema = z.object({
   id: z.string(),
   name: z.string(),

@@ -1,11 +1,5 @@
 @import "tailwindcss";
 
-.scope-finding-highlight {
-  background: var(--limewash);
-  box-shadow: 0 2px 0 var(--clay-600);
-  color: var(--ink);
-}
-
 :root {
   /* shadcn contract — every 21st.dev component reads these */
   --background: #f7f5f2;
@@ -38,14 +32,13 @@
   --sidebar-border: #3f332b;
   --sidebar-ring: #babf94;
 
-  --chart-1: #2b211b; /* focus series */
-  --chart-2: #5e6440; /* within tolerance */
-  --chart-3: #9e2b36; /* breach */
-  --chart-4: #b8862e; /* caution */
+  --chart-1: #2b211b; /* history / focus series */
+  --chart-2: #6b5445; /* forecast median */
+  --chart-3: #9e2b36; /* rising / error */
+  --chart-4: #5e6440; /* falling / good */
   --chart-5: #cfc2b2; /* background series */
-  --chart-grid: #efe8de;
 
-  /* Smart QS semantic tokens (names used in AGENTS.md / TASK_PROMPTS.md) */
+  /* Smart QS tokens */
   --ink: #2b211b;
   --surface: #f7f5f2;
   --panel: #ffffff;
@@ -67,6 +60,11 @@
   --caution-bg: #f6eacb;
   --risk: #9e2b36;
   --risk-bg: #f7e0e2;
+  --rev-base: #9e2b36;
+  --rev-target: #2f6f8f;
+  --rev-target-bg: #e3eef3;
+  --paper: #ffffff;
+  --viewer-bg: #e9e4dc;
 }
 
 @theme inline {
@@ -112,14 +110,18 @@
   --color-caution-bg: var(--caution-bg);
   --color-risk: var(--risk);
   --color-risk-bg: var(--risk-bg);
+  --color-rev-base: var(--rev-base);
+  --color-rev-target: var(--rev-target);
+  --color-rev-target-bg: var(--rev-target-bg);
+  --color-paper: var(--paper);
+  --color-viewer-bg: var(--viewer-bg);
 
   --font-sans:
-    var(--font-karla), var(--font-noto-hk), "Noto Sans HK", ui-sans-serif,
-    system-ui, sans-serif;
+    var(--font-karla), var(--font-noto-hk), ui-sans-serif, system-ui, sans-serif;
 
-  --radius-sm: 0.25rem; /* 4px  badges inside tables, checkboxes */
-  --radius-md: 0.375rem; /* 6px  buttons, inputs, selects */
-  --radius-lg: 0.625rem; /* 10px panels, cards, drawer */
+  --radius-sm: 0.25rem; /* 4px  in-table chips, checkboxes */
+  --radius-md: 0.375rem; /* 6px  buttons, inputs */
+  --radius-lg: 0.625rem; /* 10px panels, drawers */
 }
 
 body {
@@ -128,9 +130,23 @@ body {
   font-family: var(--font-sans);
 }
 
+/* Supporting layout/chart tokens referenced by DESIGN.md §§2, 6 and 9. */
+:root {
+  --sidebar-hover: #3a2e26;
+  --chart-grid: #efe8de;
+}
+@theme inline {
+  --color-surface: var(--surface);
+  --color-panel: var(--panel);
+  --color-muted-ink: var(--muted-ink);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-hover: var(--sidebar-hover);
+}
 .num,
 table,
-[data-number] {
+[data-number],
+[role="table"] {
   font-variant-numeric: tabular-nums lining-nums;
 }
 .floating-layer {
@@ -145,20 +161,37 @@ body {
 :lang(zh-HK) body {
   line-height: 22px;
 }
-@keyframes evidence-highlight {
-  from {
-    opacity: 1;
-  }
-  to {
-    opacity: 0.7;
-  }
+.drawing-text-highlight {
+  background: var(--limewash);
+  color: var(--ink);
+  box-shadow: 0 2px 0 var(--clay-600);
 }
-.evidence-highlight {
-  animation: evidence-highlight 400ms ease-out both;
+.app-sidebar {
+  width: 64px;
+  flex: 0 0 64px;
 }
-@media (prefers-reduced-motion: reduce) {
-  .evidence-highlight {
-    animation: none;
-    opacity: 0.7;
+.sidebar-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+@media (min-width: 1440px) {
+  .app-sidebar:not([data-collapsed="true"]) {
+    width: 240px;
+    flex-basis: 240px;
+  }
+  .app-sidebar:not([data-collapsed="true"]) .sidebar-label {
+    position: static;
+    width: auto;
+    height: auto;
+    margin: 0;
+    overflow: visible;
+    clip-path: none;
+    white-space: normal;
   }
 }

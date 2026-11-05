@@ -40,7 +40,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   const session = useSession();
   const [primaryAction, setPrimaryAction] = useState<ReactNode>();
-  const [, setActiveProjectId] = useState("");
+  const [activeProjectId, setActiveProjectId] = useState<string>();
   const projects = useQuery({
     queryKey: queryKeys.projects(),
     queryFn: resources.projects,
@@ -48,8 +48,9 @@ export function AppShell({ children }: { children: ReactNode }) {
   });
   const params = useParams<{ projectId?: string }>();
   const comparing = usePathname().includes("/drawings/compare/");
+  const defaultProjectId = projects.data?.[0]?.id;
   const projectId = can(session.data, "project.view")
-    ? params.projectId
+    ? (params.projectId ?? activeProjectId ?? defaultProjectId)
     : undefined;
   useProjectEvents(projectId ?? "", (event) => {
     if (event.type === "workbook.checked")

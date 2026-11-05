@@ -1,7 +1,7 @@
 # Contributing to aegisQS
 
 Welcome to aegisQS development and engineering team!
-Welcome to the aegisQS engineering team. This guide defines how we use Git and GitHub to build, review, and ship aegisQS, the platform Quantity Surveyors rely on for cost estimation, Bills of Quantities (BOQ), tendering, and measurement.
+Welcome to the aegisQS engineering team. This guide defines how we use Git and GitHub to build, review, and ship aegisQS, the platform Quantity Surveyors rely on for cost estimation, Bills of Quantities (BOQ), workbook, and measurement.
 
 ## Table of Contents
 
@@ -58,7 +58,7 @@ bugfix/excel-export-merged-cells
 chore/upgrade-pdf-renderer
 docs/api-auth-guide
 release/v1.4.0
-hotfix/tender-sum-incorrect-vat
+hotfix/workbook-sum-incorrect-vat
 ```
 
 **Bad examples:**
@@ -133,9 +133,9 @@ feat(measure): support NRM2 work section templates for take-off
 ```
 
 ```text
-feat(tender): rank tender returns by adjusted total with arithmetic checks
+feat(workbook): rank workbook returns by adjusted total with arithmetic checks
 
-Flags returns where extended totals do not equal quantity x rate,
+Checks files where extended totals do not equal quantity x rate,
 so adjudication catches contractor arithmetic errors automatically.
 ```
 
@@ -162,7 +162,7 @@ fix(export): preserve merged header cells in Excel BOQ export
 ```
 
 ```text
-fix(currency): apply VAT to tender sum after discounts, not before
+fix(currency): apply VAT to workbook sum after discounts, not before
 ```
 
 ```text
@@ -191,7 +191,7 @@ test(rates): add regression fixtures for composite rate build-ups
 build(deps): upgrade exceljs to 4.4.0
 ci: add calculation regression suite to PR checks
 docs(standards): document NRM1 element code mapping
-revert: feat(tender): rank tender returns by adjusted total
+revert: feat(workbook): rank workbook returns by adjusted total
 ```
 
 **Bad examples:**
@@ -255,6 +255,6 @@ aegisQS follows [Semantic Versioning 2.0.0](https://semver.org/): `MAJOR.MINOR.P
 - Pre-release tags are created on `release/*` branches.
 - Tags are immutable. Never delete or move a published tag; release a new version instead.
 
-If you have any questions or suggestions, please contact the repository owner. This process belongs to the whole team and should evolve as we do.
+If you have any questions or suggestions, please contact the repository maintainer. This process belongs to the whole team and should evolve as we do.
 
 Thanks! Happy Coding!!!

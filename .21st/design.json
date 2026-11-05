@@ -1,0 +1,388 @@
+{
+  "version": 1,
+  "project": {
+    "name": "aegisqs",
+    "productType": null,
+    "stack": [
+      "nextjs",
+      "react",
+      "tailwind-v4"
+    ]
+  },
+  "sources": {
+    "tokens": [
+      "src/app/globals.css"
+    ],
+    "components": [
+      "src/components/ui"
+    ],
+    "assets": [],
+    "instructions": [
+      "DESIGN.md",
+      "AGENTS.md",
+      "CLAUDE.md"
+    ]
+  },
+  "design": {
+    "colorMode": "light",
+    "colors": {
+      "--background": {
+        "value": "#f7f5f2",
+        "source": "src/app/globals.css"
+      },
+      "--foreground": {
+        "value": "#2b211b",
+        "source": "src/app/globals.css"
+      },
+      "--card-foreground": {
+        "value": "#2b211b",
+        "source": "src/app/globals.css"
+      },
+      "--popover-foreground": {
+        "value": "#2b211b",
+        "source": "src/app/globals.css"
+      },
+      "--primary": {
+        "value": "#6b5445",
+        "source": "src/app/globals.css"
+      },
+      "--primary-foreground": {
+        "value": "#ffffff",
+        "source": "src/app/globals.css"
+      },
+      "--secondary": {
+        "value": "#f3e4c9",
+        "source": "src/app/globals.css"
+      },
+      "--secondary-foreground": {
+        "value": "#4a3a2f",
+        "source": "src/app/globals.css"
+      },
+      "--muted": {
+        "value": "#f1ece5",
+        "source": "src/app/globals.css"
+      },
+      "--muted-foreground": {
+        "value": "#6e6259",
+        "source": "src/app/globals.css"
+      },
+      "--accent": {
+        "value": "#f8f0e1",
+        "source": "src/app/globals.css"
+      },
+      "--accent-foreground": {
+        "value": "#2b211b",
+        "source": "src/app/globals.css"
+      },
+      "--destructive": {
+        "value": "#9e2b36",
+        "source": "src/app/globals.css"
+      },
+      "--destructive-foreground": {
+        "value": "#ffffff",
+        "source": "src/app/globals.css"
+      },
+      "--border": {
+        "value": "#e7ded2",
+        "source": "src/app/globals.css"
+      },
+      "--ring": {
+        "value": "#8a6f5c",
+        "source": "src/app/globals.css"
+      },
+      "--sidebar-foreground": {
+        "value": "#f3e4c9",
+        "source": "src/app/globals.css"
+      },
+      "--sidebar-primary": {
+        "value": "#babf94",
+        "source": "src/app/globals.css"
+      },
+      "--sidebar-primary-foreground": {
+        "value": "#2b211b",
+        "source": "src/app/globals.css"
+      },
+      "--sidebar-accent": {
+        "value": "#3a2e26",
+        "source": "src/app/globals.css"
+      },
+      "--sidebar-accent-foreground": {
+        "value": "#f3e4c9",
+        "source": "src/app/globals.css"
+      },
+      "--sidebar-border": {
+        "value": "#3f332b",
+        "source": "src/app/globals.css"
+      },
+      "--sidebar-ring": {
+        "value": "#babf94",
+        "source": "src/app/globals.css"
+      },
+      "--chart-1": {
+        "value": "#2b211b",
+        "source": "src/app/globals.css"
+      },
+      "--chart-2": {
+        "value": "#5e6440",
+        "source": "src/app/globals.css"
+      },
+      "--chart-3": {
+        "value": "#9e2b36",
+        "source": "src/app/globals.css"
+      },
+      "--chart-4": {
+        "value": "#b8862e",
+        "source": "src/app/globals.css"
+      },
+      "--chart-5": {
+        "value": "#cfc2b2",
+        "source": "src/app/globals.css"
+      },
+      "--muted-ink": {
+        "value": "#6e6259",
+        "source": "src/app/globals.css"
+      },
+      "--color-background": {
+        "value": "var(--background)",
+        "source": "src/app/globals.css"
+      },
+      "--color-foreground": {
+        "value": "var(--foreground)",
+        "source": "src/app/globals.css"
+      },
+      "--color-card": {
+        "value": "var(--card)",
+        "source": "src/app/globals.css"
+      },
+      "--color-card-foreground": {
+        "value": "var(--card-foreground)",
+        "source": "src/app/globals.css"
+      },
+      "--color-popover": {
+        "value": "var(--popover)",
+        "source": "src/app/globals.css"
+      },
+      "--color-popover-foreground": {
+        "value": "var(--popover-foreground)",
+        "source": "src/app/globals.css"
+      },
+      "--color-primary": {
+        "value": "var(--primary)",
+        "source": "src/app/globals.css"
+      },
+      "--color-primary-foreground": {
+        "value": "var(--primary-foreground)",
+        "source": "src/app/globals.css"
+      },
+      "--color-secondary": {
+        "value": "var(--secondary)",
+        "source": "src/app/globals.css"
+      },
+      "--color-secondary-foreground": {
+        "value": "var(--secondary-foreground)",
+        "source": "src/app/globals.css"
+      },
+      "--color-muted": {
+        "value": "var(--muted)",
+        "source": "src/app/globals.css"
+      },
+      "--color-muted-foreground": {
+        "value": "var(--muted-foreground)",
+        "source": "src/app/globals.css"
+      },
+      "--color-accent": {
+        "value": "var(--accent)",
+        "source": "src/app/globals.css"
+      },
+      "--color-accent-foreground": {
+        "value": "var(--accent-foreground)",
+        "source": "src/app/globals.css"
+      },
+      "--color-destructive": {
+        "value": "var(--destructive)",
+        "source": "src/app/globals.css"
+      },
+      "--color-border": {
+        "value": "var(--border)",
+        "source": "src/app/globals.css"
+      },
+      "--color-input": {
+        "value": "var(--input)",
+        "source": "src/app/globals.css"
+      },
+      "--color-ring": {
+        "value": "var(--ring)",
+        "source": "src/app/globals.css"
+      },
+      "--color-sidebar": {
+        "value": "var(--sidebar)",
+        "source": "src/app/globals.css"
+      },
+      "--color-sidebar-foreground": {
+        "value": "var(--sidebar-foreground)",
+        "source": "src/app/globals.css"
+      },
+      "--color-sidebar-primary": {
+        "value": "var(--sidebar-primary)",
+        "source": "src/app/globals.css"
+      },
+      "--color-sidebar-accent": {
+        "value": "var(--sidebar-accent)",
+        "source": "src/app/globals.css"
+      },
+      "--color-sidebar-border": {
+        "value": "var(--sidebar-border)",
+        "source": "src/app/globals.css"
+      },
+      "--color-ink": {
+        "value": "var(--ink)",
+        "source": "src/app/globals.css"
+      },
+      "--color-clay": {
+        "value": "var(--clay)",
+        "source": "src/app/globals.css"
+      },
+      "--color-clay-600": {
+        "value": "var(--clay-600)",
+        "source": "src/app/globals.css"
+      },
+      "--color-clay-700": {
+        "value": "var(--clay-700)",
+        "source": "src/app/globals.css"
+      },
+      "--color-clay-800": {
+        "value": "var(--clay-800)",
+        "source": "src/app/globals.css"
+      },
+      "--color-sandstone": {
+        "value": "var(--sandstone)",
+        "source": "src/app/globals.css"
+      },
+      "--color-limewash": {
+        "value": "var(--limewash)",
+        "source": "src/app/globals.css"
+      },
+      "--color-limewash-100": {
+        "value": "var(--limewash-100)",
+        "source": "src/app/globals.css"
+      },
+      "--color-lichen": {
+        "value": "var(--lichen)",
+        "source": "src/app/globals.css"
+      },
+      "--color-stone-50": {
+        "value": "var(--stone-50)",
+        "source": "src/app/globals.css"
+      },
+      "--color-line": {
+        "value": "var(--line)",
+        "source": "src/app/globals.css"
+      },
+      "--color-line-strong": {
+        "value": "var(--line-strong)",
+        "source": "src/app/globals.css"
+      },
+      "--color-tolerance": {
+        "value": "var(--tolerance)",
+        "source": "src/app/globals.css"
+      },
+      "--color-tolerance-bg": {
+        "value": "var(--tolerance-bg)",
+        "source": "src/app/globals.css"
+      },
+      "--color-caution": {
+        "value": "var(--caution)",
+        "source": "src/app/globals.css"
+      },
+      "--color-caution-bg": {
+        "value": "var(--caution-bg)",
+        "source": "src/app/globals.css"
+      },
+      "--color-risk": {
+        "value": "var(--risk)",
+        "source": "src/app/globals.css"
+      },
+      "--color-risk-bg": {
+        "value": "var(--risk-bg)",
+        "source": "src/app/globals.css"
+      }
+    },
+    "typography": {
+      "--font-sans": {
+        "value": "var(--font-karla), var(--font-noto-hk), \"Noto Sans HK\", ui-sans-serif,\n    system-ui, sans-serif",
+        "source": "src/app/globals.css"
+      }
+    },
+    "spacing": {},
+    "radius": {
+      "--radius": {
+        "value": "0.625rem",
+        "source": "src/app/globals.css"
+      },
+      "--radius-sm": {
+        "value": "0.25rem",
+        "source": "src/app/globals.css"
+      },
+      "--radius-md": {
+        "value": "0.375rem",
+        "source": "src/app/globals.css"
+      },
+      "--radius-lg": {
+        "value": "0.625rem",
+        "source": "src/app/globals.css"
+      }
+    },
+    "shadows": {},
+    "motion": {},
+    "density": "unknown"
+  },
+  "components": {
+    "installed": [],
+    "preferredPrimitives": [],
+    "patterns": []
+  },
+  "constraints": {
+    "must": [],
+    "avoid": []
+  },
+  "decisions": [],
+  "evidence": [
+    {
+      "fact": "components.installed",
+      "source": "src/components/ui"
+    },
+    {
+      "fact": "design.colorMode:light",
+      "source": "src/app/globals.css"
+    },
+    {
+      "fact": "design.tokens",
+      "source": "src/app/globals.css"
+    },
+    {
+      "fact": "project.instructions",
+      "source": "AGENTS.md"
+    },
+    {
+      "fact": "project.instructions",
+      "source": "CLAUDE.md"
+    },
+    {
+      "fact": "project.instructions",
+      "source": "DESIGN.md"
+    },
+    {
+      "fact": "project.stack:nextjs",
+      "source": "package.json"
+    },
+    {
+      "fact": "project.stack:react",
+      "source": "package.json"
+    },
+    {
+      "fact": "project.stack:tailwind-v4",
+      "source": "package.json"
+    }
+  ],
+  "generatedAt": "2026-09-28T06:46:41.973Z"
+}

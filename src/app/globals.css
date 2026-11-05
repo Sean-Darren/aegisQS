@@ -1,0 +1,214 @@
+@import "tailwindcss";
+
+:root {
+  /* shadcn contract — every 21st.dev component reads these */
+  --background: #f7f5f2;
+  --foreground: #2b211b;
+  --card: #ffffff;
+  --card-foreground: #2b211b;
+  --popover: #ffffff;
+  --popover-foreground: #2b211b;
+  --primary: #6b5445;
+  --primary-foreground: #ffffff;
+  --secondary: #f3e4c9;
+  --secondary-foreground: #4a3a2f;
+  --muted: #f1ece5;
+  --muted-foreground: #6e6259;
+  --accent: #f8f0e1;
+  --accent-foreground: #2b211b;
+  --destructive: #9e2b36;
+  --destructive-foreground: #ffffff;
+  --border: #e7ded2;
+  --input: #94877b;
+  --ring: #8a6f5c;
+  --radius: 0.625rem;
+
+  --sidebar: #2b211b;
+  --sidebar-foreground: #f3e4c9;
+  --sidebar-primary: #babf94;
+  --sidebar-primary-foreground: #2b211b;
+  --sidebar-accent: #3a2e26;
+  --sidebar-accent-foreground: #f3e4c9;
+  --sidebar-border: #3f332b;
+  --sidebar-ring: #babf94;
+
+  --chart-1: #2b211b; /* history / focus series */
+  --chart-2: #6b5445; /* forecast median */
+  --chart-3: #9e2b36; /* rising / error */
+  --chart-4: #5e6440; /* falling / good */
+  --chart-5: #cfc2b2; /* background series */
+
+  /* Smart QS tokens */
+  --ink: #2b211b;
+  --surface: #f7f5f2;
+  --panel: #ffffff;
+  --muted-ink: #6e6259;
+  --clay: #a98b76;
+  --clay-600: #8a6f5c;
+  --clay-700: #6b5445;
+  --clay-800: #4a3a2f;
+  --sandstone: #bfa28c;
+  --limewash: #f3e4c9;
+  --limewash-100: #f8f0e1;
+  --lichen: #babf94;
+  --stone-50: #f1ece5;
+  --line: #e7ded2;
+  --line-strong: #94877b;
+  --tolerance: #474c2e;
+  --tolerance-bg: #eef0e2;
+  --caution: #7f5710;
+  --caution-bg: #f6eacb;
+  --risk: #9e2b36;
+  --risk-bg: #f7e0e2;
+  --rev-base: #9e2b36;
+  --rev-target: #2f6f8f;
+  --rev-target-bg: #e3eef3;
+  --paper: #ffffff;
+  --viewer-bg: #e9e4dc;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-border: var(--sidebar-border);
+
+  --color-ink: var(--ink);
+  --color-clay: var(--clay);
+  --color-clay-600: var(--clay-600);
+  --color-clay-700: var(--clay-700);
+  --color-clay-800: var(--clay-800);
+  --color-sandstone: var(--sandstone);
+  --color-limewash: var(--limewash);
+  --color-limewash-100: var(--limewash-100);
+  --color-lichen: var(--lichen);
+  --color-stone-50: var(--stone-50);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-tolerance: var(--tolerance);
+  --color-tolerance-bg: var(--tolerance-bg);
+  --color-caution: var(--caution);
+  --color-caution-bg: var(--caution-bg);
+  --color-risk: var(--risk);
+  --color-risk-bg: var(--risk-bg);
+  --color-rev-base: var(--rev-base);
+  --color-rev-target: var(--rev-target);
+  --color-rev-target-bg: var(--rev-target-bg);
+  --color-paper: var(--paper);
+  --color-viewer-bg: var(--viewer-bg);
+
+  --font-sans:
+    var(--font-karla), var(--font-noto-hk), ui-sans-serif, system-ui, sans-serif;
+
+  --radius-sm: 0.25rem; /* 4px  in-table chips, checkboxes */
+  --radius-md: 0.375rem; /* 6px  buttons, inputs */
+  --radius-lg: 0.625rem; /* 10px panels, drawers */
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+}
+
+/* Supporting layout/chart tokens referenced by DESIGN.md §§2, 6 and 9. */
+:root {
+  --sidebar-hover: #3a2e26;
+  --chart-grid: #efe8de;
+}
+@theme inline {
+  --color-surface: var(--surface);
+  --color-panel: var(--panel);
+  --color-muted-ink: var(--muted-ink);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-hover: var(--sidebar-hover);
+}
+.num,
+table,
+[data-number],
+[role="table"] {
+  font-variant-numeric: tabular-nums lining-nums;
+}
+.floating-layer {
+  box-shadow:
+    0 8px 24px rgba(43, 33, 27, 0.12),
+    0 1px 2px rgba(43, 33, 27, 0.08);
+}
+body {
+  font-size: 14px;
+  line-height: 20px;
+}
+:lang(zh-HK) body {
+  line-height: 22px;
+}
+.drawing-text-highlight {
+  background: var(--limewash);
+  color: var(--ink);
+  box-shadow: 0 2px 0 var(--clay-600);
+}
+.app-sidebar {
+  width: 64px;
+  flex: 0 0 64px;
+}
+.sidebar-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+@media (min-width: 1440px) {
+  .app-sidebar:not([data-collapsed="true"]) {
+    width: 240px;
+    flex-basis: 240px;
+  }
+  .app-sidebar:not([data-collapsed="true"]) .sidebar-label {
+    position: static;
+    width: auto;
+    height: auto;
+    margin: 0;
+    overflow: visible;
+    clip-path: none;
+    white-space: normal;
+  }
+}
+
+@keyframes revision-cloud-appear {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.revision-clouds {
+  animation: revision-cloud-appear 300ms ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .revision-clouds {
+    animation: none;
+  }
+}

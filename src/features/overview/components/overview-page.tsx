@@ -83,7 +83,7 @@ export function OverviewPage({ projectId }: { projectId: string }) {
         <h1 className="text-2xl font-semibold">{d.project.name}</h1>
         <p className="mt-2 text-muted-ink">{t("title")}</p>
       </header>
-      <BimAnalysisCard />
+      <BimAnalysisCard projectId={projectId} />
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <SummaryCard
           label={t("documents")}

@@ -1,8 +1,16 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
-import { Button, Dropzone, ErrorState, Skeleton } from "@/components/ui";
+import {
+  Button,
+  Dropzone,
+  ErrorState,
+  Skeleton,
+  useToast,
+} from "@/components/ui";
+import { queryKeys, resources } from "@/lib/api";
 import { formatCurrency, formatNumber, formatUnitRate } from "@/lib/format";
 import { type BimBoqItem, type BimResult } from "@/schemas";
 import {
@@ -163,14 +171,21 @@ function ResultView({ result }: { result: BimResult }) {
   );
 }
 
-export function BimAnalysisCard() {
+export function BimAnalysisCard({ projectId }: { projectId: string }) {
   const t = useTranslations("Bim");
+  const client = useQueryClient();
+  const toast = useToast();
   const [file, setFile] = useState<File>();
   const [phase, setPhase] = useState<Phase>("idle");
+  const [jobId, setJobId] = useState<string>();
   const [progress, setProgress] = useState(0);
   const [statusMessage, setStatusMessage] = useState("");
   const [error, setError] = useState<string>();
   const [result, setResult] = useState<BimResult>();
+  const [saveState, setSaveState] = useState<
+    "idle" | "saving" | "saved" | "error"
+  >("idle");
+  const [saveError, setSaveError] = useState<string>();
 
   const progressText = useMemo(() => {
     if (phase === "uploading") return t("uploading");
@@ -182,10 +197,13 @@ export function BimAnalysisCard() {
   function reset() {
     setFile(undefined);
     setPhase("idle");
+    setJobId(undefined);
     setProgress(0);
     setStatusMessage("");
     setError(undefined);
     setResult(undefined);
+    setSaveState("idle");
+    setSaveError(undefined);
   }
 
   async function analyze() {
@@ -201,6 +219,7 @@ export function BimAnalysisCard() {
     setResult(undefined);
     try {
       const job = await startBimAssessment(file);
+      setJobId(job.job_id);
       setPhase("running");
       connectBimProgress(
         job.job_id,
@@ -237,6 +256,46 @@ export function BimAnalysisCard() {
         requestError instanceof Error ? requestError.message : t("error"),
       );
       setPhase("error");
+    }
+  }
+
+  async function saveAsSiteRecord() {
+    if (!result || !file) return;
+    setSaveState("saving");
+    setSaveError(undefined);
+    try {
+      const baseName = file.name.replace(/\.[^.]+$/, "") || "bim-assessment";
+      const docNumber = `BIM-${(jobId ?? Date.now().toString()).slice(0, 12)}`;
+      const payload = {
+        job_id: jobId ?? null,
+        filename: file.name,
+        generated_at: new Date().toISOString(),
+        result,
+      };
+      const recordFile = new File(
+        [JSON.stringify(payload, null, 2)],
+        `${baseName}-assessment.json`,
+        { type: "application/json" },
+      );
+      const form = new FormData();
+      form.set("file", recordFile);
+      form.set("category", "site_record");
+      form.set("docNumber", docNumber);
+      form.set("title", t("siteRecordTitle", { filename: file.name }));
+      form.set("label", "A");
+      form.set("issuedDate", new Date().toISOString());
+      const doc = await resources.uploadDocument(projectId, form);
+      await client.invalidateQueries({ queryKey: queryKeys.project(projectId) });
+      setSaveState("saved");
+      toast(t("savedSiteRecord"), "success", {
+        label: t("openSiteRecord"),
+        href: `/projects/${projectId}/documents/${doc.id}`,
+      });
+    } catch (saveFailure) {
+      setSaveError(
+        saveFailure instanceof Error ? saveFailure.message : t("saveError"),
+      );
+      setSaveState("error");
     }
   }
 
@@ -318,12 +377,36 @@ export function BimAnalysisCard() {
         </div>
       ) : null}
 
-      {phase === "done" && result ? <ResultView result={result} /> : null}
-
-      {phase === "done" ? (
-        <Button className="mt-4" variant="outline" onClick={reset}>
-          {t("another")}
-        </Button>
+      {phase === "done" && result ? (
+        <>
+          <ResultView result={result} />
+          <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center">
+            <Button
+              onClick={() => void saveAsSiteRecord()}
+              disabled={saveState === "saving"}
+            >
+              {saveState === "saving"
+                ? t("savingSiteRecord")
+                : saveState === "saved"
+                  ? t("savedSiteRecord")
+                  : t("saveSiteRecord")}
+            </Button>
+            <Button variant="outline" onClick={reset}>
+              {t("another")}
+            </Button>
+          </div>
+          {saveState === "error" && saveError ? (
+            <div className="mt-3">
+              <ErrorState
+                message={saveError}
+                action={{
+                  label: t("retry"),
+                  onClick: () => void saveAsSiteRecord(),
+                }}
+              />
+            </div>
+          ) : null}
+        </>
       ) : phase === "error" && file ? (
         <Button className="mt-3" variant="secondary" onClick={() => void analyze()}>
           {t("retry")}

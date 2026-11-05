@@ -39,35 +39,38 @@ export function LeftNav({
   const t = useTranslations("Navigation");
   const pathname = usePathname();
   const comparing = pathname.includes("/drawings/compare/");
-  const links: [string, string, LucideIcon][] = [
-    ["/projects", "projects", FolderOpen],
+  const pid = projectId || "";
+  const links: [string, string, LucideIcon, boolean][] = [
+    ["/projects", "projects", FolderOpen, true],
+    ...items.map(
+      ([key, icon]) =>
+        [`/projects/${pid}/${key}`, key, icon, !!projectId] as [
+          string,
+          string,
+          LucideIcon,
+          boolean,
+        ],
+    ),
+    ["/materials", "materials", Layers, true],
+    [`/projects/${pid}/audit`, "audit", History, !!projectId],
+    ...(
+      showAdmin
+        ? [["/admin", "admin", Settings, true] as [string, string, LucideIcon, boolean]]
+        : []
+    ),
   ];
-  if (projectId)
-    links.push(
-      ...items.map(
-        ([key, icon]) =>
-          [`/projects/${projectId}/${key}`, key, icon] as [
-            string,
-            string,
-            LucideIcon,
-          ],
-      ),
-    );
-  links.push(["/materials", "materials", Layers]);
-  if (projectId) links.push([`/projects/${projectId}/audit`, "audit", History]);
-  if (showAdmin) links.push(["/admin", "admin", Settings]);
   return (
     <nav
       aria-label={t("projects")}
       data-collapsed={comparing}
       className="app-sidebar flex shrink-0 flex-col gap-1 border-r border-sidebar-border bg-sidebar px-2 py-5 text-sidebar-foreground"
     >
-      {links.map(([href, label, Icon]) => {
+      {links.map(([href, label, Icon, enabled]) => {
         const selected =
           pathname.endsWith(href) ||
           (label !== "projects" && pathname.includes(`${href}/`));
         return (
-          <Tooltip key={href}>
+          <Tooltip key={label}>
             <TooltipTrigger asChild>
               <Link
                 href={href}
@@ -78,7 +81,9 @@ export function LeftNav({
                     "mt-3 border-t border-sidebar-border pt-4",
                   selected
                     ? "bg-sidebar-accent font-semibold before:absolute before:inset-y-2 before:left-0 before:w-[3px] before:bg-lichen"
-                    : "hover:bg-sidebar-accent",
+                    : enabled
+                      ? "hover:bg-sidebar-accent"
+                      : "pointer-events-none opacity-40",
                 )}
               >
                 <Icon

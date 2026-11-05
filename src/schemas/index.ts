@@ -9,3 +9,4 @@ export * from "./workbook";
 export * from "./material";
 export * from "./ws";
 export * from "./responses";
+export * from "./bim";

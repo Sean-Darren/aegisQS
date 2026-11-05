@@ -4,6 +4,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { SummaryCard, Skeleton, ErrorState, EmptyState } from "@/components/ui";
 import { AuditTimeline } from "@/features/audit";
+import { BimAnalysisCard } from "@/features/bim";
 import { queryKeys } from "@/lib/api";
 import {
   formatCurrency,
@@ -82,6 +83,7 @@ export function OverviewPage({ projectId }: { projectId: string }) {
         <h1 className="text-2xl font-semibold">{d.project.name}</h1>
         <p className="mt-2 text-muted-ink">{t("title")}</p>
       </header>
+      <BimAnalysisCard />
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <SummaryCard
           label={t("documents")}

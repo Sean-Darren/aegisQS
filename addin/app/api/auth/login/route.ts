@@ -1,6 +1,8 @@
 export async function POST(request: Request) {
   const requestUrl = new URL(request.url);
-  const origin = `${requestUrl.protocol}//${request.headers.get("host") ?? requestUrl.host}`;
+  const origin =
+    process.env.SMART_QS_ADDIN_PUBLIC_ORIGIN ??
+    `${requestUrl.protocol}//${request.headers.get("host") ?? requestUrl.host}`;
   if (request.headers.get("origin") !== origin)
     return new Response(null, { status: 403 });
   const base = process.env.SMART_QS_API_ORIGIN;

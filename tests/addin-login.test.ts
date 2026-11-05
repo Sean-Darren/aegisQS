@@ -74,3 +74,32 @@ test("server-rendered sign-in link receives a stable callback without browser lo
     "/signin?nonce=dialog-nonce&locale=en&_host_Info=Excel",
   );
 });
+
+test("configured public origin supports HTTPS termination without trusting forwarded headers", async () => {
+  vi.stubEnv("SMART_QS_ADDIN_PUBLIC_ORIGIN", "https://excel.example.com");
+  vi.stubGlobal(
+    "fetch",
+    vi.fn().mockResolvedValue(
+      new Response(null, {
+        status: 303,
+        headers: { Location: "/en/projects" },
+      }),
+    ),
+  );
+  const request = (origin: string) =>
+    new Request("http://localhost:3200/api/auth/login", {
+      method: "POST",
+      headers: { Origin: origin, Host: "excel.example.com" },
+      body: new URLSearchParams({
+        returnTo: "/signin?nonce=test",
+        email: "test@example.com",
+        password: "password",
+      }),
+    });
+  const result = await POST(request("https://excel.example.com"));
+  expect(result.status).toBe(303);
+  expect(result.headers.get("Location")).toBe(
+    "https://excel.example.com/signin?nonce=test",
+  );
+  expect((await POST(request("https://attacker.example"))).status).toBe(403);
+});

@@ -1,3 +1,5 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
+import { z } from "zod";
 import type { DomainContext } from "@/lib/domain/context";
 import { scheduleComparison } from "@/lib/domain/comparison";
 import { summarizeChecks } from "@/lib/domain/workbook-engine";
@@ -71,4 +73,29 @@ export function advanceJobs(
       checkSummary: version.checkSummary,
     });
   }
+}
+
+/** Idle workers must not repeatedly serialize the complete project dataset. */
+export async function hasPendingJobs(db: SupabaseClient): Promise<boolean> {
+  const results = await Promise.all([
+    db
+      .from("drawing_comparisons")
+      .select("id")
+      .eq("active", true)
+      .in("data->>status", ["queued", "aligning", "detecting"])
+      .limit(1),
+    db
+      .from("workbook_versions")
+      .select("id")
+      .eq("active", true)
+      .in("data->>status", ["parsing", "checking"])
+      .limit(1),
+  ]);
+  const rows = z.array(z.object({ id: z.string() }));
+  let pending = false;
+  for (const result of results) {
+    if (result.error) throw new Error("The job queue could not be read.");
+    if (rows.parse(result.data).length) pending = true;
+  }
+  return pending;
 }

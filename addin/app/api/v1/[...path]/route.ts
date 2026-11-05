@@ -34,7 +34,8 @@ async function handle(
   if (!mocking && request.method !== "GET") {
     if (
       request.headers.get("origin") !==
-      `${request.nextUrl.protocol}//${request.headers.get("host") ?? request.nextUrl.host}`
+      (process.env.SMART_QS_ADDIN_PUBLIC_ORIGIN ??
+        `${request.nextUrl.protocol}//${request.headers.get("host") ?? request.nextUrl.host}`)
     )
       return new Response(null, { status: 403 });
     headers.set("Origin", url.origin);

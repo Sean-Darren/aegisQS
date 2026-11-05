@@ -1,0 +1,18 @@
+# Replace these temporary hostnames if the instance IP changes.
+smartqs.13-212-119-93.sslip.io {
+	request_body {
+		max_size 55MB
+	}
+	reverse_proxy 127.0.0.1:3000 {
+		flush_interval -1
+	}
+}
+excel.13-212-119-93.sslip.io {
+	request_body {
+		max_size 55MB
+	}
+	reverse_proxy 127.0.0.1:3200
+}
+http://13.212.119.93 {
+	redir https://smartqs.13-212-119-93.sslip.io{uri} 302
+}

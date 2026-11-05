@@ -1,0 +1,24 @@
+[Unit]
+Description=Smart QS website and API
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/srv/smartqs/current
+Environment=NODE_ENV=production
+Environment=NODE_OPTIONS=--max-old-space-size=768
+EnvironmentFile=/srv/smartqs/shared/app.env
+ExecStart=/usr/bin/node node_modules/next/dist/bin/next start --hostname 127.0.0.1 --port 3000
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=30
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target

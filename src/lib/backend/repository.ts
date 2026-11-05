@@ -10,7 +10,24 @@ import {
 import { MockError } from "@/lib/domain/handlers/shared";
 import type { DomainContext } from "@/lib/domain/context";
 export const FILE_BUCKET = "smart-qs-files";
-export async function loadSnapshot(db: SupabaseClient) {
+// Only coalesce concurrent reads on the same server-only client. No TTL cache:
+// a read after completion always sees a fresh snapshot; each request decodes its own state.
+const pendingSnapshots = new WeakMap<
+  SupabaseClient,
+  Promise<z.infer<typeof snapshotSchema>>
+>();
+export function loadSnapshot(db: SupabaseClient) {
+  const existing = pendingSnapshots.get(db);
+  if (existing) return existing;
+  const pending = readSnapshot(db);
+  pendingSnapshots.set(db, pending);
+  const clear = () => {
+    if (pendingSnapshots.get(db) === pending) pendingSnapshots.delete(db);
+  };
+  void pending.then(clear, clear);
+  return pending;
+}
+async function readSnapshot(db: SupabaseClient) {
   const { data, error } = await db.rpc("smart_qs_snapshot");
   if (error)
     throw new MockError(
@@ -35,12 +52,10 @@ export async function commitContext(
     if (!projectId)
       throw new MockError(400, "File is not linked to a project.");
     const path = `${projectId}/${id}/${crypto.randomUUID()}`;
-    const { error } = await db.storage
-      .from(FILE_BUCKET)
-      .upload(path, bytes, {
-        upsert: false,
-        contentType: "application/octet-stream",
-      });
+    const { error } = await db.storage.from(FILE_BUCKET).upload(path, bytes, {
+      upsert: false,
+      contentType: "application/octet-stream",
+    });
     if (error)
       throw new MockError(502, "File storage failed. Retry the upload.");
     files.push({ table: "file_objects", id, projectId, data: { path } });
@@ -67,6 +82,8 @@ export async function commitContext(
         ? "Another action changed these records. Reload and retry."
         : "The database could not save the action.",
     );
+  // Reads beginning after a successful commit must not join an older in-flight read.
+  pendingSnapshots.delete(db);
 }
 export async function hydrateFile(
   db: SupabaseClient,

@@ -81,6 +81,12 @@ export async function handleApi(request: Request) {
   try {
     assertSameOrigin(request);
     const { db, user } = await authenticate(headers);
+    // Session reads need the authenticated profile, not the full project dataset.
+    if (
+      request.method === "GET" &&
+      new URL(request.url).pathname === "/api/v1/me"
+    )
+      return Response.json(userSchema.parse(user), { headers });
     const snapshot = await loadSnapshot(db),
       state = decodeState(snapshot.records);
     const { ctx, events } = createPersistentContext(state, user);

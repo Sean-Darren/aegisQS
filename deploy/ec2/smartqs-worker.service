@@ -1,0 +1,24 @@
+[Unit]
+Description=Smart QS persistent comparison and workbook worker
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/srv/smartqs/current
+Environment=NODE_ENV=production
+Environment=NODE_OPTIONS=--max-old-space-size=384
+EnvironmentFile=/srv/smartqs/shared/app.env
+ExecStart=/usr/bin/node --import ./scripts/register-typescript.mjs scripts/supabase-worker.ts
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=30
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target

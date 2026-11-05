@@ -1,0 +1,24 @@
+[Unit]
+Description=Smart QS Excel task pane
+After=network-online.target smartqs-web.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/srv/smartqs/current/addin
+Environment=NODE_ENV=production
+Environment=NODE_OPTIONS=--max-old-space-size=384
+EnvironmentFile=/srv/smartqs/shared/addin.env
+ExecStart=/usr/bin/node ../node_modules/next/dist/bin/next start --hostname 127.0.0.1 --port 3200
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=30
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target

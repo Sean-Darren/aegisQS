@@ -1,6 +1,7 @@
 import "server-only";
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { getSupabaseConfig } from "./config";
+let cached: { url: string; key: string; client: SupabaseClient } | undefined;
 /** Only called after authentication. Never expose this client to the browser. */
 export function createSupabaseAdminClient() {
   const { url } = getSupabaseConfig();
@@ -10,7 +11,8 @@ export function createSupabaseAdminClient() {
     throw new Error(
       "SUPABASE_SECRET_KEY is required on the server. Apply the database migration before disabling mocks.",
     );
-  return createClient(url, key, {
+  if (cached?.url === url && cached.key === key) return cached.client;
+  const client = createClient(url, key, {
     auth: {
       persistSession: false,
       autoRefreshToken: false,
@@ -20,4 +22,6 @@ export function createSupabaseAdminClient() {
       fetch: (input, init) => fetch(input, { ...init, cache: "no-store" }),
     },
   });
+  cached = { url, key, client };
+  return client;
 }

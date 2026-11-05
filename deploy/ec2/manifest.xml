@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<OfficeApp xmlns="http://schemas.microsoft.com/office/appforoffice/1.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="TaskPaneApp">
+  <Id>755bc0d5-c604-4f81-aaed-65939f969c15</Id><Version>1.0.0.1</Version><ProviderName>Smart QS</ProviderName><DefaultLocale>en-HK</DefaultLocale><DisplayName DefaultValue="Smart QS"/><Description DefaultValue="Save workbook versions and review QS checks without editing cells."/>
+  <IconUrl DefaultValue="https://excel.13-212-119-93.sslip.io/icon.png"/><SupportUrl DefaultValue="https://excel.13-212-119-93.sslip.io"/>
+  <AppDomains><AppDomain>https://excel.13-212-119-93.sslip.io</AppDomain></AppDomains><Hosts><Host Name="Workbook"/></Hosts>
+  <Requirements><Sets DefaultMinVersion="1.1"><Set Name="ExcelApi" MinVersion="1.1"/><Set Name="DialogApi" MinVersion="1.1"/></Sets></Requirements>
+  <DefaultSettings><SourceLocation DefaultValue="https://excel.13-212-119-93.sslip.io"/></DefaultSettings><Permissions>ReadWriteDocument</Permissions>
+</OfficeApp>

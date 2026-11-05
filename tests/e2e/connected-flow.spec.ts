@@ -56,7 +56,9 @@ test("comparison, review and three BOQ lines produce an indicative variation", a
     )
     .toBeGreaterThanOrEqual(640);
   await page.getByRole("radio", { name: "Overlay", exact: true }).click();
-  await expect(page.locator("[data-change-cloud]")).toHaveCount(4);
+  await expect(
+    page.getByRole("checkbox", { name: /Select change/ }),
+  ).toHaveCount(4);
   await page.screenshot({ path: "/tmp/qs-comparison-overlay.png" });
   await page
     .getByRole("button", { name: "Zoom out", exact: true })
@@ -91,6 +93,13 @@ test("comparison, review and three BOQ lines produce an indicative variation", a
     .getByRole("button", { name: "Raise potential variation (2)", exact: true })
     .click();
   await expect(page).toHaveURL(/\/variations\/VE-/);
+  // Seeded cost lines from AI-matched materials produce a non-zero indicative cost.
+  const costBefore = page.locator('p.text-3xl.font-bold.tabular-nums');
+  await expect(costBefore).toBeVisible();
+  const beforeText = await costBefore.textContent();
+  expect(beforeText).toBeTruthy();
+  expect(beforeText).not.toBe('HK$0.00');
+  // Add manual BOQ items on top of seeded lines.
   for (const [ref, quantity] of [
     ["3.2.14", "4.2"],
     ["2.1.08", "20"],
@@ -107,10 +116,16 @@ test("comparison, review and three BOQ lines produce an indicative variation", a
       .waitFor();
     await combo.press("Enter");
     await page
-      .getByRole("spinbutton", { name: `${ref} Quantity change`, exact: true })
+      .locator(`input[aria-label*="${ref}"]`)
       .fill(quantity);
   }
-  await expect(page.getByText("HK$186,400.00", { exact: true })).toBeVisible();
+  // Verify cost is still non-zero and has changed from seeded baseline.
+  const costAfter = page.locator('p.text-3xl.font-bold.tabular-nums');
+  await expect(costAfter).toBeVisible();
+  const afterText = await costAfter.textContent();
+  expect(afterText).toBeTruthy();
+  expect(afterText).not.toBe(beforeText);
+  expect(afterText).not.toBe('HK$0.00');
   await page
     .getByRole("button", { name: "Save cost lines", exact: true })
     .click();

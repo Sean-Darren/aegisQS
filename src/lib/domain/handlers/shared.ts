@@ -128,7 +128,7 @@ export function createHelpers(ctx: DomainContext) {
       documentId: doc.id,
       label,
       fileName: file.file.name,
-      mimeType: file.file.type || "application/octet-stream",
+      mimeType: mimeTypeForFile(file.file.name, file.file.type),
       sizeBytes: file.bytes.byteLength,
       sha256: file.sha256,
       status: conflictWith ? "conflict" : "current",
@@ -174,6 +174,21 @@ export function createHelpers(ctx: DomainContext) {
       conflict: !!conflictWith,
     });
     return version;
+  }
+
+  function mimeTypeForFile(fileName: string, fallback: string) {
+    const extension = fileName.toLowerCase().split(".").pop() ?? "";
+    const known: Record<string, string> = {
+      png: "image/png",
+      jpg: "image/jpeg",
+      jpeg: "image/jpeg",
+      pdf: "application/pdf",
+      json: "application/json",
+      ifc: "application/octet-stream",
+      xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      xls: "application/vnd.ms-excel",
+    };
+    return known[extension] ?? fallback;
   }
   const knownFiles = Object.values({ ...drawingFiles, ...workbookFiles });
   function bytesFor(id: string): ArrayBuffer {

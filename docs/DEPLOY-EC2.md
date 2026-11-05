@@ -41,6 +41,8 @@ SUPABASE_SECRET_KEY=YOUR_SERVER_KEY
 NEXT_PUBLIC_API_MOCKING=disabled
 SMART_QS_DEMO_PROCESSING=enabled
 SMART_QS_PUBLIC_ORIGIN=https://smartqs.13-212-119-93.sslip.io
+# Run the FastAPI BIM worker on the EC2 instance (or another host):
+AEGISQS_BIM_WORKER_URL=http://127.0.0.1:8000
 ```
 
 Add-in environment:

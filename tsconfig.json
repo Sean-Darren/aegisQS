@@ -1,7 +1,11 @@
 {
   "compilerOptions": {
     "target": "ES2017",
-    "lib": ["dom", "dom.iterable", "esnext"],
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -19,8 +23,12 @@
       }
     ],
     "paths": {
-      "@/*": ["./src/*"],
-      "@schemas": ["./src/schemas/index.ts"]
+      "@/*": [
+        "./src/*"
+      ],
+      "@schemas": [
+        "./src/schemas/index.ts"
+      ]
     },
     "allowImportingTsExtensions": true
   },
@@ -34,7 +42,13 @@
     ".next-playwright/dev/types/**/*.ts",
     "**/*.mts",
     ".next-supabase/types/**/*.ts",
-    ".next-supabase/dev/types/**/*.ts"
+    ".next-supabase/dev/types/**/*.ts",
+    ".next-playwright-hf/types/**/*.ts",
+    ".next-playwright-hf/dev/types/**/*.ts"
   ],
-  "exclude": ["node_modules", "addin/.next", "addin/node_modules"]
+  "exclude": [
+    "node_modules",
+    "addin/.next",
+    "addin/node_modules"
+  ]
 }

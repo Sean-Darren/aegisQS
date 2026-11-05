@@ -36,7 +36,9 @@ test("connected five-minute demo", async ({ page }) => {
     timeout: 25000,
   });
   await page.getByRole("radio", { name: "Overlay", exact: true }).click();
-  await expect(page.locator("[data-change-cloud]")).toHaveCount(4);
+  await expect(
+    page.getByRole("checkbox", { name: /Select change/ }),
+  ).toHaveCount(4);
   // Keyboard-only viewer interactions: pan, zoom, change navigation and swipe.
   const viewer = page.locator('section[tabindex="0"]');
   await viewer.focus();

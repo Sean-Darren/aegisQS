@@ -58,7 +58,12 @@ export function UploadQueue({
       await client.invalidateQueries({
         queryKey: queryKeys.project(projectId),
       });
+      await client.invalidateQueries({
+        queryKey: queryKeys.documents(projectId),
+      });
       await client.invalidateQueries({ queryKey: queryKeys.document(doc.id) });
+      await client.invalidateQueries({ queryKey: queryKeys.versions(doc.id) });
+      await client.invalidateQueries({ queryKey: queryKeys.drawings(projectId) });
       if (
         doc.category === "drawing" &&
         previous &&

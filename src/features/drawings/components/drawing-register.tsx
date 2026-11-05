@@ -182,20 +182,47 @@ function DrawingRow({ entry }: { entry: DrawingRegisterEntry }) {
 }
 export function DrawingRegister({ projectId }: { projectId: string }) {
   const t = useTranslations("Drawing");
+  const session = useSession();
+  const [upload, setUpload] = useState(false);
   const query = useQuery({
     queryKey: queryKeys.drawings(projectId),
     queryFn: () => resources.drawings(projectId),
   });
   return (
     <div className="space-y-5">
-      <h1 className="text-2xl font-semibold">{t("register")}</h1>
+      <header className="flex flex-wrap justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold">{t("register")}</h1>
+          <p className="mt-2 text-sm text-muted-ink">{t("uploadHint")}</p>
+        </div>
+        {can(session.data, "document.upload") && (
+          <Button onClick={() => setUpload((value) => !value)}>
+            {t("uploadDrawing")}
+          </Button>
+        )}
+      </header>
+      {upload && can(session.data, "document.upload") && (
+        <UploadQueue projectId={projectId} />
+      )}
       {query.isPending && <Skeleton className="h-96 w-full" />}
       {query.isError && <ErrorState message={t("error")} />}
-      {query.data?.length === 0 && <EmptyState message={t("empty")} />}
+      {query.data?.length === 0 && (
+        <EmptyState
+          message={t("empty")}
+          action={
+            can(session.data, "document.upload")
+              ? {
+                  label: t("uploadDrawing"),
+                  onClick: () => setUpload(true),
+                }
+              : undefined
+          }
+        />
+      )}
       <Suspense fallback={<Skeleton className="h-48 w-full" />}>
-        {query.data?.map((entry) => (
-          <DrawingRow key={entry.document.id} entry={entry} />
-        ))}
+      {query.data?.map((entry) => (
+        <DrawingRow key={entry.document.id} entry={entry} />
+      ))}
       </Suspense>
     </div>
   );

@@ -1,4 +1,5 @@
 "use client";
+import { useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -36,6 +37,7 @@ export function UploadForm({
   fixedDocument?: HubDocument;
 }) {
   const t = useTranslations("Hub");
+  const [documentId, setDocumentId] = useState(fixedDocument?.id ?? "");
   const {
     register,
     control,
@@ -58,9 +60,43 @@ export function UploadForm({
     (d) => d.docNumber.trim().toLowerCase() === number.trim().toLowerCase(),
   );
   const current = versions.find((v) => v.id === existing?.currentVersionId);
+  const selectedDocument = documents.find((d) => d.id === documentId);
+  const locked = !!fixedDocument || !!selectedDocument;
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
       <h3 className="font-semibold">{file.name}</h3>
+      {!fixedDocument && documents.length > 0 && (
+        <label>
+          {t("document")}
+          <select
+            className={inputStyle}
+            value={documentId}
+            onChange={(event) => {
+              const next = event.target.value;
+              setDocumentId(next);
+              const match = documents.find((d) => d.id === next);
+              if (match) {
+                setValue("docNumber", match.docNumber);
+                setValue("title", match.title);
+                setValue("category", match.category);
+                setValue("discipline", match.discipline ?? "");
+              } else {
+                setValue("docNumber", "");
+                setValue("title", file.name);
+                setValue("category", "drawing");
+                setValue("discipline", "");
+              }
+            }}
+          >
+            <option value="">{t("newDocument")}</option>
+            {documents.map((doc) => (
+              <option key={doc.id} value={doc.id}>
+                {doc.docNumber} · {doc.title}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
       {existing && (
         <p role="status" className="rounded-md bg-stone-50 p-3 text-sm">
           {t("existing", {
@@ -72,7 +108,11 @@ export function UploadForm({
       <fieldset disabled={pending} className="grid gap-3 sm:grid-cols-2">
         <label>
           {t("category")}
-          <select {...register("category")} className={inputStyle}>
+          <select
+            {...register("category")}
+            disabled={locked}
+            className={inputStyle}
+          >
             {documentCategorySchema.options.map((v) => (
               <option key={v} value={v}>
                 {t(`categories.${v}`)}
@@ -97,17 +137,25 @@ export function UploadForm({
                 }
               },
             })}
-            readOnly={!!fixedDocument}
+            readOnly={locked}
             className={inputStyle}
           />
         </label>
         <label>
           {t("title")}
-          <input {...register("title")} className={inputStyle} />
+          <input
+            {...register("title")}
+            readOnly={locked}
+            className={inputStyle}
+          />
         </label>
         <label>
           {t("revision")}
-          <input {...register("label")} className={inputStyle} />
+          <input
+            {...register("label")}
+            placeholder={t("revisionPlaceholder")}
+            className={inputStyle}
+          />
         </label>
         <label>
           {t("issued")}
@@ -119,7 +167,11 @@ export function UploadForm({
         </label>
         <label>
           {t("discipline")}
-          <select {...register("discipline")} className={inputStyle}>
+          <select
+            {...register("discipline")}
+            disabled={locked}
+            className={inputStyle}
+          >
             <option value="">{t("notSpecified")}</option>
             {disciplineSchema.options.map((v) => (
               <option key={v} value={v}>

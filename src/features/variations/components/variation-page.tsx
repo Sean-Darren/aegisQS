@@ -27,7 +27,6 @@ import { LinkedRecords, recordHref } from "@/components/records/linked-records";
 import { EntityActivity } from "@/components/records/entity-activity";
 import { PdfViewer } from "@/components/viewer";
 import { useFile } from "@/lib/api/use-records";
-import { RevisionClouds } from "@/components/viewer/revision-clouds";
 import { indicativeCost, costAmount } from "../model";
 import type { VariationEvent, CostLine, DrawingChange } from "@/schemas";
 export function VariationPage({ variationId }: { variationId: string }) {
@@ -83,7 +82,6 @@ function SourceThumbnail({
               error={t("error")}
               framed={false}
             />
-            <RevisionClouds changes={[change]} width={480} height={339} />
           </div>
         )}
       </div>

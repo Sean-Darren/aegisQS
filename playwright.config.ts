@@ -16,6 +16,7 @@ export default defineConfig({
     reuseExistingServer: false,
     env: {
       NEXT_PUBLIC_API_MOCKING: "enabled",
+      AEGISQS_HF_LOCAL_FALLBACK: "disabled",
       AEGISQS_NEXT_DIST_DIR:
         process.env.AEGISQS_NEXT_DIST_DIR || ".next-playwright",
     },

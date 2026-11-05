@@ -369,10 +369,9 @@ function ComparisonWorkspace({
               targetLabel={t("targetCaption", {
                 revision: targetVersion?.label ?? "…",
               })}
+              baseMimeType={baseVersion?.mimeType}
+              targetMimeType={targetVersion?.mimeType}
               alignment={adjust ? draft : comparison.alignment}
-              changes={visible.filter((c) => c.page === page)}
-              selectedId={active?.id}
-              onSelect={select}
               onControls={assign}
               onZoom={setZoom}
             />
@@ -457,6 +456,13 @@ function ComparisonWorkspace({
                     <span className="tabular-nums">△{change.number}</span>{" "}
                     <StatusChip domain="changeKind" value={change.kind} />
                     <p className="mt-2 text-sm">{change.summary}</p>
+                    {(change.textBefore || change.textAfter) && (
+                      <p className="mt-1 text-xs tabular-nums text-muted-ink">
+                        {change.textBefore && <del>{change.textBefore}</del>}
+                        {change.textBefore && change.textAfter ? " → " : ""}
+                        {change.textAfter}
+                      </p>
+                    )}
                   </button>
                 </div>
                 <AiGeneratedLabel />

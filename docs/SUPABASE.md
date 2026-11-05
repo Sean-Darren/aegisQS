@@ -36,6 +36,8 @@ SMART_QS_BOOTSTRAP_EMAIL=your-email@example.com
 SMART_QS_BOOTSTRAP_PASSWORD=choose-a-long-unique-password
 NEXT_PUBLIC_API_MOCKING=enabled
 SMART_QS_DEMO_PROCESSING=enabled
+# Optional real Hugging Face drawing-difference worker (FastAPI backend):
+AEGISQS_BIM_WORKER_URL=http://localhost:8000
 ```
 
 The legacy server-only `SUPABASE_SERVICE_ROLE_KEY` is also accepted. The bootstrap email/password are the first Smart QS Senior QS login you choose for this project. Supabase enforces the password policy configured for your project. Choose a long, unique password. The seed creates the bootstrap Auth account if missing, or links the existing account without changing its password. It grants the explicitly configured bootstrap account the seeded Senior QS profile (`user-0`) on P-001. It does not grant roles from public signup or user-editable Auth metadata.
@@ -85,7 +87,14 @@ All entity changes, links, audit entries and events from an action commit togeth
 
 The separate worker recovers pending comparisons and workbook checking stages from persisted status/timestamps; restarting the worker does not lose the job. Workbook parsing uses real uploaded Excel bytes on the server. The worker completes the persisted checks and emits durable events. For large deployments, parsing should move from the upload request to a dedicated queued parser and the database-wide revision lock should become per-project transactions.
 
-**Drawing detection is still a demo service.** `SMART_QS_DEMO_PROCESSING=enabled` permits only the known A-201 B→C and S-110 P1→P2 synthetic detections; their model version says `mock-drawing-1.0`. Other pairs fail explicitly. With the setting off, pending comparisons fail with a clear unconfigured-service message. Real alignment/change detection and forecast training remain external backend services; Supabase persistence does not implement those algorithms.
+**Drawing detection can use a real Hugging Face worker.** When
+`AEGISQS_BIM_WORKER_URL` is set, the durable worker downloads the two stored
+revision files and POSTs them to that FastAPI worker's
+`/api/v1/bim/revision-comparisons` endpoint. CLIP/material inference is run
+there and the returned change cards are persisted into Supabase. Without the
+worker URL, `SMART_QS_DEMO_PROCESSING=enabled` permits the synthetic A-201
+B→C and S-110 P1→P2 detections; with the setting off, pending comparisons
+fail with a clear unconfigured-service message.
 
 **Transport adjustment:** in database mode, `/ws?projectId=…` is a cookie-authenticated **Server-Sent Events** stream, because standard Next Route Handlers cannot host WebSocket upgrades. The `WsEvent` payload contract is unchanged, and `useProjectEvents` remains the only subscriber/cache writer. Events have a database sequence cursor for reconnect, the connection reauthenticates when reopened, and a 50-second stream lifetime bounds stale access. Mock mode retains the original MSW WebSocket. Deploy behind a proxy that allows streaming and run a persistent worker process. Reconnect refreshes query data, so initial views show completed jobs even when their events occurred while offline.
 

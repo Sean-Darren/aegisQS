@@ -3,6 +3,286 @@ import { z } from "zod";
 import * as s from "@/schemas";
 import type { DomainContext } from "../context";
 import { createHelpers } from "./shared";
+
+/*
+ * Simple OLS (ordinary least squares) regression for time-series trend.
+ * Given (index, price) pairs, returns { slope, intercept } so that
+ *   price ≈ intercept + slope * index
+ */
+function ols(series: { period: string; price: number }[]) {
+  const n = series.length;
+  if (n < 2) return { slope: 0, intercept: series[0]?.price ?? 0 };
+  let sumX = 0,
+    sumY = 0,
+    sumXY = 0,
+    sumXX = 0;
+  for (let i = 0; i < n; i++) {
+    const x = i;
+    const y = series[i].price;
+    sumX += x;
+    sumY += y;
+    sumXY += x * y;
+    sumXX += x * x;
+  }
+  const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
+  const intercept = (sumY - slope * sumX) / n;
+  return { slope, intercept };
+}
+
+/*
+ * Project a rate using OLS trend from historical forecast data.
+ * Falls back to the latest p50 forecast if history is too short or flat.
+ */
+function olsProjectedRate(forecast: s.PriceForecast): number {
+  const history = forecast.history;
+  if (history.length < 3)
+    return forecast.forecast[0]?.p50 ?? forecast.history.at(-1)?.price ?? 0;
+  const { slope, intercept } = ols(history);
+  const projectIndex = history.length + 6;
+  const projected = intercept + slope * projectIndex;
+  if (!Number.isFinite(projected) || projected <= 0)
+    return forecast.forecast[0]?.p50 ?? history.at(-1)!.price;
+  return projected;
+}
+
+/*
+ * Match a change summary/text to the best material using keyword heuristics.
+ */
+const MATERIAL_KEYWORDS: Record<
+  string,
+  { keywords: string[]; unit: string }
+> = {
+  rebar: {
+    keywords: [
+      "rebar",
+      "reinforcement",
+      "reinforcing",
+      "bar",
+      "tendon",
+    ],
+    unit: "tonne",
+  },
+  "structural-steel": {
+    keywords: [
+      "steel",
+      "structural steel",
+      "beam",
+      "column",
+      "member",
+      "framing",
+      "metal",
+      "girder",
+      "truss",
+    ],
+    unit: "tonne",
+  },
+  concrete: {
+    keywords: [
+      "concrete",
+      "slab",
+      "foundation",
+      "footing",
+      "pile",
+      "pier",
+      "masonry",
+      "block",
+      "brick",
+      "stone",
+      "cement",
+      "render",
+      "screed",
+    ],
+    unit: "m³",
+  },
+  cement: {
+    keywords: ["cement", "mortar", "grout"],
+    unit: "tonne",
+  },
+  aggregate: {
+    keywords: [
+      "aggregate",
+      "gravel",
+      "sand",
+      "fill",
+      "sub-base",
+      "ballast",
+    ],
+    unit: "tonne",
+  },
+  timber: {
+    keywords: [
+      "timber",
+      "wood",
+      "formwork",
+      "plywood",
+      "roof",
+      "truss",
+      "fascia",
+      "trim",
+      "joinery",
+      "door",
+      "window",
+      "cladding",
+      "plank",
+      "deck",
+    ],
+    unit: "m²",
+  },
+  copper: {
+    keywords: [
+      "copper",
+      "cable",
+      "wire",
+      "conduit",
+      "electrical",
+      "wiring",
+      "lighting",
+    ],
+    unit: "tonne",
+  },
+  glass: {
+    keywords: [
+      "glass",
+      "glazing",
+      "curtain wall",
+      "window",
+      "glazed",
+      "glaze",
+      "fenestration",
+      "skylight",
+      "louvre",
+    ],
+    unit: "m²",
+  },
+  waterproofing: {
+    keywords: [
+      "waterproof",
+      "membrane",
+      "sealant",
+      "seal",
+      "damp",
+      "tanking",
+      "flashing",
+    ],
+    unit: "m²",
+  },
+  diesel: {
+    keywords: ["diesel", "fuel", "petrol", "oil"],
+    unit: "litre",
+  },
+};
+
+function matchMaterial(
+  summary: string,
+  textBefore?: string,
+  textAfter?: string,
+): { materialId: string; unit: string } | undefined {
+  const text = `${summary} ${textBefore ?? ""} ${textAfter ?? ""}`.toLowerCase();
+  let best: { materialId: string; unit: string; score: number } | undefined;
+  for (const [id, { keywords, unit }] of Object.entries(MATERIAL_KEYWORDS)) {
+    const score = keywords.reduce(
+      (s, kw) => s + (text.includes(kw) ? 1 : 0),
+      0,
+    );
+    if (score > 0 && (!best || score > best.score))
+      best = { materialId: id, unit, score };
+  }
+  return best ? { materialId: best.materialId, unit: best.unit } : undefined;
+}
+
+function deriveQuantity(
+  bbox: { w: number; h: number },
+  confidence: number,
+  unit: string,
+): number {
+  const area = bbox.w * bbox.h;
+  const clamped = Math.max(0.01, Math.min(1, area));
+  const factor = clamped * confidence;
+  switch (unit) {
+    case "m²":
+      return Math.max(1, Math.round(factor * 300));
+    case "m":
+      return Math.max(1, Math.round(Math.sqrt(factor) * 80));
+    case "m³":
+    case "tonne":
+      return Math.max(0.5, Math.round(factor * 15 * 10) / 10);
+    case "litre":
+      return Math.max(10, Math.round(factor * 500));
+    default:
+      return 1;
+  }
+}
+
+function seedCostLines(
+  ctx: { state: DomainContext["state"] },
+  changes: s.DrawingChange[],
+  seq: { value: number },
+): {
+  lines: s.CostLine[];
+  indicativeCost: s.VariationEvent["indicativeCost"];
+} {
+  const { state } = ctx;
+  const lines: s.CostLine[] = [];
+  for (const change of changes) {
+    const match = matchMaterial(
+      change.summary,
+      change.textBefore,
+      change.textAfter,
+    );
+    const materialId = match?.materialId;
+    const unit = match?.unit ?? "m²";
+    const material = materialId
+      ? state.materials.find((m) => m.id === materialId)
+      : undefined;
+    const forecast = materialId
+      ? state.forecasts.find((f) => f.materialId === materialId)
+      : undefined;
+
+    const quantityDelta = deriveQuantity(change.bbox, change.confidence, unit);
+    const rate = forecast
+      ? Math.round(olsProjectedRate(forecast) * 100) / 100
+      : (material?.latestPrice ?? 1000);
+    const amount = Math.round(quantityDelta * rate * 100) / 100;
+
+    const description =
+      change.summary ||
+      `${change.textBefore ?? "Previous"} → ${change.textAfter ?? "New"}`;
+    const boqItemRef = `REV-△${change.number}`;
+
+    lines.push({
+      id: `cost-seed-${change.id}-${++seq.value}`,
+      boqItemRef,
+      description,
+      unit,
+      quantityDelta,
+      rate,
+      rateSource: forecast ? "forecast_adjusted" : "manual",
+      amount,
+      materialId,
+    });
+  }
+
+  if (!lines.length) return { lines: [], indicativeCost: undefined };
+
+  const total =
+    Math.round(lines.reduce((sum, l) => sum + l.amount, 0) * 100) / 100;
+  const ends = [
+    total * variationRangeRule.lowFactor,
+    total * variationRangeRule.highFactor,
+  ].sort((a, b) => a - b);
+
+  return {
+    lines,
+    indicativeCost: {
+      total,
+      low: Math.round(ends[0] * 100) / 100,
+      high: Math.round(ends[1] * 100) / 100,
+      basis:
+        "AI-seeded quantities × forecast-adjusted rates (OLS trend); indicative range for review.",
+    },
+  };
+}
+
 export function createVariationsHandlers(ctx: DomainContext) {
   const { state, currentUser, now, audit } = ctx;
   const { route, reply, requireProject, requirePermission, find, MockError } =
@@ -95,6 +375,8 @@ export function createVariationsHandlers(ctx: DomainContext) {
             0,
           ) + 1;
         const id = `VE-${String(number).padStart(3, "0")}`;
+        const seq = { value: 0 };
+        const seeded = seedCostLines(ctx, changes, seq);
         const v: s.VariationEvent = {
           id,
           projectId,
@@ -104,7 +386,8 @@ export function createVariationsHandlers(ctx: DomainContext) {
           comparisonId: comparison.id,
           drawingNumber: find(state.documents, comparison.documentId).docNumber,
           status: "potential",
-          costLines: [],
+          costLines: seeded.lines,
+          indicativeCost: seeded.indicativeCost,
           raisedBy: currentUser().id,
           raisedAt: now(),
         };

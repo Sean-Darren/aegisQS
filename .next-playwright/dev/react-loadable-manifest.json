@@ -34,6 +34,25 @@
       "static/chunks/_app-pages-browser_src_components_viewer_pdf-canvas_tsx.js"
     ]
   },
+  "features/drawings/components/comparison-page.tsx -> @/components/viewer/comparison-canvas": {
+    "id": "features/drawings/components/comparison-page.tsx -> @/components/viewer/comparison-canvas",
+    "files": [
+      "static/css/_app-pages-browser_src_components_viewer_comparison-canvas_tsx.css",
+      "static/chunks/_app-pages-browser_src_components_viewer_comparison-canvas_tsx.js"
+    ]
+  },
+  "features/materials/components/material-forecast-page.tsx -> ./fan-chart": {
+    "id": "features/materials/components/material-forecast-page.tsx -> ./fan-chart",
+    "files": [
+      "static/chunks/_app-pages-browser_src_features_materials_components_fan-chart_tsx.js"
+    ]
+  },
+  "features/procurement/components/procurement-page.tsx -> ./exposure-chart": {
+    "id": "features/procurement/components/procurement-page.tsx -> ./exposure-chart",
+    "files": [
+      "static/chunks/_app-pages-browser_src_features_procurement_components_exposure-chart_tsx.js"
+    ]
+  },
   "features/workbooks/components/diff-tab.tsx -> ./version-totals-chart": {
     "id": "features/workbooks/components/diff-tab.tsx -> ./version-totals-chart",
     "files": [

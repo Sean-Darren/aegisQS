@@ -8,7 +8,7 @@ import {
 import { useTranslations } from "next-intl";
 import { ChevronsLeftRight } from "lucide-react";
 import { PdfCanvas } from "./pdf-canvas";
-import { RevisionClouds } from "./revision-clouds";
+import { RasterCanvas } from "./raster-canvas";
 import { bboxPixels } from "./geometry";
 import type { DrawingChange, DrawingComparison } from "@/schemas";
 export type ViewerMode = "side" | "overlay" | "swipe";
@@ -48,27 +48,25 @@ export function ComparisonCanvas({
   target,
   mode,
   alignment,
-  changes,
-  selectedId,
-  onSelect,
   onControls,
   onZoom,
   page = 1,
   baseLabel,
   targetLabel,
+  baseMimeType,
+  targetMimeType,
 }: {
   base: Blob;
   target: Blob;
   mode: ViewerMode;
   alignment: DrawingComparison["alignment"];
-  changes: DrawingChange[];
-  selectedId?: string;
-  onSelect: (id: string) => void;
   onControls: (controls: CanvasControls) => void;
   onZoom: (zoom: number) => void;
   page?: number;
   baseLabel: string;
   targetLabel: string;
+  baseMimeType?: string;
+  targetMimeType?: string;
 }) {
   const t = useTranslations("Drawing");
   const refs = useRef<(ReactZoomPanPinchRef | null)[]>([]);
@@ -78,9 +76,10 @@ export function ComparisonCanvas({
   const tintedSources = useRef<(HTMLCanvasElement | null)[]>([null, null]);
   const [renderScale, setRenderScale] = useState(1);
   const [swipe, setSwipe] = useState(50);
-  const [zoom, setZoom] = useState(1);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const viewport = useRef<HTMLDivElement>(null);
+  const baseIsImage = (baseMimeType ?? base.type).startsWith("image/");
+  const targetIsImage = (targetMimeType ?? target.type).startsWith("image/");
   const aligning = useCallback(
     (ctx: CanvasRenderingContext2D, factor: number) => {
       ctx.translate(alignment.dx * factor, alignment.dy * factor);
@@ -159,7 +158,6 @@ export function ComparisonCanvas({
     (x: number, y: number, scale: number) => {
       shared.current = { x, y, scale };
       for (const ref of refs.current) ref?.setTransform(x, y, scale, 0);
-      setZoom(scale);
       onZoom(scale);
       clearTimeout(timer.current);
       timer.current = setTimeout(() => setRenderScale(scale), 150);
@@ -215,34 +213,62 @@ export function ComparisonCanvas({
         className="pointer-events-none absolute -left-[10000px] top-0"
         aria-hidden="true"
       >
-        <PdfCanvas
-          file={base}
-          page={page}
-          zoom={1}
-          width={WIDTH}
-          pixelRatio={
-            (typeof window !== "undefined" ? window.devicePixelRatio : 1) *
-            renderScale
-          }
-          onCanvas={captureA}
-          framed={false}
-          loading={t("loading")}
-          error={t("pdfError")}
-        />
-        <PdfCanvas
-          file={target}
-          page={page}
-          zoom={1}
-          width={WIDTH}
-          pixelRatio={
-            (typeof window !== "undefined" ? window.devicePixelRatio : 1) *
-            renderScale
-          }
-          onCanvas={captureB}
-          framed={false}
-          loading={t("loading")}
-          error={t("pdfError")}
-        />
+        {baseIsImage ? (
+          <RasterCanvas
+            file={base}
+            width={WIDTH}
+            pixelRatio={
+              (typeof window !== "undefined" ? window.devicePixelRatio : 1) *
+              renderScale
+            }
+            onCanvas={captureA}
+            loading={t("loading")}
+            error={t("pdfError")}
+          />
+        ) : (
+          <PdfCanvas
+            file={base}
+            page={page}
+            zoom={1}
+            width={WIDTH}
+            pixelRatio={
+              (typeof window !== "undefined" ? window.devicePixelRatio : 1) *
+              renderScale
+            }
+            onCanvas={captureA}
+            framed={false}
+            loading={t("loading")}
+            error={t("pdfError")}
+          />
+        )}
+        {targetIsImage ? (
+          <RasterCanvas
+            file={target}
+            width={WIDTH}
+            pixelRatio={
+              (typeof window !== "undefined" ? window.devicePixelRatio : 1) *
+              renderScale
+            }
+            onCanvas={captureB}
+            loading={t("loading")}
+            error={t("pdfError")}
+          />
+        ) : (
+          <PdfCanvas
+            file={target}
+            page={page}
+            zoom={1}
+            width={WIDTH}
+            pixelRatio={
+              (typeof window !== "undefined" ? window.devicePixelRatio : 1) *
+              renderScale
+            }
+            onCanvas={captureB}
+            framed={false}
+            loading={t("loading")}
+            error={t("pdfError")}
+          />
+        )}
       </div>
       <div
         className={`grid h-full ${mode === "side" ? "grid-cols-2 gap-2" : "grid-cols-1"}`}
@@ -288,7 +314,6 @@ export function ComparisonCanvas({
                 clearTimeout(timer.current);
                 timer.current = setTimeout(() => {
                   setRenderScale(scale);
-                  setZoom(scale);
                   onZoom(scale);
                 }, 150);
               }}
@@ -313,17 +338,6 @@ export function ComparisonCanvas({
                         ? "baseCanvas"
                         : "targetCanvas",
                     )}
-                  />
-                  <RevisionClouds
-                    changes={changes}
-                    width={WIDTH}
-                    height={HEIGHT}
-                    selectedId={selectedId}
-                    onSelect={onSelect}
-                    zoom={zoom}
-                    alignment={
-                      mode === "side" && index === 0 ? undefined : alignment
-                    }
                   />
                   {mode === "swipe" && (
                     <div

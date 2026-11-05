@@ -46,3 +46,26 @@ class ProgressEvent(BaseModel):
     progress: int = Field(ge=0, le=100)
     message: str = ""
     error: str | None = None
+
+
+class RevisionBBox(BaseModel):
+    x: float = Field(ge=0, le=1)
+    y: float = Field(ge=0, le=1)
+    w: float = Field(ge=0, le=1)
+    h: float = Field(ge=0, le=1)
+
+
+class RevisionChange(BaseModel):
+    bbox: RevisionBBox
+    kind: Literal["added", "removed", "modified"]
+    summary: str
+    confidence: float = Field(ge=0, le=1)
+    textBefore: str | None = None
+    textAfter: str | None = None
+
+
+class RevisionComparisonResponse(BaseModel):
+    model_version: str
+    base_materials: list[dict[str, Any]]
+    target_materials: list[dict[str, Any]]
+    changes: list[RevisionChange]

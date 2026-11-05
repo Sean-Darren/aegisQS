@@ -41,6 +41,13 @@ export function advanceJobs(
     };
     scheduleComparison(runner, comparison);
   }
+  advanceWorkbooks(ctx, now);
+}
+
+export function advanceWorkbooks(
+  ctx: DomainContext,
+  now = Date.now(),
+) {
   for (const version of ctx.state.workbookVersions.filter((v) =>
     ["parsing", "checking"].includes(v.status),
   )) {

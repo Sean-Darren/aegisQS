@@ -11,7 +11,7 @@ export async function POST(request: Request) {
     );
   const form = await request.formData();
   const locale = form.get("locale") === "zh-HK" ? "zh-HK" : "en";
-  const returnUrl = new URL(String(form.get("returnTo") ?? "/signin"), origin);
+  const returnUrl = new URL(String(form.get("returnTo") || "/signin"), origin);
   if (returnUrl.origin !== origin || returnUrl.pathname !== "/signin")
     return new Response(null, { status: 400 });
   try {

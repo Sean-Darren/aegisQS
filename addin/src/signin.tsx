@@ -7,9 +7,11 @@ export default function SignIn({
   mocking,
   loginPath,
   locale,
+  returnTo,
 }: {
   mocking: boolean;
   loginPath: string;
+  returnTo: string;
   locale: "en" | "zh-HK";
 }) {
   const t = translator(locale);
@@ -47,7 +49,7 @@ export default function SignIn({
       <p>{t("signinBasis")}</p>
       {!mocking && (
         <a
-          href={`${loginPath}${loginPath.includes("?") ? "&" : "?"}returnTo=${encodeURIComponent(typeof location === "undefined" ? "" : location.href)}`}
+          href={`${loginPath}${loginPath.includes("?") ? "&" : "?"}returnTo=${encodeURIComponent(returnTo)}`}
         >
           {t("openSignIn")}
         </a>

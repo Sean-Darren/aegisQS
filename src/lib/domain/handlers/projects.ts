@@ -1,10 +1,20 @@
 import { z } from "zod";
 import * as s from "@/schemas";
 import type { DomainContext } from "../context";
-import { createHelpers } from "./shared";
+import { createHelpers, MockError } from "./shared";
 export function createProjectsHandlers(ctx: DomainContext) {
-  const { state, currentUser } = ctx;
-  const { route, reply, requireProject, paged } = createHelpers(ctx);
+  const { state, currentUser, now, nextId, audit } = ctx;
+  const {
+    route,
+    reply,
+    requirePermission,
+    requireProject,
+    paged,
+  } = createHelpers(ctx);
+  const createProjectSchema = z.object({
+    name: z.string().trim().min(1).max(120),
+    code: z.string().trim().min(1).max(20).optional(),
+  });
   function belongsToProject(event: s.AuditEvent, projectId: string): boolean {
     const document = (id: string) =>
       state.documents.some((d) => d.id === id && d.projectId === projectId);
@@ -66,6 +76,150 @@ export function createProjectsHandlers(ctx: DomainContext) {
         state.projects.filter((p) => p.memberIds.includes(currentUser().id)),
       ),
     ),
+    route("post", "/projects", async ({ request }) => {
+      requirePermission("project.create");
+      const body = createProjectSchema.parse(await request.json());
+      const requestedCode = body.code?.toUpperCase();
+      if (requestedCode) {
+        const duplicate = state.projects.some(
+          (p) => p.code.toUpperCase() === requestedCode,
+        );
+        if (duplicate)
+          throw new MockError(409, "A project with this code already exists.");
+      }
+      const id = nextId("P");
+      const code =
+        requestedCode ??
+        `P-${String(
+          state.projects.filter((p) => /^P-\d+$/.test(p.code)).length + 1,
+        ).padStart(3, "0")}`;
+      const project = s.projectSchema.parse({
+        id,
+        code,
+        name: body.name,
+        createdAt: now(),
+        memberIds: [currentUser().id],
+      });
+      state.projects.push(project);
+      audit(
+        "project.created",
+        "project",
+        project.id,
+        `Project ${project.code} created`,
+        { code: project.code, name: project.name },
+      );
+      return reply(s.projectSchema, project, 201);
+    }),
+    route("delete", "/projects/:projectId", ({ params }) => {
+      requirePermission("project.delete");
+      const id = String(params.projectId);
+      const project = requireProject(id);
+      const documentIds = new Set(
+        state.documents
+          .filter((document) => document.projectId === id)
+          .map((document) => document.id),
+      );
+      const documentVersionIds = new Set(
+        state.versions
+          .filter((version) => documentIds.has(version.documentId))
+          .map((version) => version.id),
+      );
+      const workbookIds = new Set(
+        state.workbooks
+          .filter((workbook) => workbook.projectId === id)
+          .map((workbook) => workbook.id),
+      );
+      const workbookVersionIds = new Set(
+        state.workbookVersions
+          .filter((version) => workbookIds.has(version.workbookId))
+          .map((version) => version.id),
+      );
+      const comparisonIds = new Set(
+        state.comparisons
+          .filter((comparison) => comparison.projectId === id)
+          .map((comparison) => comparison.id),
+      );
+      const changeIds = new Set(
+        state.changes
+          .filter((change) => comparisonIds.has(change.comparisonId))
+          .map((change) => change.id),
+      );
+      const variationIds = new Set(
+        state.variations
+          .filter((variation) => variation.projectId === id)
+          .map((variation) => variation.id),
+      );
+      const procurementIds = new Set(
+        state.procurement
+          .filter((advice) => advice.projectId === id)
+          .map((advice) => advice.id),
+      );
+      const relatedEntityIds = new Set([
+        id,
+        ...documentIds,
+        ...documentVersionIds,
+        ...workbookIds,
+        ...workbookVersionIds,
+        ...comparisonIds,
+        ...changeIds,
+        ...variationIds,
+        ...procurementIds,
+      ]);
+      const auditEventIds = new Set(
+        state.auditEvents
+          .filter((event) => belongsToProject(event, id))
+          .map((event) => event.id),
+      );
+
+      state.projects = state.projects.filter((item) => item.id !== id);
+      state.documents = state.documents.filter(
+        (item) => item.projectId !== id,
+      );
+      state.versions = state.versions.filter(
+        (item) => !documentVersionIds.has(item.id),
+      );
+      state.conflicts = state.conflicts.filter(
+        (item) => !documentIds.has(item.documentId),
+      );
+      state.comparisons = state.comparisons.filter(
+        (item) => item.projectId !== id,
+      );
+      state.changes = state.changes.filter((item) => !changeIds.has(item.id));
+      state.variations = state.variations.filter(
+        (item) => item.projectId !== id,
+      );
+      state.workbooks = state.workbooks.filter(
+        (item) => item.projectId !== id,
+      );
+      state.workbookVersions = state.workbookVersions.filter(
+        (item) => !workbookVersionIds.has(item.id),
+      );
+      state.checks = state.checks.filter(
+        (item) => !workbookVersionIds.has(item.versionId),
+      );
+      state.items = state.items.filter(
+        (item) => !workbookVersionIds.has(item.workbookVersionId),
+      );
+      state.procurement = state.procurement.filter(
+        (item) => item.projectId !== id,
+      );
+      state.materialNeeds = state.materialNeeds.filter(
+        (item) => item.projectId !== id,
+      );
+      state.links = state.links.filter(
+        (link) =>
+          !relatedEntityIds.has(link.from.id) &&
+          !relatedEntityIds.has(link.to.id),
+      );
+      state.auditEvents = state.auditEvents.filter(
+        (event) => !auditEventIds.has(event.id),
+      );
+      for (const versionId of documentVersionIds) delete state.filePaths[versionId];
+      for (const versionId of workbookVersionIds) delete state.filePaths[versionId];
+      for (const versionId of workbookVersionIds) delete state.parsed[versionId];
+
+      return reply(s.projectSchema, project);
+    }),
     route("get", "/projects/:projectId", ({ params }) =>
       reply(s.projectSchema, requireProject(String(params.projectId))),
     ),

@@ -2,10 +2,10 @@
 import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 import dynamic from "next/dynamic";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
-import { queryKeys, resources } from "@/lib/api";
+import { ApiError, queryKeys, resources } from "@/lib/api";
 import { can } from "@/lib/auth/permissions";
 import { useSession } from "@/lib/auth/session";
 import {
@@ -13,8 +13,14 @@ import {
   EmptyState,
   ErrorState,
   Skeleton,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
   StatusChip,
   LowConfidenceNote,
+  useToast,
 } from "@/components/ui";
 import { recordHref } from "@/components/records/linked-records";
 import {
@@ -43,14 +49,36 @@ export function ProcurementPage({ projectId }: { projectId: string }) {
   const t = useTranslations("Procurement");
   const locale = useLocale() as FormatLocale;
   const session = useSession();
+  const toast = useToast();
   const materials = useQuery({
     queryKey: queryKeys.materials(),
     queryFn: () => resources.materials(),
   });
   const { needs, advice } = useProcurement(projectId);
   const [plannerNeed, setPlannerNeed] = useState<ProjectMaterialNeed>();
+  const [selectedArtifactId, setSelectedArtifactId] = useState("");
+  const artifacts = useQuery({
+    queryKey: queryKeys.documents(projectId, { category: "site_record" }),
+    queryFn: async () => {
+      const docs = await resources.documents(projectId, {
+        category: "site_record",
+      });
+      return docs.filter((doc) => doc.docNumber.startsWith("BIM-"));
+    },
+  });
   const params = useSearchParams();
   const [selectedId, setSelectedId] = useState(params.get("advice") ?? "");
+  const extractMaterials = useMutation({
+    mutationFn: (documentId: string) =>
+      resources.extractMaterialNeeds(projectId, documentId),
+    onSuccess: (result) => {
+      void needs.refetch();
+      void materials.refetch();
+      toast(t("extracted", { count: result.length }), "success");
+    },
+    onError: (error) =>
+      toast(error instanceof ApiError ? error.message : t("extractError"), "error"),
+  });
   const selected =
     advice.data?.find((a) => a.id === selectedId) ?? advice.data?.[0];
   const selectedMaterial = materials.data?.find(
@@ -94,6 +122,52 @@ export function ProcurementPage({ projectId }: { projectId: string }) {
       <header>
         <h1 className="text-2xl font-semibold">{t("title")}</h1>
         <p className="mt-2 text-sm text-muted-ink">{t("intro")}</p>
+        {can(session.data, "procurement.plan") && (
+          <div className="mt-4 flex flex-wrap items-end gap-3">
+            <div className="w-full max-w-md">
+              <label
+                htmlFor="saved-artifact"
+                className="mb-1 block text-sm font-medium"
+              >
+                {t("artifact")}
+              </label>
+              <Select
+                value={selectedArtifactId}
+                onValueChange={setSelectedArtifactId}
+                disabled={artifacts.isPending}
+              >
+                <SelectTrigger id="saved-artifact" className="w-full">
+                  <SelectValue
+                    placeholder={
+                      artifacts.isPending
+                        ? t("loadingArtifacts")
+                        : t("chooseArtifact")
+                    }
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  {(artifacts.data ?? []).map((doc) => (
+                    <SelectItem key={doc.id} value={doc.id}>
+                      {doc.docNumber} · {doc.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <Button
+              onClick={() => {
+                if (selectedArtifactId)
+                  extractMaterials.mutate(selectedArtifactId);
+              }}
+              disabled={!selectedArtifactId || extractMaterials.isPending}
+              variant="secondary"
+            >
+              {extractMaterials.isPending
+                ? t("extracting")
+                : t("extractMaterials")}
+            </Button>
+          </div>
+        )}
       </header>
       <section className="space-y-3">
         <h2 className="text-lg font-semibold">{t("needs")}</h2>
@@ -168,7 +242,9 @@ export function ProcurementPage({ projectId }: { projectId: string }) {
                                   : need.source === "boq"
                                     ? boq.data?.find((b) => b.itemRef === ref)
                                         ?.id
-                                    : undefined;
+                                    : need.source === "site_record"
+                                      ? ref
+                                      : undefined;
                               return (
                                 <li
                                   key={ref}
@@ -181,15 +257,21 @@ export function ProcurementPage({ projectId }: { projectId: string }) {
                                         projectId,
                                         need.source === "variation"
                                           ? "variation"
-                                          : "boq_item",
+                                          : need.source === "boq"
+                                            ? "boq_item"
+                                            : "document",
                                         entity,
                                       )}
                                     >
-                                      {t(`sources.${need.source}`)} · {ref}
+                                      {need.source === "site_record"
+                                        ? `${t("sources.site_record")} · ${artifacts.data?.find((d) => d.id === ref)?.docNumber ?? ref}`
+                                        : `${t(`sources.${need.source}`)} · ${ref}`}
                                     </Link>
                                   ) : (
                                     <span>
-                                      {t(`sources.${need.source}`)} · {ref}
+                                      {need.source === "site_record"
+                                        ? `${t("sources.site_record")} · ${artifacts.data?.find((d) => d.id === ref)?.docNumber ?? ref}`
+                                        : `${t(`sources.${need.source}`)} · ${ref}`}
                                     </span>
                                   )}
                                 </li>

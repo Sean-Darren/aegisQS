@@ -116,11 +116,23 @@ export async function handleApi(request: Request) {
         names.map((name, i) => [name, decodeURIComponent(match[i + 1])]),
       );
       // Fetch file bytes only after membership is verified. Parsing/remapping stays server-side.
-      let fileId =
+      const isDocumentFile =
         path.includes("/document-versions/") ||
+        path.includes("/material-needs/extract/");
+      let fileId =
+        isDocumentFile ||
         (path.includes("/workbook-versions/") && path.endsWith("/download"))
           ? params.versionId
           : undefined;
+      if (
+        route.method === "post" &&
+        path.includes("/material-needs/extract/")
+      ) {
+        const doc = state.documents.find(
+          (d) => d.id === params.documentId,
+        );
+        fileId = doc?.currentVersionId;
+      }
       if (route.method === "put" && path.endsWith("/mapping"))
         fileId = state.workbooks.find(
           (w) => w.id === params.workbookId,
@@ -128,7 +140,7 @@ export async function handleApi(request: Request) {
       if (fileId) {
         const projectId = projectFor(
           state,
-          path.includes("/document-versions/")
+          isDocumentFile
             ? "document_version"
             : "workbook_version",
           fileId,

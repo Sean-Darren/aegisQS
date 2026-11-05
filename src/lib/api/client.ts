@@ -236,6 +236,18 @@ export function createApiClient(baseUrl = "/api/v1") {
         })
       ).data;
     },
+    async delete<S extends z.ZodType>(
+      path: string,
+      schema: S,
+      options: ApiRequestOptions = {},
+    ) {
+      return (
+        await request(path, schema, {
+          ...options,
+          method: "DELETE",
+        })
+      ).data;
+    },
     async file(path: string, options: ApiRequestOptions = {}) {
       return (await request(path, z.instanceof(Blob), options, true)).data;
     },

@@ -7,6 +7,10 @@ import { Link, useRouter } from "@/i18n/navigation";
 import { queryKeys, resources } from "@/lib/api";
 import {
   Button,
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogTrigger,
   ErrorState,
   EmptyState,
   Skeleton,
@@ -15,6 +19,7 @@ import {
 import { inputStyle } from "@/components/ui/form-styles";
 import { useSession } from "@/lib/auth/session";
 import { can } from "@/lib/auth/permissions";
+import { UploadQueue } from "@/features/documents/components/upload-queue";
 import type { DrawingRegisterEntry } from "@/schemas";
 function DrawingRow({ entry }: { entry: DrawingRegisterEntry }) {
   const t = useTranslations("Drawing");
@@ -94,6 +99,19 @@ function DrawingRow({ entry }: { entry: DrawingRegisterEntry }) {
               )}
             </span>
           ))}
+          {can(session.data, "document.upload") && (
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button variant="secondary">{t("uploadRevision")}</Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogTitle>
+                  {t("uploadRevisionFor", { number: doc.docNumber })}
+                </DialogTitle>
+                <UploadQueue projectId={doc.projectId} fixedDocument={doc} />
+              </DialogContent>
+            </Dialog>
+          )}
         </div>
       </div>
       {entry.latestComparison && (

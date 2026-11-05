@@ -8,6 +8,53 @@ import { seededRandom } from "./random";
 import { calculateAdvice } from "../procurement";
 import type { ParsedWorkbook } from "../workbook-engine";
 export const fixtureTime = "2026-11-04T00:00:00Z";
+export const bimArtifactPayload = {
+  job_id: "job-bim-001",
+  filename: "sample-model.ifc",
+  generated_at: fixtureTime,
+  result: s.bimResultSchema.parse({
+    report: {
+      overall_score: 61,
+      gate_state: "READY",
+      category_scores: {},
+      issues: [],
+      material_mappings: {},
+      material_family_summary: {},
+      summary: "Sample BIM analysis result for procurement extraction.",
+      element_count: 2,
+      spec_count: 2,
+    },
+    elements: [],
+    boq: [
+      {
+        item_id: "BOQ-1",
+        description: "High-tensile steel rebar",
+        quantity: 4.2,
+        unit: "tonne",
+        rate: 6850,
+        total_price: 28770,
+        price_book_item_code: "MAT-001",
+        material_code: "MAT-001",
+        bim_element: "Structure",
+        material_family: "Steel",
+        element_ids: [],
+      },
+      {
+        item_id: "BOQ-2",
+        description: "Ready-mixed concrete C35",
+        quantity: 20,
+        unit: "m³",
+        rate: 1050,
+        total_price: 21000,
+        price_book_item_code: "MAT-002",
+        material_code: "MAT-002",
+        bim_element: "Structure",
+        material_family: "Concrete",
+        element_ids: [],
+      },
+    ],
+  }),
+};
 export const project = s.projectSchema.parse({
   id: "P-001",
   code: "P-001",
@@ -124,6 +171,39 @@ for (let i = 0; i < 37; i++) {
     category === "drawing" ? "other" : undefined,
   );
 }
+const bimArtifactDocId = "D-BIM-001";
+const bimArtifactVersionId = "BIM-001-v1";
+const bimArtifactBytes = new TextEncoder().encode(
+  JSON.stringify(bimArtifactPayload),
+);
+versions.push(
+  s.documentVersionSchema.parse({
+    id: bimArtifactVersionId,
+    documentId: bimArtifactDocId,
+    label: "A",
+    fileName: "sample-bim-assessment.json",
+    mimeType: "application/json",
+    sizeBytes: bimArtifactBytes.byteLength,
+    sha256: "0".repeat(64),
+    status: "current",
+    uploadedBy: users[0].id,
+    uploadedAt: fixtureTime,
+  }),
+);
+documents.push(
+  s.hubDocumentSchema.parse({
+    id: bimArtifactDocId,
+    projectId: project.id,
+    category: "site_record",
+    docNumber: "BIM-001",
+    title: "BIM analysis · sample-model.ifc",
+    currentVersionId: bimArtifactVersionId,
+    versionCount: 1,
+    hasConflict: false,
+    tags: [],
+    updatedAt: fixtureTime,
+  }),
+);
 const contract = documents.find((d) => d.docNumber === "CON-004")!;
 const original = versions.find((v) => v.id === contract.currentVersionId)!;
 original.label = "2";

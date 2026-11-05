@@ -34,6 +34,10 @@ export function createResources(
     me: () => client.get("/me", s.userSchema),
     projects: () => client.get("/projects", z.array(s.projectSchema)),
     project: (p: string) => client.get(project(p), s.projectSchema),
+    createProject: (body: { name: string; code?: string }) =>
+      client.post("/projects", s.projectSchema, body),
+    deleteProject: (p: string) =>
+      client.delete(project(p), s.projectSchema),
     overview: (p: string) =>
       client.get(`${project(p)}/overview`, s.projectOverviewSchema),
     documents: (p: string, filters: DocumentFilters = {}) =>
@@ -233,6 +237,12 @@ export function createResources(
       client.get(
         `${project(p)}/material-needs`,
         z.array(s.projectMaterialNeedSchema),
+      ),
+    extractMaterialNeeds: (p: string, documentId: string) =>
+      client.post(
+        `${project(p)}/material-needs/extract/${id(documentId)}`,
+        z.array(s.projectMaterialNeedSchema),
+        {},
       ),
     procurement: (p: string) =>
       client.get(

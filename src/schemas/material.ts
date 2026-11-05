@@ -81,7 +81,7 @@ export const projectMaterialNeedSchema = z.object({
   materialId: z.string(),
   quantity: z.number(),
   neededBy: isoDateSchema.optional(),
-  source: z.enum(["boq", "variation", "manual"]),
+  source: z.enum(["boq", "variation", "manual", "site_record"]),
   sourceRefs: z.array(z.string()),
   exposureHKD: z.object({ p10: z.number(), p50: z.number(), p90: z.number() }),
 });

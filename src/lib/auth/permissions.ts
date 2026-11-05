@@ -1,6 +1,8 @@
 import type { User } from "@/schemas";
 export const PERMISSIONS = {
   "project.view": ["senior_qs", "qs", "viewer", "admin"],
+  "project.create": ["senior_qs", "admin"],
+  "project.delete": ["senior_qs", "admin"],
   "document.upload": ["senior_qs", "qs"],
   "document.setCurrent": ["senior_qs"],
   "comparison.run": ["senior_qs", "qs"],

@@ -17,7 +17,7 @@ export type DomainResolver = (info: {
   request: Request;
 }) => Response | Promise<Response>;
 export function route(
-  method: "get" | "post" | "patch" | "put",
+  method: "get" | "post" | "patch" | "put" | "delete",
   path: string,
   resolver: DomainResolver,
 ) {

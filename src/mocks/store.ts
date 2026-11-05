@@ -30,7 +30,12 @@ function initial() {
   });
 }
 export let state = initial();
-export const uploadedFiles = new Map<string, ArrayBuffer>();
+export const uploadedFiles = new Map<string, ArrayBuffer>([
+  [
+    "BIM-001-v1",
+    new TextEncoder().encode(JSON.stringify(fixtures.bimArtifactPayload)).buffer,
+  ],
+]);
 let role: Role = "senior_qs";
 let sequence = 1000;
 export function setMockRole(next: Role) {

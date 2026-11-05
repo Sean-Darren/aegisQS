@@ -8,9 +8,6 @@ import time
 from pathlib import Path
 from typing import Any, Callable
 
-from app.material_detector import detect_house_material_boq
-from app.image_material_detector import detect_image_material_boq
-
 ProgressCallback = Callable[[str, int, str], None]
 
 SUPPORTED_EXTENSIONS = {".ifc", ".json", ".pdf", ".png", ".jpg", ".jpeg"}
@@ -399,16 +396,22 @@ def run_assessment(
         elements, metadata = _parse_elements(path)
         resolved_specs = specs or []
 
-    house_boq = (
-        detect_house_material_boq(str(path))
-        if _is_house_pdf(elements, metadata)
-        else None
-    )
-    image_boq = (
-        detect_image_material_boq(str(path))
-        if str(metadata.get("file_type") or "").upper() == "2D_DRAWING"
-        else None
-    )
+    house_boq: list[dict[str, Any]] | None = None
+    image_boq: list[dict[str, Any]] | None = None
+    if not mock_mode:
+        from app.material_detector import detect_house_material_boq
+        from app.image_material_detector import detect_image_material_boq
+
+        house_boq = (
+            detect_house_material_boq(str(path))
+            if _is_house_pdf(elements, metadata)
+            else None
+        )
+        image_boq = (
+            detect_image_material_boq(str(path))
+            if str(metadata.get("file_type") or "").upper() == "2D_DRAWING"
+            else None
+        )
 
     _emit(progress, "readiness", 45, "Running readiness assessment")
     report = _assess(elements, resolved_specs)

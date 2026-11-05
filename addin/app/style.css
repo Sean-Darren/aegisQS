@@ -68,6 +68,11 @@ button:disabled {
   color: var(--caution);
   padding: 10px;
 }
+.success {
+  background: var(--tolerance-bg);
+  color: var(--tolerance);
+  padding: 10px;
+}
 .check {
   display: block;
   text-align: left;
@@ -94,6 +99,24 @@ fieldset {
   border: 1px solid var(--line);
   border-radius: 10px;
   padding: 12px;
+}
+dl {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 12px;
+}
+dl div {
+  display: grid;
+  grid-template-columns: minmax(112px, 1fr) minmax(0, 2fr);
+  gap: 8px;
+}
+dt {
+  color: var(--muted-ink);
+  font-weight: 700;
+}
+dd {
+  margin: 0;
+  overflow-wrap: anywhere;
 }
 input[type="checkbox"] {
   accent-color: var(--clay-700);

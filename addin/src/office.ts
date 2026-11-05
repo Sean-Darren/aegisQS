@@ -180,3 +180,62 @@ export async function selectCell(sheet: string, cell: string) {
     await ctx.sync();
   });
 }
+
+export type WorkbookIdentity = {
+  workbookId?: string;
+  projectId?: string;
+  versionNumber?: number;
+};
+
+export async function readWorkbookIdentity(): Promise<WorkbookIdentity | null> {
+  if (!window.Excel) return null;
+  try {
+    let identity: WorkbookIdentity | null = null;
+    await window.Excel.run(async (rawContext) => {
+      const context = rawContext as unknown as {
+        workbook?: {
+          properties?: {
+            custom?: {
+              load: (propertyNames: string | string[]) => void;
+              items?: Array<{
+                key?: string;
+                value?: string | number;
+              }>;
+            };
+          };
+        };
+        sync: () => Promise<void>;
+      };
+      const custom = context.workbook?.properties?.custom;
+      if (!custom?.load) return;
+      custom.load("items");
+      await context.sync();
+      const values = new Map<string, string>();
+      for (const item of custom.items ?? []) {
+        if (typeof item.key === "string" && item.value !== undefined) {
+          values.set(item.key.toLowerCase(), String(item.value));
+        }
+      }
+      const workbookId =
+        values.get("aegisqs_workbook_id") ?? values.get("workbook_id");
+      const projectId =
+        values.get("aegisqs_project_id") ?? values.get("project_id");
+      const versionNumber = Number(
+        values.get("aegisqs_version_number") ??
+          values.get("version_number") ??
+          "",
+      );
+      identity = {
+        workbookId,
+        projectId,
+        versionNumber:
+          Number.isInteger(versionNumber) && versionNumber > 0
+            ? versionNumber
+            : undefined,
+      };
+    });
+    return identity;
+  } catch {
+    return null;
+  }
+}

@@ -7,7 +7,7 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
-DEFAULT_PIPELINE_ROOT = "/Users/glennjeffersonchandra/AegisQS/data-AegisQS/BIM"
+DEFAULT_PIPELINE_ROOT = Path(__file__).resolve().parent / "pipeline"
 DEFAULT_UPLOAD_DIR = "/tmp/aegisqs-bim-uploads"
 DEFAULT_CORS_ORIGINS = "http://localhost:3000"
 
@@ -44,7 +44,7 @@ class Settings:
         return cls(pipeline_root, upload_dir, cors_origins, mock_mode)
 
     def ensure_pipeline_path(self) -> None:
-        """Expose the existing deterministic pipeline to Python imports."""
+        """Expose the vendored deterministic pipeline to Python imports."""
         root = str(self.pipeline_root)
         if not self.pipeline_root.exists():
             raise RuntimeError(

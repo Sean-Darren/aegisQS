@@ -46,10 +46,15 @@ test("simulated Office host signs in with cookie, uploads a version, selects a c
   await page
     .getByRole("spinbutton", { name: /Open file version number/ })
     .fill("1");
-  await page.getByRole("button", { name: "Pull latest", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Check Version", exact: true })
+    .click();
   await expect(page.getByRole("status")).toContainText(
-    "older than current version 2",
+    "Version status refreshed.",
   );
+  await expect(
+    page.getByText("A newer workbook version is available.", { exact: true }),
+  ).toBeVisible();
   const workbook = new ExcelJS.Workbook();
   await workbook.xlsx.load(
     new Uint8Array(
@@ -77,7 +82,7 @@ test("simulated Office host signs in with cookie, uploads a version, selects a c
     })
     .check();
   await page
-    .getByRole("button", { name: "Save version to Smart QS", exact: true })
+    .getByRole("button", { name: "Save New Version", exact: true })
     .click();
   await expect(page.getByRole("status")).toContainText("Version 3 saved", {
     timeout: 20000,

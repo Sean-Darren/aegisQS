@@ -10,7 +10,44 @@ import type {
 } from "@schemas";
 import { can } from "@/lib/auth/permissions";
 import { api } from "../src/api";
-import { ready, signIn, exportWorkbook, selectCell } from "../src/office";
+import {
+  ready,
+  signIn,
+  exportWorkbook,
+  selectCell,
+  readWorkbookIdentity,
+} from "../src/office";
+type VersionState =
+  | "UNKNOWN"
+  | "UNVERIFIED"
+  | "CURRENT"
+  | "OUTDATED"
+  | "AHEAD"
+  | "MISMATCH"
+  | "ERROR";
+const versionStatusKey = {
+  UNKNOWN: "statusUnknown",
+  UNVERIFIED: "statusUnverified",
+  CURRENT: "statusCurrent",
+  OUTDATED: "statusOutdated",
+  AHEAD: "statusAhead",
+  MISMATCH: "statusMismatch",
+  ERROR: "statusError",
+} satisfies Record<VersionState, Parameters<ReturnType<typeof translator>>[0]>;
+function resolveVersionState(
+  open: string,
+  latest?: WorkbookVersion,
+): VersionState {
+  if (!latest) return "ERROR";
+  const raw = open.trim();
+  if (!raw) return "UNVERIFIED";
+  const versionNumber = Number(raw);
+  if (!Number.isInteger(versionNumber) || versionNumber < 1) return "UNKNOWN";
+  if (versionNumber === latest.versionNumber) return "CURRENT";
+  if (versionNumber < latest.versionNumber) return "OUTDATED";
+  if (versionNumber > latest.versionNumber) return "AHEAD";
+  return "MISMATCH";
+}
 export default function TaskPane() {
   const [locale, setLocale] = useState<"en" | "zh-HK">("en");
   const t = translator(locale);
@@ -22,6 +59,7 @@ export default function TaskPane() {
   const [workbook, setWorkbook] = useState("");
   const [checks, setChecks] = useState<WorkbookCheck[]>([]);
   const [current, setCurrent] = useState<WorkbookVersion>();
+  const [checkedVersion, setCheckedVersion] = useState<WorkbookVersion>();
   const [openNumber, setOpenNumber] = useState("");
   const [copy, setCopy] = useState<File>();
   const [confirmedCopy, setConfirmedCopy] = useState(false);
@@ -29,9 +67,11 @@ export default function TaskPane() {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const selected = workbooks.find((w) => w.id === workbook);
+  const selectedProject = projects.find((p) => p.id === project);
   const canUpload = can(user, "workbook.upload");
+  const versionState = resolveVersionState(openNumber, current);
   const selectionVerified =
-    !!current && Number(openNumber) === current.versionNumber;
+    versionState === "CURRENT" && checkedVersion?.id === current?.id;
   useEffect(() => {
     let active = true;
     void ready()
@@ -78,6 +118,7 @@ export default function TaskPane() {
     setWorkbook("");
     setChecks([]);
     setCurrent(undefined);
+    setCheckedVersion(undefined);
     setOpenNumber("");
     setWorkbooks(await api.workbooks(id));
   }
@@ -85,11 +126,16 @@ export default function TaskPane() {
     setWorkbook(id);
     setChecks([]);
     setCurrent(undefined);
+    setCheckedVersion(undefined);
     setOpenNumber("");
     setCopy(undefined);
     setConfirmedCopy(false);
     const w = workbooks.find((w) => w.id === id);
     if (w?.currentVersionId) setCurrent(await api.version(w.currentVersionId));
+    const identity = await readWorkbookIdentity();
+    if (identity?.workbookId === id && identity.versionNumber) {
+      setOpenNumber(String(identity.versionNumber));
+    }
   }
   async function refresh() {
     const list = await api.workbooks(project);
@@ -112,6 +158,7 @@ export default function TaskPane() {
     setOpenNumber(String(version.versionNumber));
     setCurrent(version);
     setChecks([]);
+    setCheckedVersion(undefined);
     setCopy(undefined);
     setConfirmedCopy(false);
     await refresh();
@@ -119,6 +166,7 @@ export default function TaskPane() {
   }
   async function check() {
     const v = await refresh();
+    setCheckedVersion(v);
     setChecks(await api.checks(v.id));
     setNotice(
       v.status === "checked"
@@ -126,15 +174,9 @@ export default function TaskPane() {
         : t("checksPending", { version: v.versionNumber, status: v.status }),
     );
   }
-  async function pull() {
-    const v = await refresh();
-    const n = Number(openNumber);
-    if (!openNumber) setNotice(t("unknown", { current: v.versionNumber }));
-    else if (n < v.versionNumber)
-      setNotice(t("older", { open: n, current: v.versionNumber }));
-    else if (n > v.versionNumber)
-      setNotice(t("newer", { open: n, current: v.versionNumber }));
-    else setNotice(t("matches", { current: v.versionNumber }));
+  async function checkVersion() {
+    await refresh();
+    setNotice(t("versionChecked"));
   }
   return (
     <main lang={locale}>
@@ -230,6 +272,34 @@ export default function TaskPane() {
           </fieldset>
           {selected && (
             <>
+              <section aria-live="polite">
+                <h2>{t("versionStatusTitle")}</h2>
+                <dl>
+                  <div>
+                    <dt>{t("project")}</dt>
+                    <dd>{selectedProject?.name}</dd>
+                  </div>
+                  <div>
+                    <dt>{t("workbook")}</dt>
+                    <dd>{selected.name}</dd>
+                  </div>
+                  <div>
+                    <dt>{t("open")}</dt>
+                    <dd>
+                      {openNumber.trim() ? `v${openNumber.trim()}` : t("notVerified")}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>{t("latest")}</dt>
+                    <dd>
+                      {current ? `v${current.versionNumber}` : t("notUploaded")}
+                    </dd>
+                  </div>
+                </dl>
+                <p className={versionState === "CURRENT" ? "success" : "warning"}>
+                  {t(versionStatusKey[versionState])}
+                </p>
+              </section>
               <section>
                 <h2>{t("versions")}</h2>
                 <p>
@@ -261,19 +331,8 @@ export default function TaskPane() {
                     </label>
                   </>
                 )}
-                {canUpload && (
-                  <button
-                    disabled={
-                      busy ||
-                      (host === "OfficeOnline" && (!copy || !confirmedCopy))
-                    }
-                    onClick={() => void run(save)}
-                  >
-                    {t("save")}
-                  </button>
-                )}
-                <button disabled={busy} onClick={() => void run(pull)}>
-                  {t("pull")}
+                <button disabled={busy} onClick={() => void run(checkVersion)}>
+                  {t("checkVersion")}
                 </button>
                 {current && (
                   <p>
@@ -285,6 +344,17 @@ export default function TaskPane() {
                     </a>
                   </p>
                 )}
+                {canUpload && (
+                  <button
+                    disabled={
+                      busy ||
+                      (host === "OfficeOnline" && (!copy || !confirmedCopy))
+                    }
+                    onClick={() => void run(save)}
+                  >
+                    {t("save")}
+                  </button>
+                )}
               </section>
               <section>
                 <h2>{t("checks")}</h2>
@@ -293,6 +363,13 @@ export default function TaskPane() {
                   {t("check")}
                 </button>
                 {checks.length === 0 && <p>{t("noChecks")}</p>}
+                {checkedVersion && checks.length > 0 && (
+                  <p className={selectionVerified ? "success" : "warning"}>
+                    {selectionVerified
+                      ? t("checksReadyCurrent", { count: checks.length })
+                      : t("checksReadyCloudOnly", { count: checks.length })}
+                  </p>
+                )}
                 {!selectionVerified && (
                   <p className="warning">{t("verifyVersion")}</p>
                 )}

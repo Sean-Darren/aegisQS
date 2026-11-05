@@ -13,7 +13,7 @@ Use Node.js 22+ and npm. Run `npm ci`, put `NEXT_PUBLIC_API_MOCKING=enabled` in 
 3. Try **Side by side**, **Overlay**, and **Swipe**. Drag either synchronized pane, use the swipe divider, or focus the viewer and use arrow keys to pan, +/− to zoom, and J/K to move between changes. Zoom spans 25–400%; the PDF re-renders after zoom settles. S-110 demonstrates low alignment confidence and adjustment controls.
 4. On a fresh A-201 comparison, select changes 1 and 2, then **Raise potential variation (2)**. Existing snapshot changes already link to VE-007; the fresh comparison supplies unlinked changes.
 5. Add current BOQ items **3.2.14** (quantity change **4.2**), **2.1.08** (**20**), and **2.4.03** (**100**). Their contract rates total **HK$186,400**. Save the cost lines. Negative quantity changes represent omissions and reduce the total. Editing a rate marks it as manual.
-6. Follow a BOQ reference to its read-only source row, then its workbook version. **Open in Excel** downloads that version. **See price forecast** opens the material's twelve-month forecast with p10–p90 ranges and model information.
+6. Follow a BOQ reference to its read-only source row, then its workbook version. **Open in Excel** downloads that version. **See price forecast** navigates to the material's twelve-month forecast with p10–p90 ranges and model information.
 7. A senior QS can confirm or reject with a reason after saving cost edits. The register and activity data refresh without a full page reload. Open **Audit** to follow the recorded actions.
 
 The range configuration for new or edited costs is low = total × 0.92 and high = total × 1.09. At HK$186,400, that is **HK$171,488–203,176**. The original VE-007 snapshot retains its supplied **HK$171,000–203,000** range until edited. This is an indicative demo rule, not a production estimation method.
@@ -45,7 +45,7 @@ Disable `NEXT_PUBLIC_API_MOCKING` and rebuild/restart Next. Serve `/api/v1` and 
 
 Run `npm run typecheck`, `npm run lint`, `npm test`, `npm run build`, and `npm run test:e2e`. Browser tests cover the connected comparison/costing flow, conflicts, role controls, linked sources, focus restoration, the shell, real mock workbook parsing and axe checks on the new screens in both locales. PDF rendering loads client-side only. Hub rows virtualize through the existing shared grid component.
 
-Documents, drawing comparison/review, variations, the portfolio, login and audit are implemented. Linked BOQ rows, workbook versions and material forecasts have read-only detail views. Procurement, project overview and admin screens remain explicit migration placeholders for their later tasks.
+Documents, drawing comparison/review, variations, the portfolio, login and audit are implemented. Linked BOQ rows and workbook versions have read-only detail views; materials use the full forecast route. Procurement and project overview connect the four modules. Administration is a directional informational state; organisation user-management screens are outside the connected demo.
 
 ## Workbook upload and review
 
@@ -67,10 +67,22 @@ Open `/en/materials`, filter categories or search, then **View forecast**. `/en/
 
 The 3/6/12-month selector changes the visible chart window and its table equivalent only. The model remains the supplied 12-month forecast; +3/+6-month glance cards stay tied to the material’s latest observed period. Every forecast median appears with its likely range. The model card reports name/version, training cut-off, mean absolute percentage backtest error and AI-labelled drivers. Backtest error strictly above 10% shows low confidence; the threshold lives in config.
 
-**Plan a purchase** opens the shared planner for QS roles. Choose the project, quantity, need-by date and lead time; the latest order date updates live. Existing project needs and the latest saved advice prefill the inputs. A missing lead time must be entered rather than assumed. Viewer has no planning action. Existing material record drawers reuse the same forecast components and offer the full-page link; long detail content scrolls inside the drawer.
+**Plan a purchase** opens the shared planner for QS roles. Choose the project, quantity, need-by date and lead time; the latest order date updates live. Existing project needs and the latest saved advice prefill the inputs. A missing lead time must be entered rather than assumed. Viewer has no planning action. Material links navigate to the forecast page.
 
 ### Procurement flow
 
 Open `/en/projects/P-001/procurement`. The rebar need links to VE-007 and starts at 4.2 tonnes. Choose **Get advice**, retain the seeded 1 June 2027 need-by date and eight-week lead time, and submit. The mock returns **Buy in window · Feb–Mar 2027**, expected cost HK$27,300 and expected saving +HK$1,470, with the supplied p10–p90 cost range and a saving range that can include a loss. These are synthetic demo forecasts, not purchase instructions.
 
 **View selected advice on forecast** opens `/en/materials/rebar?project=P-001&advice=<id>`. The selected advice supplies the window band and the latest-order/need-by lines. Change the chart horizon to inspect the visible months; dates outside it stay in the advice card. Advice IDs are mock-session records and reset on a fresh mock backend. The exposure chart combines needs per material, sorts by p90 and includes a collapsible table. BOQ and variation source chips open their existing records.
+
+## Reliable demo and release checks
+
+Follow [DEMO.md](./DEMO.md). With mocks enabled in development, Start demo story prepares the pre-upload position; Reset demo data restores the exact finished fixture snapshot and clears query state and scheduled jobs. Viewers cannot use these controls. Full reloads restore the finished snapshot. Neither control exists in the production UI.
+
+Run `npm run typecheck`, `npm run lint`, `npm test`, `npm run build`, then `npm run test:e2e`. Run typecheck after the Playwright server stops: Next regenerates the included `.next-playwright` type files during startup. Run `node scripts/report-bundles.mjs` after a production build to update [bundle-report.md](./bundle-report.md). Route-entry sizes there exclude shared/deferred chunks.
+
+`tests/e2e/release-accessibility.spec.ts` covers every route in both locales. Chart, viewer and sheet tests also exercise text alternatives and keyboard controls. The dev identity selector does not authenticate a real backend.
+
+## Excel task pane (P1)
+
+The separate `/addin` npm workspace shares schemas, permissions and theme assets. See [addin/README.md](../addin/README.md) for HTTPS development, mock cookie sign-in, the approved web download/upload fallback, manifest sideload steps and the simulated-host test. Actual Microsoft 365 sideload validation remains manual.

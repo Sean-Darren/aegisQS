@@ -44,3 +44,10 @@ next-env.d.ts
 !.env.example
 /playwright-report/
 /test-results/
+
+/addin/.next/
+/addin/.env.local
+/addin/certificates/
+
+/addin/test-results/
+/addin/playwright-report/

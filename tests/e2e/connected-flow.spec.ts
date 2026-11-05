@@ -174,15 +174,13 @@ test("QS and viewer controls, linked sources and drawer focus", async ({
     page.getByRole("button", { name: "Record decision" }),
   ).toHaveCount(0);
   await page.getByRole("link", { name: "See price forecast" }).first().click();
+  await expect(page).toHaveURL(/materials\/rebar/);
   await expect(
-    page
-      .getByRole("dialog")
-      .getByRole("heading", { name: "Price forecast", exact: true }),
+    page.getByRole("heading", { name: "Price forecast", exact: true }),
   ).toBeVisible();
+  await page.getByText("Show price data table", { exact: true }).click();
   await expect(
-    page
-      .getByRole("dialog")
-      .getByRole("columnheader", { name: "80% likely range" }),
+    page.getByRole("columnheader", { name: "80% likely range" }),
   ).toBeVisible();
 });
 

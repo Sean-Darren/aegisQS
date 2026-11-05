@@ -2,7 +2,6 @@
 import { Suspense, useState } from "react";
 import dynamic from "next/dynamic";
 import { useTranslations, useLocale } from "next-intl";
-import { Link } from "@/i18n/navigation";
 import {
   StatusChip,
   Skeleton,
@@ -30,13 +29,7 @@ const FanChart = dynamic(() => import("./fan-chart").then((m) => m.FanChart), {
   ssr: false,
   loading: () => <Skeleton className="h-[420px] w-full" />,
 });
-export function MaterialForecastPage({
-  materialId,
-  compact = false,
-}: {
-  materialId: string;
-  compact?: boolean;
-}) {
+export function MaterialForecastPage({ materialId }: { materialId: string }) {
   const t = useTranslations("Materials");
   const locale = useLocale() as FormatLocale;
   const materials = useMaterials();
@@ -65,11 +58,7 @@ export function MaterialForecastPage({
   return (
     <div className="space-y-5">
       <header className="space-y-2">
-        {compact ? (
-          <h2 className="text-xl font-semibold">{material.name}</h2>
-        ) : (
-          <h1 className="text-2xl font-semibold">{material.name}</h1>
-        )}
+        <h1 className="text-2xl font-semibold">{material.name}</h1>
         <p className="text-3xl font-bold tabular-nums">
           {formatUnitRate(material.latestPrice, material.unit)}
         </p>
@@ -91,17 +80,9 @@ export function MaterialForecastPage({
           })}
         </p>
       )}
-      {compact && (
-        <Link
-          className="text-clay-700 underline"
-          href={`/materials/${encodeURIComponent(material.id)}`}
-        >
-          {t("fullForecast")}
-        </Link>
-      )}
       {data.forecast.length === 0 && <EmptyState message={t("noForecast")} />}
       {data.history.length === 0 && <EmptyState message={t("noHistory")} />}
-      {!compact && (
+      {
         <Suspense fallback={<Skeleton className="h-24 w-full" />}>
           <ForecastPlanning
             material={material}
@@ -109,8 +90,8 @@ export function MaterialForecastPage({
             onAdvice={setAdvice}
           />
         </Suspense>
-      )}
-      {!compact && data.history.length > 0 && data.forecast.length > 0 && (
+      }
+      {data.history.length > 0 && data.forecast.length > 0 && (
         <section className="space-y-3 rounded-lg border border-line bg-panel p-4">
           <SegmentedControl
             label={t("horizon")}
@@ -129,7 +110,7 @@ export function MaterialForecastPage({
           />
         </section>
       )}
-      {!compact && (
+      {
         <section className="space-y-3">
           <h2 className="text-lg font-semibold">{t("glance")}</h2>
           <div className="grid gap-4 md:grid-cols-2">
@@ -162,19 +143,12 @@ export function MaterialForecastPage({
             })}
           </div>
         </section>
-      )}
-      <details
-        className="rounded-lg border border-line bg-panel p-4"
-        open={compact || undefined}
-      >
+      }
+      <details className="rounded-lg border border-line bg-panel p-4">
         <summary className="cursor-pointer font-semibold focus-visible:outline-2 focus-visible:outline-clay-600">
           {t("dataTable")}
         </summary>
-        <ForecastTable
-          material={material}
-          forecast={data}
-          horizon={compact ? 12 : horizon}
-        />
+        <ForecastTable material={material} forecast={data} horizon={horizon} />
       </details>
       <section className="space-y-3 rounded-lg border border-line bg-panel p-4">
         <h2 className="text-lg font-semibold">{t("model")}</h2>

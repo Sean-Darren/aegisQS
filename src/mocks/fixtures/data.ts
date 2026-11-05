@@ -368,9 +368,9 @@ export const variations = [
   }),
   ...Array.from({ length: 5 }, (_, i) =>
     s.variationEventSchema.parse({
-      id: `VE-00${i + 1}`,
+      id: `VE-00${[1, 2, 3, 4, 6][i]}`,
       projectId: project.id,
-      ref: `VE-00${i + 1}`,
+      ref: `VE-00${[1, 2, 3, 4, 6][i]}`,
       title: `Structural change review ${i + 1}`,
       drawingNumber: "S-110",
       sourceChangeIds: ["CH-S110-1"],
@@ -472,7 +472,7 @@ export const forecasts = materials.map((m) => {
       backtestMapePct: 4.8,
       drivers: [
         "Wholesale material prices",
-        "Tender price index",
+        "Construction price index",
         "Wage index",
       ],
     },

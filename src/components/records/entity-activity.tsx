@@ -16,6 +16,7 @@ export function EntityActivity({
 }) {
   const t = useTranslations("Records");
   const router = useRouter();
+  const common = useTranslations("Common");
   const query = useQuery({
     queryKey: [...queryKeys.auditEvents(projectId), "entities", entities],
     queryFn: async () => {
@@ -36,7 +37,17 @@ export function EntityActivity({
     <section className="space-y-3">
       <h2 className="text-lg font-semibold">{t("activity")}</h2>
       {query.isPending && <Skeleton className="h-20 w-full" />}
-      {query.isError && <ErrorState message={t("error")} />}
+      {query.isError && (
+        <ErrorState
+          message={t("error")}
+          action={{
+            label: common("retry"),
+            onClick: () => {
+              void query.refetch();
+            },
+          }}
+        />
+      )}
       {query.data?.length === 0 && <p>{t("none")}</p>}
       {query.data && (
         <AuditTimeline

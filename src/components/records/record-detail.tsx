@@ -21,7 +21,6 @@ import {
 } from "@/lib/format";
 import { LinkedRecords, recordHref } from "./linked-records";
 import type { BoqItem, WorkbookVersion } from "@/schemas";
-import { MaterialForecastPage } from "@/features/materials";
 import { useState } from "react";
 
 function VersionRecord({ id, projectId }: { id: string; projectId: string }) {
@@ -199,6 +198,13 @@ export function RecordDetail({
   if (type === "workbook")
     return <WorkbookRecord id={id} projectId={projectId} />;
   if (type === "material")
-    return <MaterialForecastPage materialId={id} compact />;
+    return (
+      <Link
+        className="text-clay-700 underline"
+        href={`/materials/${encodeURIComponent(id)}`}
+      >
+        {id}
+      </Link>
+    );
   return <EmptyState message={t("notFound")} />;
 }

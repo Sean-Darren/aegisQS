@@ -1,4 +1,5 @@
 "use client";
+import { DemoControls } from "./demo-controls";
 import { JobStatus } from "./job-status";
 import type { ReactNode } from "react";
 import { Bell, CircleDashed } from "lucide-react";
@@ -66,6 +67,7 @@ export function Header({
       )}
       <div className="ml-auto flex items-center gap-2">
         {primaryAction}
+        <DemoControls user={user} />
         <Tooltip>
           <TooltipTrigger asChild>
             <span

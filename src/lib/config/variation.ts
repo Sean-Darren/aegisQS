@@ -3,3 +3,5 @@ export const variationRangeRule = {
   highFactor: 1.09,
   basis: "Contract BOQ rates; quantities entered by QS",
 } as const;
+
+export const costLineToleranceHKD = 0.011;

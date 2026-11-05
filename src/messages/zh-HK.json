@@ -108,10 +108,6 @@
       "summary": "摘要"
     }
   },
-  "Migration": {
-    "coming": "即將於本次版本推出",
-    "detail": "記錄詳情"
-  },
   "StatusVocabulary": {
     "changeKind": {
       "added": "新增",
@@ -741,5 +737,14 @@
     "openDrawings": "開啟圖則",
     "openVariations": "開啟變更",
     "openWorkbooks": "開啟活頁簿"
+  },
+  "Demo": {
+    "reset": "重設示範資料",
+    "start": "開始示範流程",
+    "error": "無法重設示範資料，請再次嘗試重設。"
+  },
+  "Admin": {
+    "title": "管理",
+    "empty": "用戶及材料目錄由機構管理。如需更改權限，請聯絡管理員。"
   }
 }

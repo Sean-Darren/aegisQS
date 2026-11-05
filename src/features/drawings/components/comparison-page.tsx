@@ -41,10 +41,22 @@ const Canvas = dynamic(
   { ssr: false, loading: () => <Skeleton className="h-[600px] w-full" /> },
 );
 export function ComparisonPage({ comparisonId }: { comparisonId: string }) {
+  const common = useTranslations("Common");
   const t = useTranslations("Drawing");
   const query = useComparison(comparisonId);
   if (query.isPending) return <Skeleton className="h-[650px] w-full" />;
-  if (query.isError || !query.data) return <ErrorState message={t("error")} />;
+  if (query.isError || !query.data)
+    return (
+      <ErrorState
+        message={t("error")}
+        action={{
+          label: common("retry"),
+          onClick: () => {
+            void query.refetch();
+          },
+        }}
+      />
+    );
   return <ComparisonWorkspace key={comparisonId} comparison={query.data} />;
 }
 function ComparisonWorkspace({

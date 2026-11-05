@@ -57,5 +57,8 @@
     "workerDirectory": [
       "public"
     ]
-  }
+  },
+  "workspaces": [
+    "addin"
+  ]
 }

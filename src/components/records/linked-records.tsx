@@ -21,7 +21,7 @@ export function recordHref(projectId: string, type: string, id: string) {
     case "comparison":
       return `${root}/drawings/compare/${id}`;
     case "material":
-      return `/materials?detail=material:${encodeURIComponent(id)}`;
+      return `/materials/${encodeURIComponent(id)}`;
     case "workbook":
       return `${root}/workbooks/${encodeURIComponent(id)}`;
     default:

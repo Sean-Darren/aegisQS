@@ -19,7 +19,8 @@
       }
     ],
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@schemas": ["./src/schemas/index.ts"]
     },
     "allowImportingTsExtensions": true
   },
@@ -33,5 +34,5 @@
     ".next-playwright/dev/types/**/*.ts",
     "**/*.mts"
   ],
-  "exclude": ["node_modules"]
+  "exclude": ["node_modules", "addin/.next", "addin/node_modules"]
 }

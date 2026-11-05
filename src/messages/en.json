@@ -108,10 +108,6 @@
       "summary": "Summary"
     }
   },
-  "Migration": {
-    "coming": "Coming in this release",
-    "detail": "Record details"
-  },
   "StatusVocabulary": {
     "changeKind": {
       "added": "Added",
@@ -741,5 +737,14 @@
     "openDrawings": "Open drawings",
     "openVariations": "Open variations",
     "openWorkbooks": "Open workbooks"
+  },
+  "Demo": {
+    "reset": "Reset demo data",
+    "start": "Start demo story",
+    "error": "Demo data could not be reset. Try the reset action again."
+  },
+  "Admin": {
+    "title": "Administration",
+    "empty": "User and catalogue administration is managed by your organisation. Contact your administrator to change access."
   }
 }

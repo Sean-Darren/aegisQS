@@ -1,3 +1,4 @@
+import { costLineToleranceHKD } from "@/lib/config/variation";
 import { z } from "zod";
 import { isoDateSchema } from "./enums";
 export const variationStatusSchema = z.enum([
@@ -19,7 +20,7 @@ export const costLineSchema = z
     materialId: z.string().optional(),
   })
   .refine(
-    (l) => Math.abs(l.amount - l.quantityDelta * l.rate) < 0.011,
+    (l) => Math.abs(l.amount - l.quantityDelta * l.rate) < costLineToleranceHKD,
     "Amount must equal quantity delta times rate",
   );
 export const variationEventSchema = z.object({

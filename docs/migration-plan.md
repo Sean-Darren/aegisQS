@@ -1,5 +1,7 @@
 # Migration plan: tender-audit front end to the four-module Smart QS MVP
 
+**Status: Completed — 5 November 2026.** Scope cutover and Tasks 03–11 are complete; Task 12 remains an optional P1 stretch. Historical inventory and sequencing below are retained for reference.
+
 _Inventory taken 4 November 2026. Planning document only; no implementation or deletion is part of this step._
 
 ## Source and decision boundary

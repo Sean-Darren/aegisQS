@@ -1,0 +1,86 @@
+{
+  "../node_modules/.pnpm/msw@2.15.0_@types+node@20.19.43_typescript@5.9.3/node_modules/msw/lib/core/utils/internal/parseGraphQLRequest.mjs -> graphql": {
+    "id": "../node_modules/.pnpm/msw@2.15.0_@types+node@20.19.43_typescript@5.9.3/node_modules/msw/lib/core/utils/internal/parseGraphQLRequest.mjs -> graphql",
+    "files": []
+  },
+  "components/layout/demo-controls.tsx -> @/mocks/demo": {
+    "id": "components/layout/demo-controls.tsx -> @/mocks/demo",
+    "files": [
+      "static/chunks/_app-pages-browser_src_mocks_demo_ts.js"
+    ]
+  },
+  "components/layout/detail-drawer.tsx -> @/components/records/record-detail": {
+    "id": "components/layout/detail-drawer.tsx -> @/components/records/record-detail",
+    "files": [
+      "static/chunks/_app-pages-browser_src_components_records_record-detail_tsx.js"
+    ]
+  },
+  "components/layout/detail-drawer.tsx -> @/features/documents": {
+    "id": "components/layout/detail-drawer.tsx -> @/features/documents",
+    "files": [
+      "static/chunks/_app-pages-browser_src_features_documents_index_ts.js"
+    ]
+  },
+  "components/layout/detail-drawer.tsx -> @/features/workbooks": {
+    "id": "components/layout/detail-drawer.tsx -> @/features/workbooks",
+    "files": [
+      "static/chunks/_app-pages-browser_src_features_workbooks_index_ts.js"
+    ]
+  },
+  "components/viewer/pdf-viewer.tsx -> ./pdf-canvas": {
+    "id": "components/viewer/pdf-viewer.tsx -> ./pdf-canvas",
+    "files": [
+      "static/css/_app-pages-browser_src_components_viewer_pdf-canvas_tsx.css",
+      "static/chunks/_app-pages-browser_src_components_viewer_pdf-canvas_tsx.js"
+    ]
+  },
+  "features/drawings/components/comparison-page.tsx -> @/components/viewer/comparison-canvas": {
+    "id": "features/drawings/components/comparison-page.tsx -> @/components/viewer/comparison-canvas",
+    "files": [
+      "static/css/_app-pages-browser_src_components_viewer_comparison-canvas_tsx.css",
+      "static/chunks/_app-pages-browser_src_components_viewer_comparison-canvas_tsx.js"
+    ]
+  },
+  "features/materials/components/material-forecast-page.tsx -> ./fan-chart": {
+    "id": "features/materials/components/material-forecast-page.tsx -> ./fan-chart",
+    "files": [
+      "static/chunks/_app-pages-browser_src_features_materials_components_fan-chart_tsx.js"
+    ]
+  },
+  "features/procurement/components/procurement-page.tsx -> ./exposure-chart": {
+    "id": "features/procurement/components/procurement-page.tsx -> ./exposure-chart",
+    "files": [
+      "static/chunks/_app-pages-browser_src_features_procurement_components_exposure-chart_tsx.js"
+    ]
+  },
+  "features/workbooks/components/diff-tab.tsx -> ./version-totals-chart": {
+    "id": "features/workbooks/components/diff-tab.tsx -> ./version-totals-chart",
+    "files": [
+      "static/chunks/_app-pages-browser_src_features_workbooks_components_version-totals-chart_tsx.js"
+    ]
+  },
+  "lib/auth/session.ts -> @/mocks/store": {
+    "id": "lib/auth/session.ts -> @/mocks/store",
+    "files": [
+      "static/chunks/_app-pages-browser_src_mocks_store_ts.js"
+    ]
+  },
+  "mocks/handlers/workbooks.ts -> exceljs": {
+    "id": "mocks/handlers/workbooks.ts -> exceljs",
+    "files": [
+      "static/chunks/_app-pages-browser_node_modules_pnpm_exceljs_4_4_0_node_modules_exceljs_dist_exceljs_min_js.js"
+    ]
+  },
+  "mocks/provider.tsx -> ./browser": {
+    "id": "mocks/provider.tsx -> ./browser",
+    "files": [
+      "static/chunks/_app-pages-browser_src_mocks_browser_ts.js"
+    ]
+  },
+  "mocks/workbook-engine.ts -> exceljs": {
+    "id": "mocks/workbook-engine.ts -> exceljs",
+    "files": [
+      "static/chunks/_app-pages-browser_node_modules_pnpm_exceljs_4_4_0_node_modules_exceljs_dist_exceljs_min_js.js"
+    ]
+  }
+}

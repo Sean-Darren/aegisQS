@@ -1,0 +1,19 @@
+{
+  "/[locale]/page": "app/[locale]/page.js",
+  "/[locale]/(auth)/login/page": "app/[locale]/(auth)/login/page.js",
+  "/[locale]/(app)/projects/[projectId]/documents/page": "app/[locale]/(app)/projects/[projectId]/documents/page.js",
+  "/[locale]/(app)/projects/[projectId]/drawings/compare/[comparisonId]/page": "app/[locale]/(app)/projects/[projectId]/drawings/compare/[comparisonId]/page.js",
+  "/[locale]/(app)/projects/[projectId]/variations/page": "app/[locale]/(app)/projects/[projectId]/variations/page.js",
+  "/[locale]/(app)/projects/[projectId]/overview/page": "app/[locale]/(app)/projects/[projectId]/overview/page.js",
+  "/[locale]/(app)/projects/[projectId]/procurement/page": "app/[locale]/(app)/projects/[projectId]/procurement/page.js",
+  "/[locale]/(app)/projects/[projectId]/workbooks/page": "app/[locale]/(app)/projects/[projectId]/workbooks/page.js",
+  "/[locale]/(app)/projects/[projectId]/workbooks/[workbookId]/page": "app/[locale]/(app)/projects/[projectId]/workbooks/[workbookId]/page.js",
+  "/[locale]/(app)/projects/[projectId]/audit/page": "app/[locale]/(app)/projects/[projectId]/audit/page.js",
+  "/[locale]/(app)/projects/[projectId]/drawings/page": "app/[locale]/(app)/projects/[projectId]/drawings/page.js",
+  "/[locale]/(app)/projects/page": "app/[locale]/(app)/projects/page.js",
+  "/[locale]/(app)/materials/page": "app/[locale]/(app)/materials/page.js",
+  "/[locale]/(app)/materials/[materialId]/page": "app/[locale]/(app)/materials/[materialId]/page.js",
+  "/[locale]/(app)/projects/[projectId]/documents/[documentId]/page": "app/[locale]/(app)/projects/[projectId]/documents/[documentId]/page.js",
+  "/[locale]/(app)/projects/[projectId]/variations/[variationId]/page": "app/[locale]/(app)/projects/[projectId]/variations/[variationId]/page.js",
+  "/[locale]/(app)/admin/page": "app/[locale]/(app)/admin/page.js"
+}

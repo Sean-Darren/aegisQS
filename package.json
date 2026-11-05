@@ -9,10 +9,15 @@
     "lint": "eslint .",
     "test": "vitest run",
     "test:e2e": "playwright test",
-    "mock:files": "node --experimental-default-type=module --experimental-strip-types scripts/make-mock-drawings.ts && node --experimental-default-type=module --experimental-strip-types scripts/make-mock-workbooks.ts"
+    "mock:files": "node --experimental-default-type=module --experimental-strip-types scripts/make-mock-drawings.ts && node --experimental-default-type=module --experimental-strip-types scripts/make-mock-workbooks.ts",
+    "db:migrate": "node --env-file=.env.local scripts/migrate-supabase.mjs",
+    "db:seed": "node --env-file=.env.local --import ./scripts/register-typescript.mjs scripts/seed-supabase.ts",
+    "db:worker": "node --env-file=.env.local --import ./scripts/register-typescript.mjs scripts/supabase-worker.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^7.0.2",
+    "@supabase/ssr": "^0.12.7",
+    "@supabase/supabase-js": "^2.119.0",
     "@tanstack/react-query": "^5.104.0",
     "@tanstack/react-virtual": "^3.14.13",
     "class-variance-authority": "^0.7.1",

@@ -39,5 +39,8 @@
   "failed": "無法完成操作。請檢查連線及所選活頁簿，再重試。",
   "details": "技術詳情",
   "confirmCopy": "我確認此下載副本與目前開啟的活頁簿相符。",
-  "verifyVersion": "選取檢查儲存格前，請先確認開啟版本與目前 Smart QS 版本相同。"
+  "verifyVersion": "選取檢查儲存格前，請先確認開啟版本與目前 Smart QS 版本相同。",
+  "email": "電郵",
+  "password": "密碼",
+  "loginError": "登入失敗。請檢查電郵及密碼，然後重試。"
 }

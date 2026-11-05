@@ -31,6 +31,14 @@ async function handle(
     const value = request.headers.get(key);
     if (value) headers.set(key, value);
   }
+  if (!mocking && request.method !== "GET") {
+    if (
+      request.headers.get("origin") !==
+      `${request.nextUrl.protocol}//${request.headers.get("host") ?? request.nextUrl.host}`
+    )
+      return new Response(null, { status: 403 });
+    headers.set("Origin", url.origin);
+  }
   try {
     const result = await fetch(url, {
       method: request.method,
@@ -38,11 +46,19 @@ async function handle(
       body: request.method === "GET" ? undefined : await request.arrayBuffer(),
       cache: "no-store",
     });
-    const outgoing = new Headers();
-    for (const key of ["content-type", "set-cookie", "x-next-cursor"]) {
+    const outgoing = new Headers({ "Cache-Control": "private, no-store" });
+    for (const key of ["content-type", "x-next-cursor"]) {
       const value = result.headers.get(key);
       if (value) outgoing.set(key, value);
     }
+    for (const cookie of result.headers.getSetCookie())
+      outgoing.append(
+        "Set-Cookie",
+        mocking
+          ? cookie
+          : cookie.replace(/;\s*SameSite=Lax/gi, "; SameSite=None") +
+              (/;\s*Secure/i.test(cookie) ? "" : "; Secure"),
+      );
     return new Response(await result.arrayBuffer(), {
       status: result.status,
       headers: outgoing,

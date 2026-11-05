@@ -55,7 +55,13 @@
   "Login": {
     "title": "登入 AegisQS",
     "description": "使用模擬工作區檢視項目資料。",
-    "continue": "前往項目"
+    "continue": "前往項目",
+    "realDescription": "使用你的 Smart QS 項目帳戶登入。",
+    "email": "電郵",
+    "password": "密碼",
+    "signIn": "登入",
+    "signOut": "登出",
+    "error": "登入失敗。請檢查電郵及密碼，然後重試。"
   },
   "Audit": {
     "title": "審計紀錄",

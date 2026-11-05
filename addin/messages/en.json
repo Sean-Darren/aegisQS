@@ -39,5 +39,8 @@
   "failed": "The action could not be completed. Review your connection and selected workbook, then try again.",
   "details": "Technical details",
   "confirmCopy": "I confirm this downloaded copy matches the open workbook.",
-  "verifyVersion": "Confirm the actual open version matches the current Smart QS version before selecting a check cell."
+  "verifyVersion": "Confirm the actual open version matches the current Smart QS version before selecting a check cell.",
+  "email": "Email",
+  "password": "Password",
+  "loginError": "Sign-in failed. Check your email and password and try again."
 }

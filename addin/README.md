@@ -58,3 +58,7 @@ Playwright starts a built production server on HTTP localhost **only for simulat
 Karla is self-hosted from the same Google Fonts font used by the app, licensed under the included SIL OFL. Theme variables import the canonical `src/app/globals.css`. UI labels are in `addin/messages/en.json` and `zh-HK.json`; raw Office/backend diagnostic messages are shown separately from translated guidance.
 
 References: [File export platform support](https://learn.microsoft.com/en-us/javascript/api/office/office.document?view=office-js), [Office dialog authentication](https://learn.microsoft.com/en-us/office/dev/add-ins/develop/auth-with-office-dialog-api), [Sideloading](https://learn.microsoft.com/en-us/office/dev/add-ins/testing/sideload-office-add-ins-for-testing), [framework/history compatibility](https://learn.microsoft.com/en-us/office/dev/add-ins/develop/connect-to-javascript-frameworks).
+
+## Persistent Supabase backend
+
+Follow [the main Supabase setup](../docs/SUPABASE.md) first. Set `ADDIN_API_MOCKING=disabled` and `SMART_QS_API_ORIGIN` to the main app origin. The built-in `/login` page uses the backend login endpoint through the add-in origin, retaining httpOnly cookies. Do not set a Supabase secret key in the add-in. The original dialog, explicit web download/upload, cell-selection and pull-latest flows then use the real persistent workbook endpoints. Real Excel sideload/cookie behaviour must still be verified in Microsoft 365.

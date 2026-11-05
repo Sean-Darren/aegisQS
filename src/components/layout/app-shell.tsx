@@ -11,11 +11,12 @@ import { useQuery } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { can } from "@/lib/auth/permissions";
 import { useSession } from "@/lib/auth/session";
-import { queryKeys, resources } from "@/lib/api";
+import { ApiError, queryKeys, resources } from "@/lib/api";
 import { useProjectEvents } from "@/lib/ws";
 
 import { useToast } from "@/components/ui/toast";
-import { ErrorState, Skeleton } from "@/components/ui";
+import { Link } from "@/i18n/navigation";
+import { ErrorState, Skeleton, Button } from "@/components/ui";
 import { Header } from "./header";
 import { LeftNav } from "./left-nav";
 import { DetailDrawer } from "./detail-drawer";
@@ -32,6 +33,7 @@ export function useMonitorProject() {
 }
 export function AppShell({ children }: { children: ReactNode }) {
   const t = useTranslations("Shell");
+  const auth = useTranslations("Login");
   const drawing = useTranslations("Drawing");
   const workbookCopy = useTranslations("Workbooks");
   const toast = useToast();
@@ -106,7 +108,15 @@ export function AppShell({ children }: { children: ReactNode }) {
               }
             >
               {session.isError ? (
-                <ErrorState message={t("sessionError")} />
+                <>
+                  <ErrorState message={t("sessionError")} />
+                  {session.error instanceof ApiError &&
+                    session.error.status === 401 && (
+                      <Button asChild className="mt-4">
+                        <Link href="/login">{auth("signIn")}</Link>
+                      </Button>
+                    )}
+                </>
               ) : (
                 <div
                   className={

@@ -55,7 +55,13 @@
   "Login": {
     "title": "Sign in to AegisQS",
     "description": "Use the mock workspace to review project data.",
-    "continue": "Continue to projects"
+    "continue": "Continue to projects",
+    "realDescription": "Sign in with your Smart QS project account.",
+    "email": "Email",
+    "password": "Password",
+    "signIn": "Sign in",
+    "signOut": "Sign out",
+    "error": "Sign-in failed. Check your email and password and try again."
   },
   "Audit": {
     "title": "Audit log",

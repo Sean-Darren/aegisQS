@@ -39,6 +39,8 @@ UI gating uses `can()`. Mock handlers enforce the same permissions. The selector
 
 ## Real API
 
+The persistent Supabase backend, table migration, seed, real sign-in, worker and Excel add-in setup are documented in [SUPABASE.md](./SUPABASE.md). Complete that setup before disabling mocks.
+
 Disable `NEXT_PUBLIC_API_MOCKING` and rebuild/restart Next. Serve `/api/v1` and `/ws?projectId=…` at the same origin, usually through a reverse proxy. The client sends credentials; the backend sets and validates the httpOnly cookie. Tokens are never placed in browser storage. Every JSON response and socket event is checked with Zod. `useProjectEvents(projectId)` is the sole socket subscriber and updates TanStack Query caches. The development role selector disappears with mocks disabled.
 
 ## Verification and remaining modules

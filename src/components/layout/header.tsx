@@ -3,13 +3,14 @@ import { DemoControls } from "./demo-controls";
 import { JobStatus } from "./job-status";
 import type { ReactNode } from "react";
 import { Bell, CircleDashed } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { Link } from "@/i18n/navigation";
 import { can } from "@/lib/auth/permissions";
 import { useMockRoleSwitcher } from "@/lib/auth/session";
 import type { Project, Role, User } from "@/schemas";
 import {
+  Button,
   IconButton,
   Tooltip,
   TooltipContent,
@@ -29,6 +30,8 @@ export function Header({
   primaryAction?: ReactNode;
 }) {
   const t = useTranslations("Shell");
+  const auth = useTranslations("Login");
+  const locale = useLocale();
   const router = useRouter();
   const switchRole = useMockRoleSwitcher();
   return (
@@ -119,6 +122,14 @@ export function Header({
           </label>
         )}
       </div>
+      {user && process.env.NEXT_PUBLIC_API_MOCKING !== "enabled" && (
+        <form method="post" action="/api/auth/logout">
+          <input type="hidden" name="locale" value={locale} />
+          <Button variant="ghost" type="submit">
+            {auth("signOut")}
+          </Button>
+        </form>
+      )}
     </header>
   );
 }

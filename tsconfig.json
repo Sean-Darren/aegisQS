@@ -32,7 +32,9 @@
     ".next/dev/types/**/*.ts",
     ".next-playwright/types/**/*.ts",
     ".next-playwright/dev/types/**/*.ts",
-    "**/*.mts"
+    "**/*.mts",
+    ".next-supabase/types/**/*.ts",
+    ".next-supabase/dev/types/**/*.ts"
   ],
   "exclude": ["node_modules", "addin/.next", "addin/node_modules"]
 }

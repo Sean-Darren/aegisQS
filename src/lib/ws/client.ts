@@ -10,6 +10,22 @@ export function connectProjectSocket(
   projectId: string,
   options: ProjectSocketOptions,
 ) {
+  if (process.env.NEXT_PUBLIC_API_MOCKING !== "enabled" && !options.baseUrl) {
+    const url = new URL("/ws", globalThis.location.origin);
+    url.searchParams.set("projectId", projectId);
+    const source = new EventSource(url, { withCredentials: true });
+    source.onopen = () => options.onOpen?.();
+    source.onmessage = (message) => {
+      try {
+        options.onEvent(wsEventSchema.parse(JSON.parse(message.data)));
+      } catch {
+        options.onError?.(new Error("Invalid project event"));
+      }
+    };
+    source.onerror = () =>
+      options.onError?.(new Error("Project event stream reconnecting"));
+    return () => source.close();
+  }
   const url = new URL("/ws", options.baseUrl ?? globalThis.location.origin);
   url.protocol =
     url.protocol === "https:" || url.protocol === "wss:" ? "wss:" : "ws:";

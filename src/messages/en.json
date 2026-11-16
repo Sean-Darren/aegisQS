@@ -42,7 +42,8 @@
     "audit": "Audit",
     "materials": "Materials",
     "projects": "Projects",
-    "admin": "Admin"
+    "admin": "Admin",
+    "toggleSidebar": "Collapse or expand sidebar"
   },
   "Projects": {
     "title": "Projects",

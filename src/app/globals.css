@@ -169,6 +169,12 @@ body {
 .app-sidebar {
   width: 64px;
   flex: 0 0 64px;
+  position: sticky;
+  top: 0;
+  height: 100dvh;
+  transition:
+    width 200ms ease,
+    flex-basis 200ms ease;
 }
 .sidebar-label {
   position: absolute;
@@ -194,6 +200,64 @@ body {
     clip-path: none;
     white-space: normal;
   }
+}
+/* Manual collapse/expand toggle: overrides both the icon-only default and
+   the wide-screen media query above (same specificity, later in source). */
+.app-sidebar[data-manual="expanded"] {
+  width: 240px;
+  flex-basis: 240px;
+}
+.app-sidebar[data-manual="expanded"] .sidebar-label {
+  position: static;
+  width: auto;
+  height: auto;
+  margin: 0;
+  overflow: visible;
+  clip-path: none;
+  white-space: normal;
+}
+.app-sidebar[data-manual="collapsed"] {
+  width: 64px;
+  flex-basis: 64px;
+}
+.app-sidebar[data-manual="collapsed"] .sidebar-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+/* The toggle shows the action it performs: collapse icon while expanded,
+   expand icon while collapsed. CSS mirrors the width rules so the icon
+   always matches the actual state, no JS media queries needed. */
+.app-sidebar .toggle-collapse-icon {
+  display: none;
+}
+.app-sidebar .toggle-expand-icon {
+  display: flex;
+}
+@media (min-width: 1440px) {
+  .app-sidebar:not([data-collapsed="true"]) .toggle-collapse-icon {
+    display: flex;
+  }
+  .app-sidebar:not([data-collapsed="true"]) .toggle-expand-icon {
+    display: none;
+  }
+}
+.app-sidebar[data-manual="expanded"] .toggle-collapse-icon {
+  display: flex;
+}
+.app-sidebar[data-manual="expanded"] .toggle-expand-icon {
+  display: none;
+}
+.app-sidebar[data-manual="collapsed"] .toggle-collapse-icon {
+  display: none;
+}
+.app-sidebar[data-manual="collapsed"] .toggle-expand-icon {
+  display: flex;
 }
 
 @keyframes revision-cloud-appear {

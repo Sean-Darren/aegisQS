@@ -42,7 +42,8 @@
     "audit": "審計記錄",
     "materials": "材料",
     "projects": "項目",
-    "admin": "管理"
+    "admin": "管理",
+    "toggleSidebar": "收合或展開側邊欄"
   },
   "Projects": {
     "title": "項目",

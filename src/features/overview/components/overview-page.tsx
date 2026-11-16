@@ -2,7 +2,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
-import { SummaryCard, Skeleton, ErrorState, EmptyState } from "@/components/ui";
+import { Skeleton, ErrorState, EmptyState } from "@/components/ui";
 import { AuditTimeline } from "@/features/audit";
 import { BimAnalysisCard } from "@/features/bim";
 import { queryKeys } from "@/lib/api";
@@ -13,6 +13,7 @@ import {
   type FormatLocale,
 } from "@/lib/format";
 import { loadOverview, summarizeOverview } from "../load";
+import { KpiCard } from "./kpi-card";
 const link =
   "rounded-sm text-clay-700 underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-clay-600";
 export function OverviewPage({ projectId }: { projectId: string }) {
@@ -83,60 +84,50 @@ export function OverviewPage({ projectId }: { projectId: string }) {
         <h1 className="text-2xl font-semibold">{d.project.name}</h1>
         <p className="mt-2 text-muted-ink">{t("title")}</p>
       </header>
-      <BimAnalysisCard projectId={projectId} />
+      {/* KPI tiles: compact numbers up top; the detailed context moved into
+          each card's hover/focus tooltip and the whole tile navigates. */}
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <SummaryCard
+        <KpiCard
           label={t("documents")}
           value={d.documents.length}
-          context={t("conflicts", { count: s.conflicts.length })}
-        >
-          <Link className={link} href={`${root}/documents`}>
-            {t("openDocuments")}
-          </Link>
-        </SummaryCard>
-        <SummaryCard
+          detail={t("conflicts", { count: s.conflicts.length })}
+          href={`${root}/documents`}
+        />
+        <KpiCard
           label={t("drawings")}
           value={s.comparisons}
-          context={t("comparisons", {
+          detail={t("comparisons", {
             period: formatPeriod(month, locale),
             count: s.unreviewed.length,
           })}
-        >
-          <Link className={link} href={`${root}/drawings`}>
-            {t("openDrawings")}
-          </Link>
-        </SummaryCard>
-        <SummaryCard
+          href={`${root}/drawings`}
+        />
+        <KpiCard
           label={t("variations")}
           value={s.potential.length}
-          context={t("potentialRange", {
-            range: s.priced ? formatRange(s.low, s.high) : t("unpriced"),
-            priced: s.priced,
-            count: s.potential.length,
-          })}
-        >
-          <p className="my-2 text-sm">
-            {t("confirmed", {
+          detail={[
+            t("potentialRange", {
+              range: s.priced ? formatRange(s.low, s.high) : t("unpriced"),
+              priced: s.priced,
+              count: s.potential.length,
+            }),
+            t("confirmed", {
               total: s.confirmedPriced
                 ? `${formatCurrency(s.confirmed)} (${formatRange(s.confirmedLow, s.confirmedHigh)})`
                 : t("unpriced"),
-            })}
-          </p>
-          <p className="text-xs text-muted-ink">{t("costBasis")}</p>
-          <Link className={link} href={`${root}/variations`}>
-            {t("openVariations")}
-          </Link>
-        </SummaryCard>
-        <SummaryCard
+            }),
+            t("costBasis"),
+          ].join("\n")}
+          href={`${root}/variations`}
+        />
+        <KpiCard
           label={t("workbooks")}
           value={s.errors}
-          context={t("checks", { count: s.warnings })}
-        >
-          <Link className={link} href={`${root}/workbooks`}>
-            {t("openWorkbooks")}
-          </Link>
-        </SummaryCard>
+          detail={t("checks", { count: s.warnings })}
+          href={`${root}/workbooks`}
+        />
       </div>
+      <BimAnalysisCard projectId={projectId} />
       <section className="space-y-3 rounded-lg border border-line bg-panel p-5">
         <h2 className="text-lg font-semibold">{t("attention")}</h2>
         {attention.length ? (

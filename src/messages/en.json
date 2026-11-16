@@ -770,6 +770,8 @@
     "recent": "Recent activity",
     "emptyActivity": "No activity yet. Upload a document to begin the project record.",
     "allActivity": "View full audit trail",
+    "showAllActivity": "Show all activity",
+    "showLess": "Show less",
     "openDocuments": "Open documents",
     "openDrawings": "Open drawings",
     "openVariations": "Open variations",

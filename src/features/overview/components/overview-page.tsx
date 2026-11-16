@@ -1,10 +1,10 @@
 "use client";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
-import { Skeleton, ErrorState, EmptyState } from "@/components/ui";
+import { Button, Skeleton, ErrorState, EmptyState } from "@/components/ui";
 import { AuditTimeline } from "@/features/audit";
-import { BimAnalysisCard } from "@/features/bim";
 import { queryKeys } from "@/lib/api";
 import {
   formatCurrency,
@@ -19,6 +19,7 @@ const link =
 export function OverviewPage({ projectId }: { projectId: string }) {
   const t = useTranslations("Overview");
   const locale = useLocale() as FormatLocale;
+  const [activityExpanded, setActivityExpanded] = useState(false);
   const query = useQuery({
     queryKey: [...queryKeys.overview(projectId), "workspace"],
     queryFn: () => loadOverview(projectId),
@@ -127,7 +128,6 @@ export function OverviewPage({ projectId }: { projectId: string }) {
           href={`${root}/workbooks`}
         />
       </div>
-      <BimAnalysisCard projectId={projectId} />
       <section className="space-y-3 rounded-lg border border-line bg-panel p-5">
         <h2 className="text-lg font-semibold">{t("attention")}</h2>
         {attention.length ? (
@@ -147,7 +147,30 @@ export function OverviewPage({ projectId }: { projectId: string }) {
       <section className="space-y-3 rounded-lg border border-line bg-panel p-5">
         <h2 className="text-lg font-semibold">{t("recent")}</h2>
         {d.events.length ? (
-          <AuditTimeline events={d.events.slice(0, 15)} projectId={projectId} />
+          <>
+            <div className="relative">
+              <AuditTimeline
+                events={activityExpanded ? d.events : d.events.slice(0, 3)}
+                projectId={projectId}
+              />
+              {/* Fade the last visible entry into the panel background so
+                  the collapsed list blends away instead of ending hard. */}
+              {!activityExpanded && d.events.length > 3 && (
+                <div
+                  aria-hidden
+                  className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-b from-transparent to-panel"
+                />
+              )}
+            </div>
+            {d.events.length > 3 && (
+              <Button
+                variant="ghost"
+                onClick={() => setActivityExpanded((value) => !value)}
+              >
+                {activityExpanded ? t("showLess") : t("showAllActivity")}
+              </Button>
+            )}
+          </>
         ) : (
           <EmptyState message={t("emptyActivity")} />
         )}

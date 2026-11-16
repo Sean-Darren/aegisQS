@@ -770,6 +770,8 @@
     "recent": "近期活動",
     "emptyActivity": "尚無活動。請上載文件以開始項目記錄。",
     "allActivity": "檢視完整審計記錄",
+    "showAllActivity": "顯示全部活動",
+    "showLess": "收起",
     "openDocuments": "開啟文件",
     "openDrawings": "開啟圖則",
     "openVariations": "開啟變更",

@@ -41,6 +41,15 @@ function writeSidebarPref(pref: SidebarPref) {
   for (const notify of sidebarListeners) notify();
 }
 
+const wideScreen = {
+  subscribe: (notify: () => void) => {
+    const mq = window.matchMedia("(min-width: 1440px)");
+    mq.addEventListener("change", notify);
+    return () => mq.removeEventListener("change", notify);
+  },
+  getSnapshot: () => window.matchMedia("(min-width: 1440px)").matches,
+};
+
 const items: readonly [string, LucideIcon][] = [
   ["overview", LayoutDashboard],
   ["documents", Files],
@@ -64,6 +73,16 @@ export function LeftNav({
     readSidebarPref,
     () => null,
   );
+  const isWide = useSyncExternalStore(
+    wideScreen.subscribe,
+    wideScreen.getSnapshot,
+    () => false,
+  );
+  // Mirrors the CSS width rules: labels are visible (and tooltips therefore
+  // redundant) whenever the sidebar is expanded — by preference or by the
+  // wide-screen default. Tooltips stay available in icon-only mode.
+  const expanded =
+    manual === "expanded" || (manual === null && isWide && !comparing);
   const toggle = () => {
     const current: SidebarPref =
       manual === null
@@ -112,39 +131,42 @@ export function LeftNav({
           const selected =
             pathname.endsWith(href) ||
             (label !== "projects" && pathname.includes(`${href}/`));
-          return (
+          const link = (
+            <Link
+              href={href}
+              aria-current={selected ? "page" : undefined}
+              className={cn(
+                "relative flex min-h-10 items-center gap-3 rounded-md px-3 py-2 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sidebar-ring",
+                label === "materials" &&
+                  "mt-3 border-t border-sidebar-border pt-4",
+                selected
+                  ? "bg-sidebar-accent font-semibold before:absolute before:inset-y-2 before:left-0 before:w-[3px] before:bg-lichen"
+                  : enabled
+                    ? "hover:bg-sidebar-accent"
+                    : "pointer-events-none opacity-40",
+              )}
+            >
+              <Icon
+                size={20}
+                strokeWidth={1.5}
+                aria-hidden="true"
+                className="shrink-0"
+              />
+              <span className="sidebar-label">{t(label)}</span>
+            </Link>
+          );
+          return expanded ? (
+            link
+          ) : (
             <Tooltip key={label}>
-              <TooltipTrigger asChild>
-                <Link
-                  href={href}
-                  aria-current={selected ? "page" : undefined}
-                  className={cn(
-                    "relative flex min-h-10 items-center gap-3 rounded-md px-3 py-2 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sidebar-ring",
-                    label === "materials" &&
-                      "mt-3 border-t border-sidebar-border pt-4",
-                    selected
-                      ? "bg-sidebar-accent font-semibold before:absolute before:inset-y-2 before:left-0 before:w-[3px] before:bg-lichen"
-                      : enabled
-                        ? "hover:bg-sidebar-accent"
-                        : "pointer-events-none opacity-40",
-                  )}
-                >
-                  <Icon
-                    size={20}
-                    strokeWidth={1.5}
-                    aria-hidden="true"
-                    className="shrink-0"
-                  />
-                  <span className="sidebar-label">{t(label)}</span>
-                </Link>
-              </TooltipTrigger>
+              <TooltipTrigger asChild>{link}</TooltipTrigger>
               <TooltipContent side="right">{t(label)}</TooltipContent>
             </Tooltip>
           );
         })}
       </div>
-      <Tooltip>
-        <TooltipTrigger asChild>
+      {(() => {
+        const toggleButton = (
           <button
             type="button"
             onClick={toggle}
@@ -163,11 +185,17 @@ export function LeftNav({
               aria-hidden="true"
               className="toggle-expand-icon shrink-0"
             />
-            <span className="sidebar-label">{t("toggleSidebar")}</span>
           </button>
-        </TooltipTrigger>
-        <TooltipContent side="right">{t("toggleSidebar")}</TooltipContent>
-      </Tooltip>
+        );
+        return expanded ? (
+          toggleButton
+        ) : (
+          <Tooltip>
+            <TooltipTrigger asChild>{toggleButton}</TooltipTrigger>
+            <TooltipContent side="right">{t("toggleSidebar")}</TooltipContent>
+          </Tooltip>
+        );
+      })()}
     </nav>
   );
 }

@@ -1,13 +1,18 @@
 "use client";
 import { useState } from "react";
 import { useTranslations, useLocale } from "next-intl";
+import { Upload } from "lucide-react";
 import { Link, useRouter } from "@/i18n/navigation";
 import {
+  Button,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
   EmptyState,
   ErrorState,
   Skeleton,
   StatusChip,
-  Button,
 } from "@/components/ui";
 import { VirtualTable } from "@/components/grid";
 import { useProjectDocuments } from "@/lib/api/use-records";
@@ -30,7 +35,7 @@ export function DocumentsPage({ projectId }: { projectId: string }) {
   const [category, setCategory] = useState("");
   const [search, setSearch] = useState("");
   const [conflicts, setConflicts] = useState(false);
-  const [upload, setUpload] = useState(false);
+  const [uploadOpen, setUploadOpen] = useState(false);
   const data = documents.data ?? [];
   const visible = data.filter(
     (d) =>
@@ -53,13 +58,13 @@ export function DocumentsPage({ projectId }: { projectId: string }) {
       <header className="flex justify-between gap-3">
         <h1 className="text-2xl font-semibold">{t("register")}</h1>
         {can(session.data, "document.upload") && (
-          <Button onClick={() => setUpload((v) => !v)}>{t("upload")}</Button>
+          <Button onClick={() => setUploadOpen(true)}>
+            <Upload size={16} strokeWidth={2} aria-hidden="true" />
+            {t("upload")}
+          </Button>
         )}
       </header>
-      {upload && can(session.data, "document.upload") && (
-        <UploadQueue projectId={projectId} />
-      )}
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <Button
           variant={category === "" ? "primary" : "outline"}
           onClick={() => setCategory("")}
@@ -78,17 +83,15 @@ export function DocumentsPage({ projectId }: { projectId: string }) {
             </span>
           </Button>
         ))}
-      </div>
-      <div className="flex flex-wrap gap-5">
-        <label className="min-w-64">
-          {t("search")}
-          <input
-            className={inputStyle}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </label>
-        <label className="flex items-center gap-2">
+        <input
+          type="search"
+          aria-label={t("search")}
+          placeholder={t("search")}
+          className={`${inputStyle} ml-auto w-56`}
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+        <label className="flex cursor-pointer items-center gap-2 text-sm">
           <input
             type="checkbox"
             checked={conflicts}
@@ -125,6 +128,7 @@ export function DocumentsPage({ projectId }: { projectId: string }) {
       {visible.length > 0 && (
         <div className="rounded-lg border border-line bg-panel">
           <VirtualTable
+            autoHeight
             label={t("register")}
             rows={visible}
             rowHeight={48}
@@ -198,6 +202,22 @@ export function DocumentsPage({ projectId }: { projectId: string }) {
             }}
           />
         </div>
+      )}
+      {uploadOpen && can(session.data, "document.upload") && (
+        <Dialog
+          open
+          onOpenChange={(open) => {
+            if (!open) setUploadOpen(false);
+          }}
+        >
+          <DialogContent className="max-h-[85vh] space-y-4 overflow-y-auto">
+            <DialogTitle className="pr-7 text-xl font-semibold">
+              {t("upload")}
+            </DialogTitle>
+            <DialogDescription>{t("uploadDescription")}</DialogDescription>
+            <UploadQueue projectId={projectId} />
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   );

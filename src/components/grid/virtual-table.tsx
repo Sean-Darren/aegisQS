@@ -10,6 +10,7 @@ export function VirtualTable<T>({
   header,
   columns,
   onRowClick,
+  autoHeight = false,
 }: {
   rows: T[];
   renderRow: (row: T, index: number) => ReactNode;
@@ -18,6 +19,9 @@ export function VirtualTable<T>({
   header?: ReactNode;
   columns?: string;
   onRowClick?: (row: T) => void;
+  /** Expand to the full height of the content instead of a fixed
+      scrollable viewport. */
+  autoHeight?: boolean;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   // TanStack Virtual owns mutable measurements; React Compiler must skip this hook.
@@ -35,13 +39,13 @@ export function VirtualTable<T>({
       tabIndex={0}
       aria-label={label}
       aria-rowcount={rows.length + (header ? 1 : 0)}
-      className="tabular-nums overflow-auto focus-visible:outline-2 focus-visible:outline-clay-600"
-      style={{ height: 480 }}
+      className={`tabular-nums focus-visible:outline-2 focus-visible:outline-clay-600${autoHeight ? "" : " overflow-auto"}`}
+      style={autoHeight ? undefined : { height: 480 }}
     >
       {header && (
         <div
           role="row"
-          className="sticky top-0 z-10 bg-stone-50"
+          className={`bg-stone-50${autoHeight ? "" : " sticky top-0 z-10"}`}
           style={{
             display: "grid",
             gridTemplateColumns: columns,

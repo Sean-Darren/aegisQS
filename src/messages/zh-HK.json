@@ -285,6 +285,7 @@
     "error": "無法載入文件，請檢查連線後再試。",
     "retry": "重試",
     "upload": "上載文件",
+    "uploadDescription": "拖放一個或多個檔案以新增文件或新版本，然後在上載前填寫每個檔案的資料。",
     "uploadFile": "上載檔案",
     "uploading": "正在上載…",
     "uploaded": "檔案已上載",

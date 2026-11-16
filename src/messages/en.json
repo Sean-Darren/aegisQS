@@ -285,6 +285,7 @@
     "error": "Documents could not be loaded. Check the connection and try again.",
     "retry": "Try again",
     "upload": "Upload documents",
+    "uploadDescription": "Drop one or more files to add a new document or a new revision, then complete the details for each before uploading.",
     "uploadFile": "Upload file",
     "uploading": "Uploading…",
     "uploaded": "File uploaded",

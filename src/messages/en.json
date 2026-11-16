@@ -130,6 +130,45 @@
     "exportError": "The CSV could not be prepared. Try exporting again.",
     "actorSummary": "{actor} · {role}",
     "viewEntity": "View {entity}",
+    "view": "View",
+    "actions": {
+      "project": {
+        "created": "Project created",
+        "updated": "Project updated"
+      },
+      "document": {
+        "version_uploaded": "Document version uploaded",
+        "version_added": "Document version added",
+        "current_set": "Current version set"
+      },
+      "comparison": {
+        "completed": "Drawing comparison completed",
+        "run": "Drawing comparison run",
+        "alignment_updated": "Comparison alignment updated"
+      },
+      "change": {
+        "marked_potential_variation": "Change marked as potential variation",
+        "review": "Change reviewed",
+        "reviewed": "Change reviewed"
+      },
+      "variation": {
+        "raised": "Variation raised",
+        "cost_updated": "Variation cost updated",
+        "decide": "Variation decision recorded",
+        "decided": "Variation decision recorded"
+      },
+      "workbook": {
+        "checked": "Workbook checks completed",
+        "mapping_updated": "Workbook mapping updated",
+        "upload": "Workbook uploaded",
+        "uploaded": "Workbook uploaded"
+      },
+      "procurement": {
+        "created": "Procurement advice saved",
+        "plan": "Procurement plan updated",
+        "materials_extracted": "Materials extracted"
+      }
+    },
     "entities": {
       "project": "project",
       "document": "document",
@@ -794,9 +833,7 @@
     "clear": "Nothing currently needs attention. Continue reviewing your project records.",
     "recent": "Recent activity",
     "emptyActivity": "No activity yet. Upload a document to begin the project record.",
-    "allActivity": "View full audit trail",
     "showAllActivity": "Show all activity",
-    "showLess": "Show less",
     "openDocuments": "Open documents",
     "openDrawings": "Open drawings",
     "openVariations": "Open variations",

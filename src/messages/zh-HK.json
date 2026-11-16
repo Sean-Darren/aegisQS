@@ -130,6 +130,45 @@
     "exportError": "無法準備 CSV。請重新匯出。",
     "actorSummary": "{actor} · {role}",
     "viewEntity": "檢視{entity}",
+    "view": "查看",
+    "actions": {
+      "project": {
+        "created": "已建立項目",
+        "updated": "已更新項目"
+      },
+      "document": {
+        "version_uploaded": "已上載文件版本",
+        "version_added": "已加入文件版本",
+        "current_set": "已設定現行版本"
+      },
+      "comparison": {
+        "completed": "圖則比對完成",
+        "run": "圖則比對已執行",
+        "alignment_updated": "比對對齊已更新"
+      },
+      "change": {
+        "marked_potential_variation": "變更已標記為潛在變更",
+        "review": "變更已審核",
+        "reviewed": "變更已審核"
+      },
+      "variation": {
+        "raised": "已提出變更",
+        "cost_updated": "變更成本已更新",
+        "decide": "已記錄變更決定",
+        "decided": "已記錄變更決定"
+      },
+      "workbook": {
+        "checked": "工作簿檢查完成",
+        "mapping_updated": "工作簿對應已更新",
+        "upload": "已上載工作簿",
+        "uploaded": "已上載工作簿"
+      },
+      "procurement": {
+        "created": "已儲存採購建議",
+        "plan": "採購計劃已更新",
+        "materials_extracted": "已抽取材料資料"
+      }
+    },
     "entities": {
       "project": "project",
       "document": "document",
@@ -794,9 +833,7 @@
     "clear": "目前沒有待處理事項，可繼續檢視項目記錄。",
     "recent": "近期活動",
     "emptyActivity": "尚無活動。請上載文件以開始項目記錄。",
-    "allActivity": "檢視完整審計記錄",
     "showAllActivity": "顯示全部活動",
-    "showLess": "收起",
     "openDocuments": "開啟文件",
     "openDrawings": "開啟圖則",
     "openVariations": "開啟變更",

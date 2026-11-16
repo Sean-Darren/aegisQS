@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocale, useTranslations } from "next-intl";
-import { ArrowUpRight, FolderOpen, Plus, Trash2 } from "lucide-react";
+import { FolderOpen, MoreVertical, Plus, Trash2 } from "lucide-react";
 import { Link, useRouter } from "@/i18n/navigation";
 import { ApiError, queryKeys, resources } from "@/lib/api";
 import { can } from "@/lib/auth/permissions";
@@ -15,6 +15,10 @@ import {
   DialogContent,
   DialogDescription,
   DialogTitle,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
   EmptyState,
   ErrorState,
   Skeleton,
@@ -74,55 +78,75 @@ export default function ProjectsPage() {
           {projects.data.map((project) => (
             <article
               key={project.id}
-              className="rounded-lg border border-line bg-panel p-5"
+              className="group relative rounded-lg border border-line bg-panel p-5 transition-colors hover:border-clay-600"
             >
-              <div className="flex items-start justify-between gap-3">
-                <span className="inline-flex size-9 items-center justify-center rounded-md bg-stone-50 text-clay-800">
-                  <FolderOpen size={18} strokeWidth={1.5} aria-hidden="true" />
-                </span>
-                <span className="num text-xs text-muted-ink">
-                  {project.code}
-                </span>
-              </div>
-              <h2 className="mt-5 text-lg font-semibold">{project.name}</h2>
-              <div className="mt-5 flex items-end justify-between gap-2 border-t border-line pt-4">
-                <span className="text-xs text-muted-ink">
-                  {t("created", {
-                    date: formatDate(project.createdAt, locale),
-                  })}
-                </span>
-                <div className="flex items-center gap-2">
-                  {canDelete && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setDeleteTarget(project)}
-                    >
-                      <Trash2 size={14} strokeWidth={1.5} aria-hidden="true" />
-                      {t("deleteProject")}
-                    </Button>
-                  )}
-                  <Link
-                    href={`/projects/${project.id}/overview`}
-                    className="inline-flex items-center gap-1 rounded-sm text-sm font-semibold text-clay-800 underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-clay-600"
-                  >
-                    {t("open")}
-                    <ArrowUpRight
-                      size={14}
+              {/* Whole-card click target. The visual content is
+                  pointer-transparent so the overlay link stays clickable
+                  while the kebab menu above it remains interactive. */}
+              <Link
+                href={`/projects/${project.id}/overview`}
+                aria-label={t("openAriaLabel", { name: project.name })}
+                className="absolute inset-0 rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-clay-600"
+              />
+              <div className="relative pointer-events-none">
+                <div className="flex items-start justify-between gap-3">
+                  <span className="inline-flex size-9 items-center justify-center rounded-md bg-stone-50 text-clay-800">
+                    <FolderOpen
+                      size={18}
                       strokeWidth={1.5}
                       aria-hidden="true"
                     />
-                  </Link>
+                  </span>
+                </div>
+                <h2 className="mt-5 text-lg font-semibold group-hover:text-clay-700">
+                  {project.name}
+                </h2>
+                <div className="mt-5 flex items-end justify-between gap-2 border-t border-line pt-4">
+                  <span className="text-xs text-muted-ink">
+                    {project.code} ·{" "}
+                    {t("created", {
+                      date: formatDate(project.createdAt, locale),
+                    })}
+                  </span>
                 </div>
               </div>
+              {canDelete && (
+                <div className="absolute right-2 top-2">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button
+                        type="button"
+                        aria-label={t("cardActions", { name: project.name })}
+                        className="rounded-md p-1.5 text-muted-ink opacity-0 transition-opacity focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-clay-600 group-hover:opacity-100"
+                      >
+                        <MoreVertical
+                          size={16}
+                          strokeWidth={1.5}
+                          aria-hidden="true"
+                        />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent>
+                      <DropdownMenuItem
+                        className="text-risk"
+                        onSelect={() => setDeleteTarget(project)}
+                      >
+                        <Trash2
+                          size={14}
+                          strokeWidth={1.5}
+                          aria-hidden="true"
+                        />
+                        {t("deleteProject")}
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              )}
             </article>
           ))}
         </div>
       )}
-      <CreateProjectDialog
-        open={createOpen}
-        onOpenChange={setCreateOpen}
-      />
+      <CreateProjectDialog open={createOpen} onOpenChange={setCreateOpen} />
       <DeleteProjectDialog
         project={deleteTarget}
         onOpenChange={(open) => {
@@ -198,7 +222,9 @@ function CreateProjectDialog({
                   onChange={(event) => setName(event.target.value)}
                   onBlur={() => setNameTouched(true)}
                   aria-invalid={showNameError}
-                  aria-describedby={showNameError ? "project-name-error" : undefined}
+                  aria-describedby={
+                    showNameError ? "project-name-error" : undefined
+                  }
                   maxLength={120}
                 />
                 {showNameError && (

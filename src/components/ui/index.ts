@@ -4,6 +4,7 @@ export * from "./badge";
 
 export * from "./tabs";
 export * from "./dialog";
+export * from "./dropdown";
 export * from "./drawer";
 export * from "./tooltip";
 export * from "./toast";

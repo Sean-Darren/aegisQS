@@ -50,6 +50,8 @@
     "empty": "No projects are available yet.",
     "error": "Projects could not be loaded. Try again.",
     "open": "Open project",
+    "openAriaLabel": "Open {name}",
+    "cardActions": "Actions for {name}",
     "created": "Created {date}",
     "addProject": "Add project",
     "addProjectDescription": "Create a new project so you can analyze it alongside the projects already in this workspace.",

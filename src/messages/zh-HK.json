@@ -50,6 +50,8 @@
     "empty": "目前沒有可用項目。",
     "error": "無法載入項目，請重試。",
     "open": "開啟項目",
+    "openAriaLabel": "開啟 {name}",
+    "cardActions": "{name} 的操作",
     "created": "建立於 {date}",
     "addProject": "新增項目",
     "addProjectDescription": "建立新項目，以便與工作區內現有項目一併分析。",

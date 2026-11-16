@@ -12,6 +12,11 @@ from fastapi import WebSocket
 
 from app.schemas.bim import JobStatus
 
+#: Terminal jobs are dropped once the store exceeds this size.
+MAX_RETAINED_JOBS = 200
+#: Terminal jobs older than this are evicted on the next create.
+JOB_RETENTION_SECONDS = 24 * 3600
+
 
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
@@ -40,7 +45,33 @@ class JobManager:
         }
         with self._lock:
             self._jobs[job_id] = job
+            self._evict_locked()
         return dict(job)
+
+    def _evict_locked(self) -> None:
+        """Bound memory growth by dropping terminal jobs.
+
+        Only completed/failed jobs are ever removed; queued or running jobs
+        are kept regardless of age. Callers must hold ``self._lock``.
+        """
+        now = datetime.now(timezone.utc)
+        for job_id, job in list(self._jobs.items()):
+            if job["status"] not in (JobStatus.completed, JobStatus.failed):
+                continue
+            updated_at = datetime.fromisoformat(job["updated_at"])
+            if (now - updated_at).total_seconds() > JOB_RETENTION_SECONDS:
+                self._jobs.pop(job_id, None)
+                self._subscribers.pop(job_id, None)
+        if len(self._jobs) <= MAX_RETAINED_JOBS:
+            return
+        terminal = sorted(
+            (job["updated_at"], job_id)
+            for job_id, job in self._jobs.items()
+            if job["status"] in (JobStatus.completed, JobStatus.failed)
+        )
+        for _, job_id in terminal[: len(self._jobs) - MAX_RETAINED_JOBS]:
+            self._jobs.pop(job_id, None)
+            self._subscribers.pop(job_id, None)
 
     def update(self, job_id: str, **fields: Any) -> dict[str, Any]:
         with self._lock:

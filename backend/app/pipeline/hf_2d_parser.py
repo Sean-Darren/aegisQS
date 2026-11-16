@@ -19,11 +19,17 @@ Usage::
 
 from __future__ import annotations
 
+import threading
 from pathlib import Path
 from typing import Any
 
 from models import BimElement, MaterialFamily
 from PIL import Image
+
+#: Process-wide OWL-ViT pipeline cache. Loading the model takes multiple
+#: seconds and several hundred MB, so parser instances share one pipeline.
+_shared_pipeline: Any = None
+_shared_pipeline_lock = threading.Lock()
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -302,19 +308,30 @@ class HuggingFace2DParser:
     # ------------------------------------------------------------------
 
     def _ensure_pipeline_loaded(self) -> None:
-        """Lazy-load the Hugging Face pipeline on first use."""
+        """Lazy-load the Hugging Face pipeline on first use.
+
+        The pipeline is cached at module level so concurrent parser
+        instances reuse one model instead of loading a copy each.
+        """
+        global _shared_pipeline
         if self._loaded:
             return
-        from transformers import pipeline
+        with _shared_pipeline_lock:
+            if _shared_pipeline is None:
+                from transformers import pipeline
 
-        print(f"[HuggingFace2DParser] Loading model {_MODEL_NAME!r} (device=-1 / CPU) …")
-        self._pipeline = pipeline(
-            "zero-shot-object-detection",
-            model=_MODEL_NAME,
-            device=-1,
-        )
+                print(
+                    f"[HuggingFace2DParser] Loading model {_MODEL_NAME!r} "
+                    "(device=-1 / CPU) …"
+                )
+                _shared_pipeline = pipeline(
+                    "zero-shot-object-detection",
+                    model=_MODEL_NAME,
+                    device=-1,
+                )
+                print("[HuggingFace2DParser] Model loaded.")
+        self._pipeline = _shared_pipeline
         self._loaded = True
-        print("[HuggingFace2DParser] Model loaded.")
 
     @staticmethod
     def _pdf_to_image(file_path: str) -> Image.Image:

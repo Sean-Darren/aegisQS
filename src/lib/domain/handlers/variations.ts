@@ -48,136 +48,122 @@ function olsProjectedRate(forecast: s.PriceForecast): number {
 /*
  * Match a change summary/text to the best material using keyword heuristics.
  */
-const MATERIAL_KEYWORDS: Record<
-  string,
-  { keywords: string[]; unit: string }
-> = {
-  rebar: {
-    keywords: [
-      "rebar",
-      "reinforcement",
-      "reinforcing",
-      "bar",
-      "tendon",
-    ],
-    unit: "tonne",
-  },
-  "structural-steel": {
-    keywords: [
-      "steel",
-      "structural steel",
-      "beam",
-      "column",
-      "member",
-      "framing",
-      "metal",
-      "girder",
-      "truss",
-    ],
-    unit: "tonne",
-  },
-  concrete: {
-    keywords: [
-      "concrete",
-      "slab",
-      "foundation",
-      "footing",
-      "pile",
-      "pier",
-      "masonry",
-      "block",
-      "brick",
-      "stone",
-      "cement",
-      "render",
-      "screed",
-    ],
-    unit: "m³",
-  },
-  cement: {
-    keywords: ["cement", "mortar", "grout"],
-    unit: "tonne",
-  },
-  aggregate: {
-    keywords: [
-      "aggregate",
-      "gravel",
-      "sand",
-      "fill",
-      "sub-base",
-      "ballast",
-    ],
-    unit: "tonne",
-  },
-  timber: {
-    keywords: [
-      "timber",
-      "wood",
-      "formwork",
-      "plywood",
-      "roof",
-      "truss",
-      "fascia",
-      "trim",
-      "joinery",
-      "door",
-      "window",
-      "cladding",
-      "plank",
-      "deck",
-    ],
-    unit: "m²",
-  },
-  copper: {
-    keywords: [
-      "copper",
-      "cable",
-      "wire",
-      "conduit",
-      "electrical",
-      "wiring",
-      "lighting",
-    ],
-    unit: "tonne",
-  },
-  glass: {
-    keywords: [
-      "glass",
-      "glazing",
-      "curtain wall",
-      "window",
-      "glazed",
-      "glaze",
-      "fenestration",
-      "skylight",
-      "louvre",
-    ],
-    unit: "m²",
-  },
-  waterproofing: {
-    keywords: [
-      "waterproof",
-      "membrane",
-      "sealant",
-      "seal",
-      "damp",
-      "tanking",
-      "flashing",
-    ],
-    unit: "m²",
-  },
-  diesel: {
-    keywords: ["diesel", "fuel", "petrol", "oil"],
-    unit: "litre",
-  },
-};
+const MATERIAL_KEYWORDS: Record<string, { keywords: string[]; unit: string }> =
+  {
+    rebar: {
+      keywords: ["rebar", "reinforcement", "reinforcing", "bar", "tendon"],
+      unit: "tonne",
+    },
+    "structural-steel": {
+      keywords: [
+        "steel",
+        "structural steel",
+        "beam",
+        "column",
+        "member",
+        "framing",
+        "metal",
+        "girder",
+        "truss",
+      ],
+      unit: "tonne",
+    },
+    concrete: {
+      keywords: [
+        "concrete",
+        "slab",
+        "foundation",
+        "footing",
+        "pile",
+        "pier",
+        "masonry",
+        "block",
+        "brick",
+        "stone",
+        "cement",
+        "render",
+        "screed",
+      ],
+      unit: "m³",
+    },
+    cement: {
+      keywords: ["cement", "mortar", "grout"],
+      unit: "tonne",
+    },
+    aggregate: {
+      keywords: ["aggregate", "gravel", "sand", "fill", "sub-base", "ballast"],
+      unit: "tonne",
+    },
+    timber: {
+      keywords: [
+        "timber",
+        "wood",
+        "formwork",
+        "plywood",
+        "roof",
+        "truss",
+        "fascia",
+        "trim",
+        "joinery",
+        "door",
+        "window",
+        "cladding",
+        "plank",
+        "deck",
+      ],
+      unit: "m²",
+    },
+    copper: {
+      keywords: [
+        "copper",
+        "cable",
+        "wire",
+        "conduit",
+        "electrical",
+        "wiring",
+        "lighting",
+      ],
+      unit: "tonne",
+    },
+    glass: {
+      keywords: [
+        "glass",
+        "glazing",
+        "curtain wall",
+        "window",
+        "glazed",
+        "glaze",
+        "fenestration",
+        "skylight",
+        "louvre",
+      ],
+      unit: "m²",
+    },
+    waterproofing: {
+      keywords: [
+        "waterproof",
+        "membrane",
+        "sealant",
+        "seal",
+        "damp",
+        "tanking",
+        "flashing",
+      ],
+      unit: "m²",
+    },
+    diesel: {
+      keywords: ["diesel", "fuel", "petrol", "oil"],
+      unit: "litre",
+    },
+  };
 
 function matchMaterial(
   summary: string,
   textBefore?: string,
   textAfter?: string,
 ): { materialId: string; unit: string } | undefined {
-  const text = `${summary} ${textBefore ?? ""} ${textAfter ?? ""}`.toLowerCase();
+  const text =
+    `${summary} ${textBefore ?? ""} ${textAfter ?? ""}`.toLowerCase();
   let best: { materialId: string; unit: string; score: number } | undefined;
   for (const [id, { keywords, unit }] of Object.entries(MATERIAL_KEYWORDS)) {
     const score = keywords.reduce(
@@ -310,9 +296,12 @@ export function createVariationsHandlers(ctx: DomainContext) {
       );
       if (!lines.length) continue;
       const quantity = lines.reduce((sum, l) => sum + l.line.quantityDelta, 0);
-      const forecast = state.forecasts.find(
-        (f) => f.materialId === material.id,
-      )!.forecast[0];
+      const forecast = state.forecasts.find((f) => f.materialId === material.id)
+        ?.forecast[0];
+      // Materials without a price forecast (e.g. freshly extracted site
+      // records) cannot produce priced exposure; skip them instead of
+      // crashing the whole variation save.
+      if (!forecast) continue;
       state.materialNeeds.push({
         projectId,
         materialId: material.id,

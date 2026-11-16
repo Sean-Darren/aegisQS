@@ -20,6 +20,7 @@ fixed per-file table.
 
 from __future__ import annotations
 
+import threading
 from pathlib import Path
 from typing import Any
 
@@ -199,19 +200,25 @@ def _render_rgb(path: Path) -> np.ndarray:
 
 
 _clip = None
+_clip_lock = threading.Lock()
 
 
 def _load_clip() -> tuple[Any, Any]:
-    """Lazy-load the cached CLIP model and processor."""
+    """Lazy-load the cached CLIP model and processor (thread-safe).
+
+    Assessment jobs run concurrently in the Starlette threadpool; without
+    the lock two jobs could each load a full CLIP model into memory.
+    """
     global _clip
     if _clip is not None:
         return _clip
+    with _clip_lock:
+        if _clip is None:
+            from transformers import CLIPModel, CLIPProcessor
 
-    from transformers import CLIPModel, CLIPProcessor
-
-    model = CLIPModel.from_pretrained(_CLIP_MODEL)
-    processor = CLIPProcessor.from_pretrained(_CLIP_MODEL)
-    _clip = (model, processor)
+            model = CLIPModel.from_pretrained(_CLIP_MODEL)
+            processor = CLIPProcessor.from_pretrained(_CLIP_MODEL)
+            _clip = (model, processor)
     return _clip
 
 

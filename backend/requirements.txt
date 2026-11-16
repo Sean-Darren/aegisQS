@@ -9,6 +9,8 @@ opencv-python-headless>=4.8,<5
 Pillow>=10.0
 
 # Vendored BIM pipeline integrations (required for real IFC/PDF/image parsing):
+# NOTE: pdf2image shells out to the poppler-utils binaries (pdftoppm);
+# install them on the host (apt install poppler-utils) or PDF parsing fails.
 ifcopenshell>=0.7
 transformers[torch]>=4.40
 pdf2image>=1.17

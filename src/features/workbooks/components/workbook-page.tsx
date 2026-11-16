@@ -60,6 +60,15 @@ function Workspace({ workbook }: { workbook: Workbook }) {
   const [upload, setUpload] = useState(params.get("upload") === "1");
   const [errorsOnly, setErrorsOnly] = useState(false);
   const [downloadError, setDownloadError] = useState(false);
+  const [syncedVersionId, setSyncedVersionId] = useState(versionId);
+  if (syncedVersionId !== versionId) {
+    // Switching versions through the versions tab or diff chart changes
+    // ?version= without remounting; the new version may not share sheet
+    // names, so drop stale sheet/cell selections.
+    setSyncedVersionId(versionId);
+    setSheet("");
+    setSelected("");
+  }
   const checks = useQuery({
     queryKey: queryKeys.checks(versionId),
     queryFn: () => resources.checks(versionId),
@@ -81,7 +90,8 @@ function Workspace({ workbook }: { workbook: Workbook }) {
       let part = result,
         from = 1001;
       const rows = [...result.rows];
-      while (part.rows.length === 1000) {
+      // The cache key promises toRow: 5000; never fetch beyond that cap.
+      while (part.rows.length === 1000 && rows.length < 5000) {
         part = await resources.sheet(versionId, {
           sheet: sheetName,
           fromRow: from,

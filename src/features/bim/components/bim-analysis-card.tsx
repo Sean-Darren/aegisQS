@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import {
@@ -61,7 +61,9 @@ function ScoreRing({ score }: { score: number }) {
           strokeDashoffset={offset}
         />
       </svg>
-      <span className="absolute text-xl font-semibold">{Math.round(score)}%</span>
+      <span className="absolute text-xl font-semibold">
+        {Math.round(score)}%
+      </span>
     </div>
   );
 }
@@ -89,8 +91,12 @@ function BoqTable({ items }: { items: BimBoqItem[] }) {
         <thead className="bg-stone-50 text-left text-xs font-medium text-muted-ink">
           <tr>
             <th className="border-b border-line px-3 py-2">{t("boqCode")}</th>
-            <th className="border-b border-line px-3 py-2">{t("boqElement")}</th>
-            <th className="border-b border-line px-3 py-2">{t("boqDescription")}</th>
+            <th className="border-b border-line px-3 py-2">
+              {t("boqElement")}
+            </th>
+            <th className="border-b border-line px-3 py-2">
+              {t("boqDescription")}
+            </th>
             <th className="border-b border-line px-3 py-2 text-right">
               {t("boqQuantity")}
             </th>
@@ -117,7 +123,10 @@ function BoqTable({ items }: { items: BimBoqItem[] }) {
                     item.item_id}
                 </td>
                 <td className="border-b border-line px-3 py-2">
-                  {item.bim_element || item.material_family || item.trade || "—"}
+                  {item.bim_element ||
+                    item.material_family ||
+                    item.trade ||
+                    "—"}
                 </td>
                 <td className="border-b border-line px-3 py-2">
                   {item.description || "—"}
@@ -159,7 +168,9 @@ function ResultView({ result }: { result: BimResult }) {
             {t("issueSummary", { ...counts, elements: elementCount })}
           </p>
           {result.report.summary ? (
-            <p className="mt-2 text-xs text-muted-ink">{result.report.summary}</p>
+            <p className="mt-2 text-xs text-muted-ink">
+              {result.report.summary}
+            </p>
           ) : null}
         </div>
       </div>
@@ -189,12 +200,23 @@ export function BimAnalysisCard({ projectId }: { projectId: string }) {
 
   const progressText = useMemo(() => {
     if (phase === "uploading") return t("uploading");
-    if (phase === "running") return `${statusMessage || t("running")} · ${progress}%`;
+    if (phase === "running")
+      return `${statusMessage || t("running")} · ${progress}%`;
     if (phase === "done") return t("complete");
     return null;
   }, [phase, progress, statusMessage, t]);
 
+  const progressSocketRef = useRef<(() => void) | undefined>(undefined);
+  const closeProgress = () => {
+    progressSocketRef.current?.();
+    progressSocketRef.current = undefined;
+  };
+  // Close the progress WebSocket when the card unmounts so it cannot keep
+  // firing events into a detached component.
+  useEffect(() => closeProgress, []);
+
   function reset() {
+    closeProgress();
     setFile(undefined);
     setPhase("idle");
     setJobId(undefined);
@@ -221,12 +243,14 @@ export function BimAnalysisCard({ projectId }: { projectId: string }) {
       const job = await startBimAssessment(file);
       setJobId(job.job_id);
       setPhase("running");
-      connectBimProgress(
+      closeProgress();
+      progressSocketRef.current = connectBimProgress(
         job.job_id,
         (event) => {
           setProgress(event.progress ?? 0);
           setStatusMessage(event.message ?? "");
           if (event.type === "bim.completed") {
+            closeProgress();
             void getBimJob(job.job_id)
               .then((snapshot) => {
                 setResult(snapshot.result ?? undefined);
@@ -285,7 +309,9 @@ export function BimAnalysisCard({ projectId }: { projectId: string }) {
       form.set("label", "A");
       form.set("issuedDate", new Date().toISOString());
       const doc = await resources.uploadDocument(projectId, form);
-      await client.invalidateQueries({ queryKey: queryKeys.project(projectId) });
+      await client.invalidateQueries({
+        queryKey: queryKeys.project(projectId),
+      });
       setSaveState("saved");
       toast(t("savedSiteRecord"), "success", {
         label: t("openSiteRecord"),
@@ -408,7 +434,11 @@ export function BimAnalysisCard({ projectId }: { projectId: string }) {
           ) : null}
         </>
       ) : phase === "error" && file ? (
-        <Button className="mt-3" variant="secondary" onClick={() => void analyze()}>
+        <Button
+          className="mt-3"
+          variant="secondary"
+          onClick={() => void analyze()}
+        >
           {t("retry")}
         </Button>
       ) : null}

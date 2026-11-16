@@ -107,6 +107,9 @@ def _run_job(
             error=str(exc),
         )
     finally:
+        # Assessment uploads are single-use; remove them so the upload
+        # directory cannot grow without bound.
+        Path(file_path).unlink(missing_ok=True)
         snapshot = manager.get(job_id)
         if snapshot:
             manager.emit_from_thread(loop, job_id, manager._event_for(snapshot))

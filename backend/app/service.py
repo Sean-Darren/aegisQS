@@ -213,6 +213,32 @@ _MATERIAL_PRICE_HINTS: dict[str, tuple[str, float, str]] = {
     "stone": ("Stone", 210.0, "m2"),
 }
 
+# Category-level fallback rates used only when an element has no usable
+# material name or the material name does not match any priced keyword.
+# Rates are deliberately conservative HK$ unit rates so the generated BOQ
+# still carries a realistic indicative total instead of HK$0.
+_CATEGORY_PRICE_FALLBACKS: dict[str, tuple[str, float]] = {
+    "IfcWall": ("Wall", 1200.0),
+    "IfcWallStandardCase": ("Wall", 1200.0),
+    "IfcCurtainWall": ("Curtain wall", 2500.0),
+    "IfcColumn": ("Column", 1500.0),
+    "IfcBeam": ("Beam", 1500.0),
+    "IfcSlab": ("Slab", 700.0),
+    "IfcRoof": ("Roof", 900.0),
+    "IfcDoor": ("Door", 4500.0),
+    "IfcWindow": ("Window", 3500.0),
+    "IfcPipeSegment": ("Pipe", 500.0),
+    "IfcDuctSegment": ("Duct", 400.0),
+    "IfcSpace": ("Space", 0.0),
+    "IfcFooting": ("Footing", 900.0),
+    "IfcStair": ("Stair", 20000.0),
+    "IfcRailing": ("Railing", 300.0),
+    "IfcMember": ("Structural member", 2500.0),
+    "IfcPlate": ("Plate", 3000.0),
+    "IfcCovering": ("Covering", 800.0),
+    "IfcBuildingElementProxy": ("Building element", 1000.0),
+}
+
 
 def _friendly_category(category: str) -> str:
     return _CATEGORY_DESCRIPTIONS.get(category, (category, "count", "count"))[0]
@@ -234,6 +260,11 @@ def _price_hint_for_material(material_name: str | None) -> tuple[str, float, str
         if keyword in mat:
             return hint
     return None
+
+
+def _category_price_hint(category: str) -> tuple[str, float] | None:
+    """Return a fallback (trade, unit rate) for *category* when priced."""
+    return _CATEGORY_PRICE_FALLBACKS.get(category)
 
 
 def _is_house_pdf(elements: list[dict[str, Any]], metadata: dict[str, Any]) -> bool:
@@ -291,21 +322,45 @@ def _boq(elements: list[dict[str, Any]]) -> list[dict[str, Any]]:
         grouped[key]["element_ids"].append(str(el.get("id") or ""))
 
     boq_items: list[dict[str, Any]] = []
-    for i, (_, group) in enumerate(sorted(grouped.items(), key=lambda kv: kv[0][0])):
+    next_item_number = 1
+    for _, group in sorted(grouped.items(), key=lambda kv: kv[0][0]):
         if group["quantity"] <= 0 or not group["element_ids"]:
             continue
         friendly = _friendly_category(group["category"])
         material = group["material_name"]
         description = f"{material} {friendly}" if material != "Unspecified" else f"{friendly}"
 
-        hint = _price_hint_for_material(group["material_name"])
-        rate = hint[1] if hint else 0.0
-        trade = hint[0] if hint else "Unclassified"
+        material_hint = _price_hint_for_material(group["material_name"])
+        category_hint = _category_price_hint(group["category"])
+
+        # Only use a keyword-based material rate when its unit matches the
+        # quantity unit.  Otherwise a steel ``kg`` rate can be applied to a
+        # count-based door or member and produce a nonsensical line total.
+        material_hint_matches_unit = (
+            material_hint is not None and material_hint[2] == group["unit"]
+        )
+
+        if material_hint_matches_unit:
+            rate = material_hint[1]
+            trade = material_hint[0]
+            confidence = "SEARCH"
+        elif category_hint:
+            rate = category_hint[1]
+            trade = category_hint[0]
+            confidence = "CATEGORY_DEFAULT"
+        else:
+            rate = 0.0
+            trade = "Unclassified"
+            confidence = "NO_MATCH"
+
+        if rate <= 0:
+            continue
+
         total = round(group["quantity"] * rate, 2)
 
         boq_items.append(
             {
-                "item_id": f"BOQ-{i + 1:03d}",
+                "item_id": f"BOQ-{next_item_number:03d}",
                 "description": description,
                 "quantity": round(group["quantity"], 2),
                 "unit": group["unit"],
@@ -313,12 +368,19 @@ def _boq(elements: list[dict[str, Any]]) -> list[dict[str, Any]]:
                 "total_price": total,
                 "element_ids": group["element_ids"],
                 "rate_applied": rate,
-                "price_book_item_code": hint[0] if hint else "",
-                "confidence": "SEARCH" if hint else "NO_MATCH",
+                "price_book_item_code": trade if rate > 0 else "",
+                "confidence": confidence,
                 "trade": trade,
-                "material_family": hint[0] if hint else "",
+                "material_family": (
+                    material_hint[0]
+                    if material_hint
+                    else category_hint[0]
+                    if category_hint
+                    else ""
+                ),
             }
         )
+        next_item_number += 1
 
     return boq_items
 

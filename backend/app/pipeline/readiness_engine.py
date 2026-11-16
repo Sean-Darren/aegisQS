@@ -13,6 +13,23 @@ from models import (
 from scoring_engine import ScoringEngine
 from assessment.material_classifier import MaterialClassifier
 
+# Material association is critical for load-bearing/volume-measured building
+# elements.  Fixtures, MEP proxies, stairs, railings and similar count-based
+# items are often exported without a material relationship; that should not
+# make the whole model fail readiness.
+_MATERIAL_REQUIRED_CATEGORIES: frozenset[str] = frozenset({
+    "IfcWall",
+    "IfcSlab",
+    "IfcRoof",
+    "IfcColumn",
+    "IfcBeam",
+    "IfcFooting",
+    "IfcPile",
+    "IfcCovering",
+    "IfcCurtainWall",
+    "IfcMember",
+})
+
 
 class ReadinessEngine:
     """Single entry-point that orchestrates the full BIM readiness assessment."""
@@ -127,6 +144,11 @@ class ReadinessEngine:
             family = self._get_element_family(element)
 
             if confidence == "MISSING_DATA":
+                if (
+                    element is not None
+                    and element.category not in _MATERIAL_REQUIRED_CATEGORIES
+                ):
+                    continue
                 issues.append(
                     ReadinessIssue(
                         id=self._next_mat_id(),
@@ -139,6 +161,11 @@ class ReadinessEngine:
                     )
                 )
             elif confidence == "NO_MATCH":
+                if (
+                    element is not None
+                    and element.category not in _MATERIAL_REQUIRED_CATEGORIES
+                ):
+                    continue
                 issues.append(
                     ReadinessIssue(
                         id=self._next_mat_id(),

@@ -114,5 +114,28 @@ class MaterialMapper:
         if best_spec_id is not None and best_distance <= 2:
             return (best_spec_id, "FUZZY")
 
+        # ---- Pass 3: keyword-overlap fallback ----
+        # IFC material names are often verbose composite strings such as
+        # ``Masonry - Concrete Masonry Units``.  A strict full-string edit
+        # distance rarely matches those even when they share the important
+        # material keyword with a library spec.  If any normalised token
+        # overlaps, treat it as a fuzzy match (visible as low confidence)
+        # rather than a hard no-match.
+        raw_tokens = set(norm_name.split())
+        if raw_tokens:
+            best_spec_id = None
+            best_overlap = 0
+            for spec in self._specs:
+                candidates = [spec.name, *spec.aliases]
+                for candidate in candidates:
+                    candidate_tokens = set(self._normalize(candidate).split())
+                    overlap = len(raw_tokens & candidate_tokens)
+                    if overlap > best_overlap:
+                        best_overlap = overlap
+                        best_spec_id = spec.id
+
+            if best_spec_id is not None and best_overlap > 0:
+                return (best_spec_id, "FUZZY")
+
         # ---- Pass 4: no match within threshold ----
         return ("UNMAPPED", "NO_MATCH")

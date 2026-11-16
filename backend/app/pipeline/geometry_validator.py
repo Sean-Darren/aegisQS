@@ -4,6 +4,13 @@ from models import BimElement, ReadinessIssue, Severity
 
 GENERIC_NAMES: frozenset[str] = frozenset({"Default", "Unnamed"})
 AREA_SENSITIVE_CATEGORIES: frozenset[str] = frozenset({"IfcWall", "IfcSlab", "IfcRoof"})
+VOLUME_SENSITIVE_CATEGORIES: frozenset[str] = frozenset({
+    "IfcWall",
+    "IfcColumn",
+    "IfcBeam",
+    "IfcFooting",
+    "IfcPile",
+})
 
 
 class GeometryValidator:
@@ -22,8 +29,15 @@ class GeometryValidator:
         issues: list[ReadinessIssue] = []
 
         for elem in elements:
-            # --- BLOCKER: zero or negative volume ---
-            if elem.volume <= 0.0:
+            # --- BLOCKER: zero or negative volume for volume-measured
+            # building elements.  Count/area/length-based elements (doors,
+            # windows, stairs, railings, MEP proxies, etc.) do not require a
+            # volume and should not block readiness just because IFC exports
+            # them without one.
+            if (
+                elem.category in VOLUME_SENSITIVE_CATEGORIES
+                and elem.volume <= 0.0
+            ):
                 issues.append(
                     ReadinessIssue(
                         id=self._next_id(),
@@ -52,6 +66,11 @@ class GeometryValidator:
             if (
                 elem.category in AREA_SENSITIVE_CATEGORIES
                 and (elem.area is None or elem.area <= 0.0)
+                and not (
+                    elem.category == "IfcSlab"
+                    and elem.name
+                    and elem.name.lower().startswith("stair")
+                )
             ):
                 issues.append(
                     ReadinessIssue(

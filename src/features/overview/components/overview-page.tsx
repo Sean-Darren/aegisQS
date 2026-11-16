@@ -8,13 +8,14 @@ import {
   ChevronRight,
   ClipboardList,
   GitCompareArrows,
+  Hash,
   MapPin,
   Table2,
   TrendingUp,
   type LucideIcon,
 } from "lucide-react";
 import { Link } from "@/i18n/navigation";
-import { Badge, Skeleton, ErrorState, EmptyState } from "@/components/ui";
+import { Skeleton, ErrorState, EmptyState } from "@/components/ui";
 import { AuditTimeline } from "@/features/audit";
 import { queryKeys } from "@/lib/api";
 import {
@@ -114,37 +115,40 @@ export function OverviewPage({ projectId }: { projectId: string }) {
   return (
     <div className="space-y-6 tabular-nums">
       <header>
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-          <h1 className="text-2xl font-semibold">{d.project.name}</h1>
-          <Badge className="num">{d.project.code}</Badge>
+        <h1 className="text-2xl font-semibold">{d.project.name}</h1>
+        <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-ink">
+          <span className="num flex items-center gap-1.5">
+            <Hash
+              size={14}
+              strokeWidth={1.5}
+              aria-hidden="true"
+              className="shrink-0"
+            />
+            {d.project.code}
+          </span>
+          {d.project.location && (
+            <span className="flex items-center gap-1.5">
+              <MapPin
+                size={14}
+                strokeWidth={1.5}
+                aria-hidden="true"
+                className="shrink-0"
+              />
+              {d.project.location}
+            </span>
+          )}
+          {d.project.buildingType && (
+            <span className="flex items-center gap-1.5">
+              <Building2
+                size={14}
+                strokeWidth={1.5}
+                aria-hidden="true"
+                className="shrink-0"
+              />
+              {projectsT(`buildingTypes.${d.project.buildingType}`)}
+            </span>
+          )}
         </div>
-        <p className="mt-2 text-muted-ink">{t("title")}</p>
-        {(d.project.location || d.project.buildingType) && (
-          <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-ink">
-            {d.project.location && (
-              <span className="flex items-center gap-1.5">
-                <MapPin
-                  size={14}
-                  strokeWidth={1.5}
-                  aria-hidden="true"
-                  className="shrink-0"
-                />
-                {d.project.location}
-              </span>
-            )}
-            {d.project.buildingType && (
-              <span className="flex items-center gap-1.5">
-                <Building2
-                  size={14}
-                  strokeWidth={1.5}
-                  aria-hidden="true"
-                  className="shrink-0"
-                />
-                {projectsT(`buildingTypes.${d.project.buildingType}`)}
-              </span>
-            )}
-          </div>
-        )}
       </header>
       {/* KPI tiles: compact numbers up top; the detailed context moved into
           each card's hover/focus tooltip and the whole tile navigates. */}
@@ -189,78 +193,101 @@ export function OverviewPage({ projectId }: { projectId: string }) {
           href={`${root}/workbooks`}
         />
       </div>
-      <section className="overflow-hidden rounded-lg border border-line bg-panel">
-        <div className="flex items-center justify-between gap-3 border-b border-line px-5 py-4">
-          <h2 className="text-lg font-semibold">{t("attention")}</h2>
-          {attention.length > 0 && (
-            <span className="num inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-risk-bg px-2 text-xs font-semibold text-risk">
-              {attention.length}
-            </span>
-          )}
-        </div>
-        {attention.length ? (
-          <ul className="divide-y divide-line">
-            {attention.map((a) => {
-              const meta = attentionMeta[a.kind];
-              const Icon = meta.icon;
-              return (
-                <li key={a.id}>
-                  <Link
-                    href={a.href}
-                    className="group flex items-center gap-3 px-5 py-3 transition-colors hover:bg-stone-50 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-clay-600"
-                  >
-                    <span
-                      className={cn(
-                        "inline-flex size-8 shrink-0 items-center justify-center rounded-md",
-                        meta.tone,
-                      )}
-                    >
-                      <Icon size={16} strokeWidth={1.5} aria-hidden="true" />
-                    </span>
-                    <span className="min-w-0 flex-1 text-sm text-ink">
-                      {a.text}
-                    </span>
-                    <ChevronRight
-                      size={16}
-                      strokeWidth={1.5}
-                      aria-hidden="true"
-                      className="shrink-0 text-muted-ink opacity-0 transition-opacity group-hover:opacity-100"
-                    />
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        ) : (
-          <div className="px-5 py-6">
-            <EmptyState message={t("clear")} />
+      {/* Two panels side by side (attention left, activity right), equal
+          height. Both bodies clip to the same fixed height; the lists fade
+          into the panel background at the bottom to hint at hidden items. */}
+      <div className="grid items-stretch gap-4 lg:grid-cols-2">
+        <section className="flex flex-col overflow-hidden rounded-lg border border-line bg-panel">
+          <div className="flex items-center justify-between gap-3 border-b border-line px-5 py-4">
+            <h2 className="text-lg font-semibold">{t("attention")}</h2>
+            {attention.length > 0 && (
+              <span className="num inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-risk-bg px-2 text-xs font-semibold text-risk">
+                {attention.length}
+              </span>
+            )}
           </div>
-        )}
-      </section>
-      <section className="overflow-hidden rounded-lg border border-line bg-panel">
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-line px-5 py-4">
-          <h2 className="text-lg font-semibold">{t("recent")}</h2>
-          <Link
-            className="inline-flex items-center gap-1 rounded-sm text-sm font-medium text-clay-700 underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-clay-600"
-            href={`${root}/audit`}
-          >
-            {t("showAllActivity")}
-            <ArrowRight
-              size={14}
-              strokeWidth={1.5}
-              aria-hidden="true"
-              className="shrink-0"
-            />
-          </Link>
-        </div>
-        <div className="px-5 py-4">
-          {d.events.length ? (
-            <AuditTimeline events={d.events} projectId={projectId} />
+          {attention.length ? (
+            <div className="relative h-[21rem]">
+              <ul className="h-full divide-y divide-line overflow-y-auto">
+                {attention.map((a) => {
+                  const meta = attentionMeta[a.kind];
+                  const Icon = meta.icon;
+                  return (
+                    <li key={a.id}>
+                      <Link
+                        href={a.href}
+                        className="group flex items-center gap-3 px-5 py-3 transition-colors hover:bg-stone-50 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-clay-600"
+                      >
+                        <span
+                          className={cn(
+                            "inline-flex size-8 shrink-0 items-center justify-center rounded-md",
+                            meta.tone,
+                          )}
+                        >
+                          <Icon
+                            size={16}
+                            strokeWidth={1.5}
+                            aria-hidden="true"
+                          />
+                        </span>
+                        <span className="min-w-0 flex-1 text-sm text-ink">
+                          {a.text}
+                        </span>
+                        <ChevronRight
+                          size={16}
+                          strokeWidth={1.5}
+                          aria-hidden="true"
+                          className="shrink-0 text-muted-ink opacity-0 transition-opacity group-hover:opacity-100"
+                        />
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+              <div
+                aria-hidden
+                className="pointer-events-none absolute inset-x-0 bottom-0 h-12 bg-gradient-to-b from-transparent to-panel"
+              />
+            </div>
           ) : (
-            <EmptyState message={t("emptyActivity")} />
+            <div className="px-5 py-6">
+              <EmptyState message={t("clear")} />
+            </div>
           )}
-        </div>
-      </section>
+        </section>
+        <section className="flex flex-col overflow-hidden rounded-lg border border-line bg-panel">
+          <div className="flex items-center justify-between gap-3 border-b border-line px-5 py-4">
+            <h2 className="text-lg font-semibold">{t("recent")}</h2>
+            <Link
+              className="inline-flex items-center gap-1 rounded-sm text-sm font-medium text-clay-700 underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-clay-600"
+              href={`${root}/audit`}
+            >
+              {t("showAllActivity")}
+              <ArrowRight
+                size={14}
+                strokeWidth={1.5}
+                aria-hidden="true"
+                className="shrink-0"
+              />
+            </Link>
+          </div>
+          <div className="relative h-[21rem]">
+            {d.events.length ? (
+              <>
+                <div className="h-full overflow-hidden px-5 py-2">
+                  <AuditTimeline events={d.events} projectId={projectId} />
+                </div>
+                <div
+                  aria-hidden
+                  className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-b from-transparent to-panel"
+                />
+              </>
+            ) : (
+              <EmptyState message={t("emptyActivity")} />
+            )}
+          </div>
+        </section>
+      </div>
     </div>
   );
 }

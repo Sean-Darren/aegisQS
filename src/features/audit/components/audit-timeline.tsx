@@ -1,5 +1,6 @@
 "use client";
 import { useLocale, useTranslations } from "next-intl";
+import { Calendar, ChevronRight, User } from "lucide-react";
 import { formatDate, type FormatLocale } from "@/lib/format";
 import { Link } from "@/i18n/navigation";
 import { recordHref } from "@/components/records/linked-records";
@@ -19,6 +20,9 @@ function fallbackActionLabel(action: string) {
   return tail.charAt(0).toUpperCase() + tail.slice(1);
 }
 
+const rowClass =
+  "group relative flex w-full items-start gap-3 rounded-md px-2 py-3 text-left transition-colors hover:bg-stone-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-clay-600";
+
 export function AuditTimeline({
   events,
   projectId,
@@ -32,51 +36,67 @@ export function AuditTimeline({
   const t = useTranslations("Audit");
   const shell = useTranslations("Shell");
   return (
-    <ol className="border-l border-line pl-5">
+    <ol className="border-l border-line pl-4">
       {events.map((event) => {
         const key = `actions.${event.action}`;
         const title = t.has(key) ? t(key) : fallbackActionLabel(event.action);
         const roleKey = roleLabelKeys[event.actorRole];
-        return (
-          <li
-            key={event.id}
-            className="relative border-b border-line py-4 first:pt-0 last:border-b-0 last:pb-0"
-          >
-            <span
-              aria-hidden
-              className="absolute -left-[24px] top-6 size-2 rounded-full border border-line bg-clay-400"
-            />
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <p className="text-sm font-medium text-ink">{title}</p>
-                <p className="mt-0.5 text-sm text-muted-ink">{event.summary}</p>
-                <p className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-ink">
+        const content = (
+          <>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-medium text-ink">{title}</p>
+              <p className="mt-0.5 text-sm text-muted-ink">{event.summary}</p>
+              <p className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-ink">
+                <span className="flex items-center gap-1">
+                  <Calendar
+                    size={12}
+                    strokeWidth={1.5}
+                    aria-hidden="true"
+                    className="shrink-0"
+                  />
                   <time dateTime={event.at} className="tabular-nums">
                     {formatDate(event.at, locale)}
                   </time>
-                  <span aria-hidden>·</span>
-                  <span>{roleKey ? shell(roleKey) : event.actorId}</span>
-                </p>
-              </div>
-              {onOpenDetail ? (
-                <button
-                  type="button"
-                  className="shrink-0 rounded-sm text-sm font-medium text-clay-700 underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-clay-600"
-                  onClick={() =>
-                    onOpenDetail?.(`${event.entityType}:${event.entityId}`)
-                  }
-                >
-                  {t("view")}
-                </button>
-              ) : (
-                <Link
-                  className="shrink-0 rounded-sm text-sm font-medium text-clay-700 underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-clay-600"
-                  href={recordHref(projectId, event.entityType, event.entityId)}
-                >
-                  {t("view")}
-                </Link>
-              )}
+                </span>
+                <span className="flex items-center gap-1">
+                  <User
+                    size={12}
+                    strokeWidth={1.5}
+                    aria-hidden="true"
+                    className="shrink-0"
+                  />
+                  {roleKey ? shell(roleKey) : event.actorId}
+                </span>
+              </p>
             </div>
+            <ChevronRight
+              size={16}
+              strokeWidth={1.5}
+              aria-hidden="true"
+              className="mt-1 shrink-0 text-muted-ink opacity-0 transition-opacity group-hover:opacity-100"
+            />
+          </>
+        );
+        return (
+          <li key={event.id} className="border-b border-line last:border-b-0">
+            {onOpenDetail ? (
+              <button
+                type="button"
+                className={rowClass}
+                onClick={() =>
+                  onOpenDetail?.(`${event.entityType}:${event.entityId}`)
+                }
+              >
+                {content}
+              </button>
+            ) : (
+              <Link
+                className={rowClass}
+                href={recordHref(projectId, event.entityType, event.entityId)}
+              >
+                {content}
+              </Link>
+            )}
           </li>
         );
       })}

@@ -5,6 +5,7 @@ import { useLocale, useTranslations } from "next-intl";
 import {
   Building2,
   FolderOpen,
+  Hash,
   MapPin,
   MoreVertical,
   Pencil,
@@ -18,7 +19,6 @@ import { useSession } from "@/lib/auth/session";
 import { formatDate, type FormatLocale } from "@/lib/format";
 import { buildingTypes, type Project } from "@/schemas";
 import {
-  Badge,
   Button,
   Dialog,
   DialogContent,
@@ -105,21 +105,29 @@ export default function ProjectsPage() {
                 className="absolute inset-0 rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-clay-600"
               />
               <div className="relative pointer-events-none">
-                <div className="flex items-center gap-2">
-                  <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-md bg-stone-50 text-clay-800">
+                <div className="flex items-start justify-between gap-3">
+                  <span className="inline-flex size-9 items-center justify-center rounded-md bg-stone-50 text-clay-800">
                     <FolderOpen
                       size={18}
                       strokeWidth={1.5}
                       aria-hidden="true"
                     />
                   </span>
-                  <Badge className="num shrink-0">{project.code}</Badge>
                 </div>
                 <h2 className="mt-4 text-lg font-semibold group-hover:text-clay-700">
                   {project.name}
                 </h2>
+                <p className="num mt-2 flex items-center gap-1.5 text-sm text-muted-ink">
+                  <Hash
+                    size={14}
+                    strokeWidth={1.5}
+                    aria-hidden="true"
+                    className="shrink-0"
+                  />
+                  {project.code}
+                </p>
                 {project.location && (
-                  <p className="mt-2 flex items-center gap-1.5 text-sm text-muted-ink">
+                  <p className="mt-1 flex items-center gap-1.5 text-sm text-muted-ink">
                     <MapPin
                       size={14}
                       strokeWidth={1.5}

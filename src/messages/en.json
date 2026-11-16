@@ -811,7 +811,6 @@
     "overlayOutside": "Some advice dates are outside this chart window. Select a longer horizon to see them; exact dates remain in the advice above."
   },
   "Overview": {
-    "title": "Project overview",
     "error": "Project summary could not be loaded. Try again.",
     "retry": "Try again",
     "documents": "Documents",

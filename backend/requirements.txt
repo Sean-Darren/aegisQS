@@ -1,16 +1,18 @@
-fastapi>=0.115
-uvicorn[standard]>=0.40
-python-multipart>=0.0.9
-pydantic>=2.7
+# Upper bounds pin the next breaking major of each dependency; exact
+# freezing should be done from a real deployment environment (pip freeze).
+fastapi>=0.115,<1
+uvicorn[standard]>=0.40,<1
+python-multipart>=0.0.9,<1
+pydantic>=2.7,<3
 numpy>=1.24,<2
-scipy>=1.10
-PyMuPDF>=1.24
+scipy>=1.10,<2
+PyMuPDF>=1.24,<2
 opencv-python-headless>=4.8,<5
-Pillow>=10.0
+Pillow>=10.0,<12
 
 # Vendored BIM pipeline integrations (required for real IFC/PDF/image parsing):
 # NOTE: pdf2image shells out to the poppler-utils binaries (pdftoppm);
 # install them on the host (apt install poppler-utils) or PDF parsing fails.
-ifcopenshell>=0.7
-transformers[torch]>=4.40
-pdf2image>=1.17
+ifcopenshell>=0.7,<1
+transformers[torch]>=4.40,<5
+pdf2image>=1.17,<2

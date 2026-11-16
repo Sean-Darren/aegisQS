@@ -24,6 +24,7 @@ from app.schemas.bim import (
     JobCreated,
     JobSnapshot,
     JobStatus,
+    JobTicket,
     RevisionComparisonResponse,
 )
 from app.revision_detector import estimate_revision_difference
@@ -179,6 +180,24 @@ async def get_assessment(
     if not job:
         raise HTTPException(status_code=404, detail="Assessment job not found.")
     return JobSnapshot(**job)
+
+
+@router.post(
+    "/assessments/{job_id}/progress-ticket",
+    response_model=JobTicket,
+)
+async def create_progress_ticket(
+    job_id: str,
+    manager: JobManager = Depends(get_manager),
+    _auth: None = Depends(ensure_authenticated),
+) -> JobTicket:
+    """Mint a single-use ticket the browser can spend on its WS connection."""
+    if not manager.get(job_id):
+        raise HTTPException(status_code=404, detail="Assessment job not found.")
+    return JobTicket(
+        ticket=manager.issue_progress_ticket(job_id),
+        expires_in=120,
+    )
 
 
 @router.post("/revision-comparisons", response_model=RevisionComparisonResponse)

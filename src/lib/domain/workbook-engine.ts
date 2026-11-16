@@ -234,19 +234,31 @@ export async function parseWorkbook(
         );
     }),
   );
+  // Group priced items once by (section, unit). Each item's median comes
+  // from its whole peer group exactly as before, but the peers are computed
+  // once per group instead of rescanning every item per item (O(n²) walk).
+  const peerRates = new Map<string, number[]>();
   for (const item of items) {
     if (item.rate === null) continue;
-    const peers = items
-      .filter(
-        (p) =>
-          p.section === item.section && p.unit === item.unit && p.rate !== null,
-      )
-      .map((p) => p.rate!)
-      .sort((a, b) => a - b);
-    if (peers.length < 3) continue;
+    const key = `${item.section}\u0000${item.unit}`;
+    const rates = peerRates.get(key);
+    if (rates) rates.push(item.rate);
+    else peerRates.set(key, [item.rate]);
+  }
+  const groupMedians = new Map<string, number>();
+  for (const [key, rates] of peerRates) {
+    if (rates.length < 3) continue;
+    const peers = [...rates].sort((a, b) => a - b);
     const mid = Math.floor(peers.length / 2);
-    const median =
-      peers.length % 2 ? peers[mid] : (peers[mid - 1] + peers[mid]) / 2;
+    groupMedians.set(
+      key,
+      peers.length % 2 ? peers[mid] : (peers[mid - 1] + peers[mid]) / 2,
+    );
+  }
+  for (const item of items) {
+    if (item.rate === null) continue;
+    const median = groupMedians.get(`${item.section}\u0000${item.unit}`);
+    if (median === undefined) continue;
     if (
       median > 0 &&
       Math.abs(item.rate / median - 1) > workbookThresholds.rateOutlierFraction

@@ -28,9 +28,13 @@ async def health() -> dict[str, str | bool]:
 
 @app.websocket("/ws/bim/{job_id}")
 async def bim_progress(websocket: WebSocket, job_id: str) -> None:
-    if not websocket_allowed(websocket):
-        # 1008 = policy violation; the client is neither an allowed browser
-        # origin nor a token-bearing server client.
+    ticket = websocket.query_params.get("ticket")
+    if not (
+        (ticket and manager.consume_progress_ticket(ticket, job_id))
+        or websocket_allowed(websocket)
+    ):
+        # 1008 = policy violation: no valid ticket, allowed browser origin
+        # or bearer token.
         await websocket.close(code=1008)
         return
     await websocket.accept()

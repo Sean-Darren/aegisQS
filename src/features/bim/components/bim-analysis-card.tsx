@@ -244,7 +244,7 @@ export function BimAnalysisCard({ projectId }: { projectId: string }) {
       setJobId(job.job_id);
       setPhase("running");
       closeProgress();
-      progressSocketRef.current = connectBimProgress(
+      progressSocketRef.current = await connectBimProgress(
         job.job_id,
         (event) => {
           setProgress(event.progress ?? 0);

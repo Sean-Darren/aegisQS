@@ -19,7 +19,7 @@ from fastapi import (
 )
 
 from app.config import Settings
-from app.dependencies import get_manager, get_settings
+from app.dependencies import ensure_authenticated, get_manager, get_settings
 from app.schemas.bim import (
     JobCreated,
     JobSnapshot,
@@ -27,10 +27,34 @@ from app.schemas.bim import (
     RevisionComparisonResponse,
 )
 from app.revision_detector import estimate_revision_difference
-from app.service import run_assessment
+from app.service import SUPPORTED_EXTENSIONS, run_assessment
 from app.state import JobManager
 
 router = APIRouter()
+
+#: Formats the revision detector can actually render and diff.
+REVISION_EXTENSIONS = {".pdf", ".png", ".jpg", ".jpeg"}
+
+
+async def _read_upload(file: UploadFile, limit: int) -> bytes:
+    """Read an upload in chunks, refusing files larger than ``limit`` bytes."""
+    chunks: list[bytes] = []
+    total = 0
+    while True:
+        chunk = await file.read(1024 * 1024)
+        if not chunk:
+            break
+        total += len(chunk)
+        if total > limit:
+            raise HTTPException(
+                status_code=413,
+                detail=(
+                    "Uploaded file exceeds the "
+                    f"{max(limit // (1024 * 1024), 1)} MB size limit."
+                ),
+            )
+        chunks.append(chunk)
+    return b"".join(chunks)
 
 
 def _progress_sender(
@@ -95,15 +119,24 @@ async def create_assessment(
     settings: Settings = Depends(get_settings),
     file: UploadFile = File(...),
     specs: str = Form(""),
+    _auth: None = Depends(ensure_authenticated),
 ) -> JobCreated:
     filename = file.filename or "model.bin"
+    suffix = Path(filename).suffix.lower()
+    if suffix not in SUPPORTED_EXTENSIONS:
+        raise HTTPException(
+            status_code=415,
+            detail=(
+                f"Unsupported file type '{suffix or filename}'. Expected one "
+                "of: .ifc, .json, .pdf, .png, .jpg, .jpeg."
+            ),
+        )
     job = manager.create_job(filename)
     job_id = job["job_id"]
 
     settings.upload_dir.mkdir(parents=True, exist_ok=True)
-    suffix = Path(filename).suffix.lower() or ".bin"
     destination = settings.upload_dir / f"{job_id}{suffix}"
-    destination.write_bytes(await file.read())
+    destination.write_bytes(await _read_upload(file, settings.max_upload_bytes))
 
     spec_list: list[dict[str, Any]] | None = None
     if specs:
@@ -137,6 +170,7 @@ async def create_assessment(
 async def get_assessment(
     job_id: str,
     manager: JobManager = Depends(get_manager),
+    _auth: None = Depends(ensure_authenticated),
 ) -> JobSnapshot:
     job = manager.get(job_id)
     if not job:
@@ -149,24 +183,47 @@ async def compare_revisions(
     base: UploadFile = File(...),
     target: UploadFile = File(...),
     settings: Settings = Depends(get_settings),
+    _auth: None = Depends(ensure_authenticated),
 ) -> RevisionComparisonResponse:
     """Run Hugging Face CLIP on two revisions and estimate their difference."""
     base_name = base.filename or "base.bin"
     target_name = target.filename or "target.bin"
-    base_suffix = Path(base_name).suffix.lower() or ".png"
-    target_suffix = Path(target_name).suffix.lower() or ".png"
+    base_suffix = Path(base_name).suffix.lower()
+    target_suffix = Path(target_name).suffix.lower()
+    unsupported = [
+        suffix
+        for suffix in (base_suffix, target_suffix)
+        if suffix not in REVISION_EXTENSIONS
+    ]
+    if unsupported:
+        raise HTTPException(
+            status_code=415,
+            detail=(
+                "Unsupported revision file type. Expected one of: "
+                ".pdf, .png, .jpg, .jpeg."
+            ),
+        )
 
     settings.upload_dir.mkdir(parents=True, exist_ok=True)
     job_root = settings.upload_dir / f"revision-{uuid.uuid4().hex}"
     job_root.mkdir(parents=True, exist_ok=True)
-    base_path = job_root / f"base{base_suffix}"
-    target_path = job_root / f"target{target_suffix}"
+    base_path = job_root / f"base{base_suffix or '.png'}"
+    target_path = job_root / f"target{target_suffix or '.png'}"
 
     try:
-        base_path.write_bytes(await base.read())
-        target_path.write_bytes(await target.read())
+        base_path.write_bytes(await _read_upload(base, settings.max_upload_bytes))
+        target_path.write_bytes(
+            await _read_upload(target, settings.max_upload_bytes)
+        )
         try:
-            result = estimate_revision_difference(str(base_path), str(target_path))
+            # CLIP/torch inference is CPU-bound and can run for many
+            # seconds; keep it off the event loop so other requests and
+            # WebSocket progress connections stay responsive.
+            result = await asyncio.to_thread(
+                estimate_revision_difference,
+                str(base_path),
+                str(target_path),
+            )
         except Exception as exc:
             raise HTTPException(
                 status_code=422,

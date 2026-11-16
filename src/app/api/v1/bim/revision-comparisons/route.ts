@@ -136,9 +136,18 @@ export async function POST(request: Request) {
       upstream.set("base", base, safeFileName(base.name, "base"));
       upstream.set("target", target, safeFileName(target.name, "target"));
 
+      // Server-to-server call: authenticate with the shared worker token
+      // when one is configured (the worker gates on Origin or bearer token).
+      const workerToken = process.env.AEGISQS_BIM_WORKER_TOKEN?.trim();
       const upstreamResponse = await fetch(
         `${workerUrl}/api/v1/bim/revision-comparisons`,
-        { method: "POST", body: upstream },
+        {
+          method: "POST",
+          body: upstream,
+          headers: workerToken
+            ? { Authorization: "Bearer " + workerToken }
+            : undefined,
+        },
       );
 
       if (!upstreamResponse.ok) {

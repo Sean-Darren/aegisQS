@@ -32,12 +32,26 @@ async function handle(
     if (value) headers.set(key, value);
   }
   if (!mocking && request.method !== "GET") {
+    const hostHeader = request.headers.get("host") ?? request.nextUrl.host;
+    const configured = process.env.SMART_QS_ADDIN_PUBLIC_ORIGIN;
     if (
       request.headers.get("origin") !==
-      (process.env.SMART_QS_ADDIN_PUBLIC_ORIGIN ??
-        `${request.nextUrl.protocol}//${request.headers.get("host") ?? request.nextUrl.host}`)
+      (configured ?? `${request.nextUrl.protocol}//${hostHeader}`)
     )
       return new Response(null, { status: 403 });
+    // Host-header-derived origins are client-controllable; only trust them
+    // for local development hosts.
+    if (!configured) {
+      let loopback = false;
+      try {
+        loopback = ["localhost", "127.0.0.1", "[::1]", "::1"].includes(
+          new URL(`http://${hostHeader}`).hostname,
+        );
+      } catch {
+        loopback = false;
+      }
+      if (!loopback) return new Response(null, { status: 403 });
+    }
     headers.set("Origin", url.origin);
   }
   try {

@@ -25,6 +25,13 @@ class JobCreated(BaseModel):
     status: JobStatus
 
 
+class JobTicket(BaseModel):
+    """Single-use credential for the /ws/bim/{job_id} progress socket."""
+
+    ticket: str
+    expires_in: int = Field(ge=1)
+
+
 class JobSnapshot(BaseModel):
     model_config = ConfigDict(extra="allow")
 

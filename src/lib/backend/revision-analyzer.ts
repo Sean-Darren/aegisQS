@@ -1,7 +1,11 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import type { DomainContext } from "@/lib/domain/context";
-import type { DocumentVersion, DrawingChange, DrawingComparison } from "@/schemas";
+import type {
+  DocumentVersion,
+  DrawingChange,
+  DrawingComparison,
+} from "@/schemas";
 import { FILE_BUCKET } from "./repository";
 
 const bboxSchema = z.object({
@@ -49,9 +53,7 @@ async function storedVersionBytes(
     throw new Error("The revision file is not available in project storage.");
   }
 
-  const parsed = z
-    .object({ path: z.string() })
-    .parse(data.data ?? data);
+  const parsed = z.object({ path: z.string() }).parse(data.data ?? data);
   const { data: file, error: fileError } = await db.storage
     .from(FILE_BUCKET)
     .download(parsed.path);
@@ -97,7 +99,9 @@ export async function runRevisionWorker(
   const { state, audit, emit, now } = ctx;
   const projectId = comparison.projectId;
   const base = state.versions.find((v) => v.id === comparison.baseVersionId);
-  const target = state.versions.find((v) => v.id === comparison.targetVersionId);
+  const target = state.versions.find(
+    (v) => v.id === comparison.targetVersionId,
+  );
 
   if (!base || !target) {
     throw new Error("One of the revision files is missing.");
@@ -131,10 +135,16 @@ export async function runRevisionWorker(
   form.set("base", fileForVersion(base, baseBytes));
   form.set("target", fileForVersion(target, targetBytes));
 
-  const response = await fetch(
-    `${url}/api/v1/bim/revision-comparisons`,
-    { method: "POST", body: form },
-  );
+  // Server-to-server calls carry no browser Origin header, so the worker
+  // authenticates them with a shared bearer token when one is configured.
+  const workerToken = process.env.AEGISQS_BIM_WORKER_TOKEN?.trim();
+  const response = await fetch(`${url}/api/v1/bim/revision-comparisons`, {
+    method: "POST",
+    body: form,
+    headers: workerToken
+      ? { Authorization: "Bearer " + workerToken }
+      : undefined,
+  });
 
   if (!response.ok) {
     const body = await response.text();

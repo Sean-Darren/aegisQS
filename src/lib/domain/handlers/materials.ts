@@ -8,8 +8,7 @@ function inferMaterialCategory(
   unit: string,
 ): s.Material["category"] {
   const text = `${description} ${unit}`.toLowerCase();
-  if (/\b(steel|rebar|metal|aluminium|aluminum)\b/.test(text))
-    return "steel";
+  if (/\b(steel|rebar|metal|aluminium|aluminum)\b/.test(text)) return "steel";
   if (/\b(concrete|cement|mortar)\b/.test(text))
     return text.includes("cement") || text.includes("mortar")
       ? "cement"
@@ -43,10 +42,15 @@ export function createMaterialsHandlers(ctx: DomainContext) {
     route("get", "/materials/:materialId/forecast", ({ params }) => {
       requirePermission("project.view");
       find(state.materials, String(params.materialId));
-      return reply(
-        s.priceForecastSchema,
-        state.forecasts.find((f) => f.materialId === String(params.materialId)),
+      const forecast = state.forecasts.find(
+        (f) => f.materialId === String(params.materialId),
       );
+      if (!forecast)
+        throw new MockError(
+          404,
+          "No price forecast is available for this material yet.",
+        );
+      return reply(s.priceForecastSchema, forecast);
     }),
     route("get", "/projects/:projectId/material-needs", ({ params }) => {
       const id = String(params.projectId);
@@ -80,10 +84,7 @@ export function createMaterialsHandlers(ctx: DomainContext) {
             "Choose a saved artifact from this project.",
           );
         if (doc.category !== "site_record")
-          throw new MockError(
-            400,
-            "Choose a saved BIM analysis site record.",
-          );
+          throw new MockError(400, "Choose a saved BIM analysis site record.");
         const versionId = doc.currentVersionId;
         if (!versionId)
           throw new MockError(400, "The saved artifact has no current file.");
@@ -97,10 +98,7 @@ export function createMaterialsHandlers(ctx: DomainContext) {
             .object({ result: s.bimResultSchema })
             .parse(JSON.parse(new TextDecoder().decode(bytes)));
         } catch {
-          throw new MockError(
-            400,
-            "Choose a saved BIM analysis artifact.",
-          );
+          throw new MockError(400, "Choose a saved BIM analysis artifact.");
         }
         const boqItems = payload.result.boq ?? [];
 
@@ -227,8 +225,15 @@ export function createMaterialsHandlers(ctx: DomainContext) {
             leadTimeWeeks: true,
           })
           .parse(await request.json());
-        const material = find(state.materials, body.materialId),
-          forecast = state.forecasts.find((f) => f.materialId === material.id)!;
+        const material = find(state.materials, body.materialId);
+        const forecast = state.forecasts.find(
+          (f) => f.materialId === material.id,
+        );
+        if (!forecast)
+          throw new MockError(
+            404,
+            "This material has no price forecast yet, so procurement advice cannot be calculated.",
+          );
         const advice = calculateAdvice({
           ...body,
           id: nextId("PA"),

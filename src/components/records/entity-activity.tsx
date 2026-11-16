@@ -2,7 +2,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { queryKeys, resources } from "@/lib/api";
-import { AuditTimeline, fetchAllAuditEvents } from "@/features/audit";
+import { AuditTimeline } from "@/features/audit";
 import { ErrorState, Skeleton } from "@/components/ui";
 import type { AuditEvent } from "@/schemas";
 import { useRouter } from "@/i18n/navigation";
@@ -20,14 +20,17 @@ export function EntityActivity({
   const query = useQuery({
     queryKey: [...queryKeys.auditEvents(projectId), "entities", entities],
     queryFn: async () => {
+      // One bounded single-shot request per entity (server-side filter)
+      // instead of walking the audit log page by page for each entity.
       const lists = await Promise.all(
         entities.map((e) =>
-          fetchAllAuditEvents((cursor) =>
-            resources.auditEvents(projectId, cursor, {
+          resources
+            .auditEvents(projectId, undefined, {
               entityType: e.type,
               entityId: e.id,
-            }),
-          ),
+              limit: 200,
+            })
+            .then((page) => page.data),
         ),
       );
       return lists.flat().sort((a, b) => b.at.localeCompare(a.at));

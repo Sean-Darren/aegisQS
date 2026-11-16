@@ -5,7 +5,7 @@ from __future__ import annotations
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.dependencies import manager, settings
+from app.dependencies import manager, settings, websocket_allowed
 from app.routers.bim import router as bim_router
 
 app = FastAPI(title="AegisQS BIM Worker", version="0.1.0")
@@ -28,6 +28,15 @@ async def health() -> dict[str, str | bool]:
 
 @app.websocket("/ws/bim/{job_id}")
 async def bim_progress(websocket: WebSocket, job_id: str) -> None:
+    ticket = websocket.query_params.get("ticket")
+    if not (
+        (ticket and manager.consume_progress_ticket(ticket, job_id))
+        or websocket_allowed(websocket)
+    ):
+        # 1008 = policy violation: no valid ticket, allowed browser origin
+        # or bearer token.
+        await websocket.close(code=1008)
+        return
     await websocket.accept()
     await manager.connect(job_id, websocket)
     try:

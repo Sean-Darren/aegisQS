@@ -9,13 +9,23 @@ export function JobStatus({ projectId }: { projectId?: string }) {
     queryKey: queryKeys.drawings(projectId ?? ""),
     queryFn: () => resources.drawings(projectId!),
     enabled: !!projectId,
-    refetchInterval: 2000,
+    refetchInterval: (query) =>
+      (query.state.data ?? []).some(
+        (d) =>
+          d.latestComparison &&
+          ["queued", "aligning", "detecting"].includes(
+            d.latestComparison.status,
+          ),
+      )
+        ? 2000
+        : 15000,
   });
   const workbooks = useQuery({
     queryKey: queryKeys.workbooks(projectId ?? ""),
     queryFn: () => resources.workbooks(projectId!),
     enabled: !!projectId,
-    refetchInterval: 3000,
+    refetchInterval: (query) =>
+      (query.state.data ?? []).some((w) => !w.currentVersionId) ? 3000 : 15000,
   });
   const versions = useQueries({
     queries: (workbooks.data ?? [])
@@ -23,7 +33,13 @@ export function JobStatus({ projectId }: { projectId?: string }) {
       .map((w) => ({
         queryKey: queryKeys.workbookVersion(w.currentVersionId!),
         queryFn: () => resources.workbookVersion(w.currentVersionId!),
-        refetchInterval: 2000,
+        refetchInterval: (query: {
+          state: { data?: { status: string } | undefined };
+        }) =>
+          query.state.data &&
+          ["queued", "parsing", "checking"].includes(query.state.data.status)
+            ? 2000
+            : false,
       })),
   });
   const active = drawings.data

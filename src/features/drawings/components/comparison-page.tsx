@@ -74,7 +74,14 @@ function ComparisonWorkspace({
   const changesQuery = useChanges(comparison.id);
   const [mode, setMode] = useState<ViewerMode>("side");
   const params = useSearchParams();
-  const [selected, setSelected] = useState(params.get("change") ?? "");
+  const changeParam = params.get("change") ?? "";
+  const [selected, setSelected] = useState(changeParam);
+  const [syncedChangeParam, setSyncedChangeParam] = useState(changeParam);
+  if (syncedChangeParam !== changeParam) {
+    // Follow ?change= links even when the workspace is already mounted.
+    setSyncedChangeParam(changeParam);
+    setSelected(changeParam);
+  }
   const [checked, setChecked] = useState<string[]>([]);
   const [kind, setKind] = useState("");
   const [status, setStatus] = useState("");

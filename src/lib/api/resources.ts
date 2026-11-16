@@ -25,6 +25,8 @@ export type AuditQuery = {
   actorId?: string;
   from?: string;
   to?: string;
+  /** Single-shot bounded fetch (no cursor walk). Max 500 on the server. */
+  limit?: number;
 };
 export function createResources(
   client: ReturnType<typeof createApiClient> = apiClient,
@@ -36,8 +38,7 @@ export function createResources(
     project: (p: string) => client.get(project(p), s.projectSchema),
     createProject: (body: { name: string; code?: string }) =>
       client.post("/projects", s.projectSchema, body),
-    deleteProject: (p: string) =>
-      client.delete(project(p), s.projectSchema),
+    deleteProject: (p: string) => client.delete(project(p), s.projectSchema),
     overview: (p: string) =>
       client.get(`${project(p)}/overview`, s.projectOverviewSchema),
     documents: (p: string, filters: DocumentFilters = {}) =>

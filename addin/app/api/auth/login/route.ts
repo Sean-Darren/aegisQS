@@ -1,10 +1,23 @@
 export async function POST(request: Request) {
   const requestUrl = new URL(request.url);
-  const origin =
-    process.env.SMART_QS_ADDIN_PUBLIC_ORIGIN ??
-    `${requestUrl.protocol}//${request.headers.get("host") ?? requestUrl.host}`;
+  const hostHeader = request.headers.get("host") ?? requestUrl.host;
+  const configured = process.env.SMART_QS_ADDIN_PUBLIC_ORIGIN;
+  const origin = configured ?? `${requestUrl.protocol}//${hostHeader}`;
   if (request.headers.get("origin") !== origin)
     return new Response(null, { status: 403 });
+  if (!configured) {
+    // Host-header-derived origins are client-controllable; only trust them
+    // for local development hosts.
+    let loopback = false;
+    try {
+      loopback = ["localhost", "127.0.0.1", "[::1]", "::1"].includes(
+        new URL(`http://${hostHeader}`).hostname,
+      );
+    } catch {
+      loopback = false;
+    }
+    if (!loopback) return new Response(null, { status: 403 });
+  }
   const base = process.env.SMART_QS_API_ORIGIN;
   if (!base)
     return Response.json(

@@ -51,12 +51,37 @@ export async function getBimJob(jobId: string) {
   return parseJson(response, bimJobSnapshotSchema);
 }
 
-export function connectBimProgress(
+async function fetchProgressTicket(jobId: string): Promise<string | undefined> {
+  // The worker mints single-use tickets for authenticated callers; if the
+  // endpoint is unavailable (older worker), fall back to the origin check.
+  try {
+    const response = await fetch(
+      `${bimWorkerUrl}/api/v1/bim/assessments/${jobId}/progress-ticket`,
+      { method: "POST", cache: "no-store" },
+    );
+    if (!response.ok) return undefined;
+    const body: unknown = await response.json().catch(() => undefined);
+    if (
+      body &&
+      typeof body === "object" &&
+      typeof (body as { ticket?: unknown }).ticket === "string"
+    ) {
+      return (body as { ticket: string }).ticket;
+    }
+    return undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+export async function connectBimProgress(
   jobId: string,
   onEvent: (event: BimProgressEvent) => void,
   onError?: (error: Error) => void,
-) {
+): Promise<() => void> {
+  const ticket = await fetchProgressTicket(jobId);
   const url = new URL(`/ws/bim/${jobId}`, bimWorkerUrl);
+  if (ticket) url.searchParams.set("ticket", ticket);
   url.protocol = url.protocol === "https:" ? "wss:" : "ws:";
   const socket = new WebSocket(url);
   socket.addEventListener("message", (message) => {
@@ -68,7 +93,9 @@ export function connectBimProgress(
       onEvent(parsed.data);
     } catch (error) {
       onError?.(
-        error instanceof Error ? error : new Error("Invalid BIM progress event"),
+        error instanceof Error
+          ? error
+          : new Error("Invalid BIM progress event"),
       );
     }
   });

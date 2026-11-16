@@ -41,6 +41,11 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# python (backend worker)
+__pycache__/
+*.pyc
+.venv/
+
 !.env.example
 /playwright-report/
 /test-results/

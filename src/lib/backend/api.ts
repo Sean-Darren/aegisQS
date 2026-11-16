@@ -13,15 +13,31 @@ import { MockError } from "@/lib/domain/handlers/shared";
 import { decodeState, projectFor } from "./records";
 import { createPersistentContext } from "./context";
 import { loadSnapshot, commitContext, hydrateFile } from "./repository";
+function isLoopbackHostHeader(hostHeader: string): boolean {
+  try {
+    const hostname = new URL(`http://${hostHeader}`).hostname;
+    return ["localhost", "127.0.0.1", "[::1]", "::1"].includes(hostname);
+  } catch {
+    return false;
+  }
+}
 export function assertSameOrigin(request: Request) {
   if (request.method === "GET" || request.method === "HEAD") return;
   const origin = request.headers.get("origin");
   const url = new URL(request.url);
+  const configured = process.env.SMART_QS_PUBLIC_ORIGIN;
   const expected =
-    process.env.SMART_QS_PUBLIC_ORIGIN ??
-    `${url.protocol}//${request.headers.get("host") ?? url.host}`;
+    configured ?? `${url.protocol}//${request.headers.get("host") ?? url.host}`;
   if (!origin || origin !== expected)
     throw new MockError(403, "A same-origin request is required.");
+  if (configured) return;
+  // Without a configured origin the expected value derives from the Host
+  // header, which a client can spoof. Only trust that on loopback dev hosts.
+  if (!isLoopbackHostHeader(request.headers.get("host") ?? url.host))
+    throw new MockError(
+      500,
+      "Server misconfiguration: set SMART_QS_PUBLIC_ORIGIN.",
+    );
 }
 export async function authenticate(headers: Headers) {
   const auth = await createSupabaseServerClient(headers);
@@ -128,9 +144,7 @@ export async function handleApi(request: Request) {
         route.method === "post" &&
         path.includes("/material-needs/extract/")
       ) {
-        const doc = state.documents.find(
-          (d) => d.id === params.documentId,
-        );
+        const doc = state.documents.find((d) => d.id === params.documentId);
         fileId = doc?.currentVersionId;
       }
       if (route.method === "put" && path.endsWith("/mapping"))
@@ -140,9 +154,7 @@ export async function handleApi(request: Request) {
       if (fileId) {
         const projectId = projectFor(
           state,
-          isDocumentFile
-            ? "document_version"
-            : "workbook_version",
+          isDocumentFile ? "document_version" : "workbook_version",
           fileId,
         );
         if (

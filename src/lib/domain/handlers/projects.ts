@@ -4,13 +4,8 @@ import type { DomainContext } from "../context";
 import { createHelpers, MockError } from "./shared";
 export function createProjectsHandlers(ctx: DomainContext) {
   const { state, currentUser, now, nextId, audit } = ctx;
-  const {
-    route,
-    reply,
-    requirePermission,
-    requireProject,
-    paged,
-  } = createHelpers(ctx);
+  const { route, reply, requirePermission, requireProject, paged } =
+    createHelpers(ctx);
   const createProjectSchema = z.object({
     name: z.string().trim().min(1).max(120),
     code: z.string().trim().min(1).max(20).optional(),
@@ -172,9 +167,7 @@ export function createProjectsHandlers(ctx: DomainContext) {
       );
 
       state.projects = state.projects.filter((item) => item.id !== id);
-      state.documents = state.documents.filter(
-        (item) => item.projectId !== id,
-      );
+      state.documents = state.documents.filter((item) => item.projectId !== id);
       state.versions = state.versions.filter(
         (item) => !documentVersionIds.has(item.id),
       );
@@ -188,9 +181,7 @@ export function createProjectsHandlers(ctx: DomainContext) {
       state.variations = state.variations.filter(
         (item) => item.projectId !== id,
       );
-      state.workbooks = state.workbooks.filter(
-        (item) => item.projectId !== id,
-      );
+      state.workbooks = state.workbooks.filter((item) => item.projectId !== id);
       state.workbookVersions = state.workbookVersions.filter(
         (item) => !workbookVersionIds.has(item.id),
       );
@@ -214,9 +205,12 @@ export function createProjectsHandlers(ctx: DomainContext) {
       state.auditEvents = state.auditEvents.filter(
         (event) => !auditEventIds.has(event.id),
       );
-      for (const versionId of documentVersionIds) delete state.filePaths[versionId];
-      for (const versionId of workbookVersionIds) delete state.filePaths[versionId];
-      for (const versionId of workbookVersionIds) delete state.parsed[versionId];
+      for (const versionId of documentVersionIds)
+        delete state.filePaths[versionId];
+      for (const versionId of workbookVersionIds)
+        delete state.filePaths[versionId];
+      for (const versionId of workbookVersionIds)
+        delete state.parsed[versionId];
 
       return reply(s.projectSchema, project);
     }),
@@ -252,25 +246,32 @@ export function createProjectsHandlers(ctx: DomainContext) {
     route("get", "/projects/:projectId/audit-events", ({ params, request }) => {
       requireProject(String(params.projectId));
       const q = new URL(request.url).searchParams;
-      return paged(
-        state.auditEvents
-          .filter(
-            (e) =>
-              belongsToProject(e, String(params.projectId)) &&
-              (!q.get("entityType") || e.entityType === q.get("entityType")) &&
-              (!q.get("entityId") || e.entityId === q.get("entityId")) &&
-              (!q.get("actorId") || e.actorId === q.get("actorId")) &&
-              (!q.get("from") || e.at >= q.get("from")!) &&
-              (!q.get("to") ||
-                e.at <=
-                  (q.get("to")!.length === 10
-                    ? `${q.get("to")}T23:59:59.999Z`
-                    : q.get("to")!)),
-          )
-          .toSorted((a, b) => b.at.localeCompare(a.at)),
-        q.get("cursor"),
-        3,
-      );
+      const filtered = state.auditEvents
+        .filter(
+          (e) =>
+            belongsToProject(e, String(params.projectId)) &&
+            (!q.get("entityType") || e.entityType === q.get("entityType")) &&
+            (!q.get("entityId") || e.entityId === q.get("entityId")) &&
+            (!q.get("actorId") || e.actorId === q.get("actorId")) &&
+            (!q.get("from") || e.at >= q.get("from")!) &&
+            (!q.get("to") ||
+              e.at <=
+                (q.get("to")!.length === 10
+                  ? `${q.get("to")}T23:59:59.999Z`
+                  : q.get("to")!)),
+        )
+        .toSorted((a, b) => b.at.localeCompare(a.at));
+      // Single-shot mode: a bounded slice with no cursor, so aggregate
+      // callers (overview, entity activity) do not have to walk every
+      // 3-row page of the log.
+      const limitRaw = q.get("limit");
+      if (limitRaw !== null) {
+        const limit = Number(limitRaw);
+        if (!Number.isInteger(limit) || limit < 1 || limit > 500)
+          throw new MockError(400, "limit must be an integer from 1 to 500.");
+        return Response.json(filtered.slice(0, limit));
+      }
+      return paged(filtered, q.get("cursor"), 3);
     }),
   ];
 }

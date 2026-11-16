@@ -1,6 +1,8 @@
 import { resources } from "@/lib/api";
-import { fetchAllAuditEvents } from "@/features/audit";
 export async function loadOverview(projectId: string) {
+  // Two bounded single-shot queries instead of walking the entire audit
+  // log page by page on every refresh: the newest events feed the activity
+  // timeline, comparison events feed comparison-id discovery.
   const [
     project,
     documents,
@@ -10,7 +12,8 @@ export async function loadOverview(projectId: string) {
     materials,
     needs,
     advice,
-    events,
+    recent,
+    comparisonEvents,
   ] = await Promise.all([
     resources.project(projectId),
     resources.documents(projectId),
@@ -20,16 +23,19 @@ export async function loadOverview(projectId: string) {
     resources.materials(),
     resources.materialNeeds(projectId),
     resources.procurement(projectId),
-    fetchAllAuditEvents((cursor) => resources.auditEvents(projectId, cursor)),
+    resources.auditEvents(projectId, undefined, { limit: 50 }),
+    resources.auditEvents(projectId, undefined, {
+      entityType: "comparison",
+      limit: 500,
+    }),
   ]);
+  const events = recent.data;
   const ids = [
     ...new Set([
       ...drawings.flatMap((d) =>
         d.latestComparison ? [d.latestComparison.id] : [],
       ),
-      ...events
-        .filter((e) => e.entityType === "comparison")
-        .map((e) => e.entityId),
+      ...comparisonEvents.data.map((e) => e.entityId),
     ]),
   ];
   const comparisons = await Promise.all(

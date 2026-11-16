@@ -39,7 +39,9 @@ NEXT_PUBLIC_SUPABASE_URL=https://YOUR_PROJECT.supabase.co
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=YOUR_PUBLISHABLE_KEY
 SUPABASE_SECRET_KEY=YOUR_SERVER_KEY
 NEXT_PUBLIC_API_MOCKING=disabled
-SMART_QS_DEMO_PROCESSING=enabled
+# Keep demo (synthetic) processing OFF in production: with it enabled and
+# the BIM worker unreachable, comparisons are fabricated from known pairs.
+SMART_QS_DEMO_PROCESSING=disabled
 SMART_QS_PUBLIC_ORIGIN=https://smartqs.13-212-119-93.sslip.io
 # Run the FastAPI BIM worker on the EC2 instance (or another host):
 AEGISQS_BIM_WORKER_URL=http://127.0.0.1:8000

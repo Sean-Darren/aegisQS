@@ -71,10 +71,10 @@ def _hf_elements_for_pdf(path: Path) -> list[dict[str, Any]]:
     """
     from hf_2d_parser import HuggingFace2DParser
 
-    try:
-        elements = HuggingFace2DParser().parse(str(path))
-    except Exception:
-        return []
+    # Model-download, rendering or OOM failures must surface so the job
+    # fails with the real error. Swallowing them here silently priced real
+    # drawings from the hardcoded demo dataset.
+    elements = HuggingFace2DParser().parse(str(path))
     return [el.model_dump() for el in elements]
 
 

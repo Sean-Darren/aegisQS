@@ -15,8 +15,16 @@ function pythonBinary(): string {
 function revisionScriptPath(): string {
   const candidates = [
     path.resolve(process.cwd(), "backend", "scripts", "revision_compare.py"),
-    // __dirname fallback only works inside the Next.js app directory.
-    // Callers outside the app dir must rely on cwd or set PYTHON_SCRIPT_PATH.
+    // __dirname = .../src/lib/hf
+    path.resolve(
+      __dirname,
+      "..",
+      "..",
+      "..",
+      "backend",
+      "scripts",
+      "revision_compare.py",
+    ),
     process.env.PYTHON_SCRIPT_PATH ?? "",
   ].filter(Boolean);
   for (const candidate of candidates) {

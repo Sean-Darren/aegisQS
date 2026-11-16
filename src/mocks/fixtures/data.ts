@@ -59,6 +59,8 @@ export const project = s.projectSchema.parse({
   id: "P-001",
   code: "P-001",
   name: "Central Market Rehab Phase 2",
+  location: "Central, Hong Kong",
+  buildingType: "mixedUse",
   createdAt: "2026-11-01T00:00:00Z",
   memberIds: users.map((u) => u.id),
 });

@@ -486,7 +486,10 @@
       "forecast_adjusted": "按預測調整",
       "manual": "手動"
     },
-    "saveBeforeDecision": "請先儲存成本項目，然後再記錄決定。"
+    "saveBeforeDecision": "請先儲存成本項目，然後再記錄決定。",
+    "back": "返回變更記錄",
+    "noPrices": "尚無定價",
+    "unpricedHint": "加入成本項目以顯示範圍"
   },
   "Records": {
     "linked": "連結記錄",

@@ -383,7 +383,7 @@ export function createVariationsHandlers(ctx: DomainContext) {
         state.variations.push(v);
         for (const change of changes) {
           change.status = "potential_variation";
-          change.review = { by: currentUser().id, at: now() };
+          change.review = { by: currentUser().role, at: now() };
           change.variationEventId = v.id;
           state.links.push({
             from: { type: "variation", id: v.id },
@@ -502,7 +502,7 @@ export function createVariationsHandlers(ctx: DomainContext) {
           })
           .parse(await request.json());
         v.status = body.status;
-        v.decision = { ...body, by: currentUser().id, at: now() };
+        v.decision = { ...body, by: currentUser().role, at: now() };
         refreshNeeds(v.projectId);
         audit(
           `variation.${body.status}`,

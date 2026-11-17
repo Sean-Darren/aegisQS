@@ -61,11 +61,14 @@ export function ComparisonPage({ comparisonId }: { comparisonId: string }) {
 export function ComparisonWorkspace({
   comparison,
   fit = false,
+  initialChange,
 }: {
   comparison: DrawingComparison;
   /** Fit mode (popup): fixed-height layout where only the change list
       scrolls, and the activity panel is omitted. */
   fit?: boolean;
+  /** Change to select when the workspace mounts (popup focus). */
+  initialChange?: string;
 }) {
   const t = useTranslations("Drawing");
   const client = useQueryClient();
@@ -77,7 +80,7 @@ export function ComparisonWorkspace({
   const [mode, setMode] = useState<ViewerMode>("side");
   const params = useSearchParams();
   const changeParam = params.get("change") ?? "";
-  const [selected, setSelected] = useState(changeParam);
+  const [selected, setSelected] = useState(changeParam || initialChange || "");
   const [syncedChangeParam, setSyncedChangeParam] = useState(changeParam);
   if (syncedChangeParam !== changeParam) {
     // Follow ?change= links even when the workspace is already mounted.

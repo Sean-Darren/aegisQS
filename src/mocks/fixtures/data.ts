@@ -317,7 +317,7 @@ export const changes = [
       status: i < 2 ? "potential_variation" : "new",
       ...(i < 2
         ? {
-            review: { by: users[1].id, at: fixtureTime },
+            review: { by: users[1].role, at: fixtureTime },
             variationEventId: "VE-007",
           }
         : {}),
@@ -471,7 +471,7 @@ export const variations = [
         ? {
             decision: {
               status: i === 1 ? "confirmed" : "rejected",
-              by: users[0].id,
+              by: users[0].role,
               at: fixtureTime,
               reason: "Reviewed against the current construction drawings.",
             },

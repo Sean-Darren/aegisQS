@@ -486,7 +486,10 @@
       "forecast_adjusted": "Forecast adjusted",
       "manual": "Manual"
     },
-    "saveBeforeDecision": "Save the cost lines before recording a decision."
+    "saveBeforeDecision": "Save the cost lines before recording a decision.",
+    "back": "Back to variations",
+    "noPrices": "No priced amounts",
+    "unpricedHint": "Add cost lines to see the range"
   },
   "Records": {
     "linked": "Linked records",

@@ -15,9 +15,12 @@ import { ComparisonWorkspace } from "./comparison-page";
     so comparing revisions never leaves the current page. */
 export function ComparisonDialog({
   comparisonId,
+  changeId,
   onOpenChange,
 }: {
   comparisonId: string;
+  /** Optional change to preselect when the popup opens. */
+  changeId?: string;
   onOpenChange: (open: boolean) => void;
 }) {
   const common = useTranslations("Common");
@@ -42,9 +45,10 @@ export function ComparisonDialog({
             />
           ) : (
             <ComparisonWorkspace
-              key={comparisonId}
+              key={`${comparisonId}:${changeId ?? ""}`}
               comparison={query.data}
               fit
+              initialChange={changeId}
             />
           )}
         </div>

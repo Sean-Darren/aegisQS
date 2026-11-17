@@ -12,6 +12,9 @@ _PENALTY: dict[Severity, int] = {
 }
 
 
+_MAX_MEDIUM_PENALTY = 50  # prevent large models from always scoring 0
+
+
 class ScoringEngine:
     """Deterministic scoring and gate evaluation from readiness issues."""
 
@@ -79,13 +82,23 @@ class ScoringEngine:
 
 
 def _score_group(issues: list[ReadinessIssue]) -> float:
-    """Apply the penalty formula to a group of issues (all-int arithmetic, no drift)."""
+    """Apply the penalty formula to a group of issues.
+
+    Medium-severity deductions are capped at :data:`_MAX_MEDIUM_PENALTY`
+    because large imported IFC models naturally produce many unmatched
+    material names even when the model is well-structured.
+    Without a cap, the formula ``100 - BLOCKER×20 - HIGH×5 - MEDIUM×2``
+    collapses to 0 for any model with more than 50 medium issues.
+    """
     counts: dict[Severity, int] = defaultdict(int)
     for iss in issues:
         if iss.severity in _PENALTY:
             counts[iss.severity] += 1
 
-    deductions = sum(
-        _PENALTY[sev] * cnt for sev, cnt in counts.items()
-    )
+    blocker_ded = _PENALTY.get(Severity.BLOCKER, 0) * counts.get(Severity.BLOCKER, 0)
+    high_ded = _PENALTY.get(Severity.HIGH, 0) * counts.get(Severity.HIGH, 0)
+    medium_raw = counts.get(Severity.MEDIUM, 0) * _PENALTY.get(Severity.MEDIUM, 2)
+    medium_ded = min(medium_raw, _MAX_MEDIUM_PENALTY)
+    deductions = blocker_ded + high_ded + medium_ded
+
     return float(max(0, 100 - deductions))

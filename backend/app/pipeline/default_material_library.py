@@ -115,7 +115,7 @@ _CONCRETE: list[MaterialSpec] = [
     _spec("MAT-CONC-C25", "Concrete C25/30", ["c25", "concrete c25", "c25/30", "conc 25"],
           "m3", MaterialFamily.CONCRETE, density=2400, compressive_strength=25,
           thermal_conductivity=1.4, fire_rating=120, cost_per_unit=108),
-    _spec("MAT-CONC-C30", "Concrete C30/37", ["c30", "concrete c30", "c30/37", "conc 30"],
+    _spec("MAT-CONC-C30", "Concrete C30/37", ["c30", "concrete c30", "c30/37", "conc 30", "beton", "concrete", "hormigón", "béton"],
           "m3", MaterialFamily.CONCRETE, density=2400, compressive_strength=30,
           thermal_conductivity=1.5, fire_rating=120, cost_per_unit=112),
     _spec("MAT-CONC-C32", "Concrete C32/40", ["c32", "concrete c32", "c32/40", "conc 32", "c40"],
@@ -127,7 +127,7 @@ _CONCRETE: list[MaterialSpec] = [
     _spec("MAT-CONC-C40", "Concrete C40/50", ["c40", "concrete c40", "c40/50", "conc 40"],
           "m3", MaterialFamily.CONCRETE, density=2400, compressive_strength=40,
           thermal_conductivity=1.7, fire_rating=120, cost_per_unit=122),
-    _spec("MAT-CONC-RC", "Reinforced concrete", ["rc", "reinforced", "rcc", "reinforced concrete"],
+    _spec("MAT-CONC-RC", "Reinforced concrete", ["rc", "reinforced", "rcc", "reinforced concrete", "stahlbeton", "béton armé", "hormigón armado", "beton, tragend", "armierter beton"],
           "m3", MaterialFamily.CONCRETE, density=2500, compressive_strength=32,
           thermal_conductivity=1.7, fire_rating=120, cost_per_unit=150),
     _spec("MAT-CONC-PC", "Precast concrete", ["precast", "pc concrete", "precast concrete"],
@@ -136,10 +136,10 @@ _CONCRETE: list[MaterialSpec] = [
     _spec("MAT-CONC-RMC", "Ready-mix concrete", ["ready mix", "readymix", "rm concrete"],
           "m3", MaterialFamily.CONCRETE, density=2400, compressive_strength=30,
           thermal_conductivity=1.5, fire_rating=120, cost_per_unit=110),
-    _spec("MAT-CONC-SCREED", "Screed concrete", ["screed", "floor screed", "concrete screed"],
+    _spec("MAT-CONC-SCREED", "Screed concrete", ["screed", "floor screed", "concrete screed", "estrich", "zementestrich", "chape", "solera"],
           "m3", MaterialFamily.CONCRETE, density=2200, compressive_strength=20,
           thermal_conductivity=1.2, fire_rating=90, cost_per_unit=95),
-    _spec("MAT-CONC-MASS", "Mass concrete", ["mass concrete", "plain concrete", "unreinforced concrete"],
+    _spec("MAT-CONC-MASS", "Mass concrete", ["mass concrete", "plain concrete", "unreinforced concrete", "massiv", "massivbeton", "unbewehrter beton", "wubo-beton"],
           "m3", MaterialFamily.CONCRETE, density=2400, compressive_strength=15,
           thermal_conductivity=1.3, fire_rating=120, cost_per_unit=90),
     _spec("MAT-CONC-HSC", "High-strength concrete", ["hsc", "high strength", "high strength concrete"],
@@ -175,7 +175,7 @@ _STEEL: list[MaterialSpec] = [
     _spec("MAT-STEEL-REBAR", "Reinforcement steel B500", ["b500", "rebar b500", "reinforcement steel", "reinforcing bar"],
           "kg", MaterialFamily.STEEL, density=7850, yield_strength=500,
           thermal_conductivity=50, fire_rating=30, cost_per_unit=0.8),
-    _spec("MAT-STEEL-MILD", "Mild steel", ["ms", "low carbon steel", "mild steel"],
+    _spec("MAT-STEEL-MILD", "Mild steel", ["ms", "low carbon steel", "mild steel", "stahl", "baustahl", "acier", "acciaio"],
           "kg", MaterialFamily.STEEL, density=7850, yield_strength=250,
           thermal_conductivity=50, fire_rating=30, cost_per_unit=0.7),
     _spec("MAT-STEEL-SS", "Stainless steel", ["ss", "inox", "stainless"],
@@ -202,7 +202,7 @@ _TIMBER: list[MaterialSpec] = [
     _spec("MAT-TIM-C16", "Timber C16", ["c16", "grade c16", "softwood c16", "timber grade c16"],
           "m3", MaterialFamily.TIMBER, density=500, thermal_conductivity=0.13,
           fire_rating=15, cost_per_unit=250),
-    _spec("MAT-TIM-C24", "Timber C24", ["c24", "grade c24", "structural timber", "timber grade c24"],
+    _spec("MAT-TIM-C24", "Timber C24", ["c24", "grade c24", "structural timber", "timber grade c24", "holz", "bauholz", "nadelholz", "konstruktionsholz", "bois", "madera", "legno"],
           "m3", MaterialFamily.TIMBER, density=500, thermal_conductivity=0.13,
           fire_rating=15, cost_per_unit=300),
     _spec("MAT-TIM-C30", "Timber C30", ["c30", "grade c30", "timber grade c30"],
@@ -265,16 +265,19 @@ _MASONRY: list[MaterialSpec] = [
     _spec("MAT-MAS-TERRACOTTA", "Terracotta", ["terracotta block", "terracotta tile", "clay block"],
           "m2", MaterialFamily.MASONRY, density=1800, compressive_strength=15,
           thermal_conductivity=0.8, fire_rating=120, cost_per_unit=60),
-    _spec("MAT-MAS-BRICKWORK", "Brickwork", ["brick masonry", "brickwork wall", "brick wall"],
+    _spec("MAT-MAS-BRICKWORK", "Brickwork", ["brick masonry", "brickwork wall", "brick wall", "mauerwerk", "ziegelmauerwerk", "maçonnerie", "muratura"],
           "m2", MaterialFamily.MASONRY, density=1900, compressive_strength=20,
           thermal_conductivity=0.84, fire_rating=120, cost_per_unit=65),
     _spec("MAT-MAS-STONECLAD", "Stone cladding", ["stone walling", "stone cladding panel", "masonry cladding"],
           "m2", MaterialFamily.MASONRY, density=2400, compressive_strength=50,
           thermal_conductivity=1.6, fire_rating=120, cost_per_unit=95),
+    _spec("MAT-MAS-KALKSANDSTEIN", "Calcium silicate brick", ["kalksandstein", "sand lime brick", "sand-lime brick", "ks stein", "silicate brick", "calcium silicate masonry"],
+          "m2", MaterialFamily.MASONRY, density=1800, compressive_strength=12,
+          thermal_conductivity=0.9, fire_rating=120, cost_per_unit=38),
 ]
 
 _INSULATION: list[MaterialSpec] = [
-    _spec("MAT-INS-MINWOOL", "Mineral wool", ["rock wool", "stone wool", "glass wool", "mineral fibre"],
+    _spec("MAT-INS-MINWOOL", "Mineral wool", ["rock wool", "stone wool", "glass wool", "mineral fibre", "dämmung", "daemmung", "mineralwolle", "isolation", "isolant", "aislante"],
           "m2", MaterialFamily.INSULATION, density=30, thermal_conductivity=0.037,
           fire_rating=120, cost_per_unit=6),
     _spec("MAT-INS-ROCKWOOL", "Rockwool", ["rock wool insulation", "rockwool batt", "stone wool insulation"],
@@ -322,7 +325,7 @@ _GLAZING: list[MaterialSpec] = [
 ]
 
 _FINISHES: list[MaterialSpec] = [
-    _spec("MAT-FIN-GYPSUM", "Gypsum plaster", ["plaster", "gypsum finish", "plaster finish"],
+    _spec("MAT-FIN-GYPSUM", "Gypsum plaster", ["plaster", "gypsum finish", "plaster finish", "gips", "gipsputz", "gipskarton", "plâtre", "yeso"],
           "m2", MaterialFamily.FINISHES, density=900, thermal_conductivity=0.25,
           fire_rating=60, cost_per_unit=12),
     _spec("MAT-FIN-CEMENT", "Cement plaster", ["cement render", "sand cement plaster", "cement finish"],
@@ -369,7 +372,7 @@ _FINISHES: list[MaterialSpec] = [
 ]
 
 _MEMBRANES: list[MaterialSpec] = [
-    _spec("MAT-MEM-WATERPROOF", "Waterproofing membrane", ["waterproof membrane", "tanking membrane", "waterproofing"],
+    _spec("MAT-MEM-WATERPROOF", "Waterproofing membrane", ["waterproof membrane", "tanking membrane", "waterproofing", "abdichtung", "bauwerksabdichtung", "étanchéité", "impermeabilizzazione"],
           "m2", MaterialFamily.MEMBRANES, thermal_conductivity=0.2, fire_rating=30, cost_per_unit=12),
     _spec("MAT-MEM-VAPOUR", "Vapour barrier", ["vapor barrier", "vapour control layer", "vcl"],
           "m2", MaterialFamily.MEMBRANES, thermal_conductivity=0.3, fire_rating=30, cost_per_unit=3),

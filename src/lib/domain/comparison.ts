@@ -282,17 +282,57 @@ function rasterRegions(
   return regions.slice(0, 8);
 }
 
-function resolveTemplates(
+async function resolveTemplates(
   ctx: DomainContext,
   base: DocumentVersion,
   target: DocumentVersion,
-): ChangeTemplate[] | Promise<ChangeTemplate[]> {
+): Promise<ChangeTemplate[]> {
   if (base.sha256 === target.sha256) return [];
 
-  // The durable Node worker cannot call the browser HF proxy.  It keeps the
-  // two seeded demo fixtures as a deterministic fallback and otherwise
-  // returns no cards rather than inventing a generic revision description.
+  // ---------- Node.js / server-side path ----------
   if (typeof window === "undefined") {
+    // 1. Try the Hugging Face Python bridge first (dynamic import —
+    //    keeps node builtins out of the browser bundle).  Only run when
+    //    HF_TOKEN is set so CI/tests keep using deterministic fixtures.
+    const baseBytes = knownDrawingBytes(base);
+    const targetBytes = knownDrawingBytes(target);
+    if (
+      baseBytes &&
+      targetBytes &&
+      (process.env.HF_TOKEN || process.env.HUGGING_FACE_HUB_TOKEN)
+    ) {
+      try {
+        const { runHfRevisionBridge } = await import("@/lib/hf/revision-bridge");
+        const result = await runHfRevisionBridge({
+          baseBytes,
+          baseName: base.fileName || "base",
+          targetBytes,
+          targetName: target.fileName || "target",
+        });
+        if (result.changes.length) {
+          (ctx as unknown as Record<string, unknown>)._hfModelVersion =
+            result.model_version ?? "aegisqs-hf-revision-unknown";
+          return result.changes.map((change) => ({
+            kind: change.kind as ChangeTemplate["kind"],
+            summary: change.summary,
+            confidence:
+              typeof change.confidence === "number" ? change.confidence : 0.65,
+            bbox: {
+              x: clampUnit(change.bbox.x),
+              y: clampUnit(change.bbox.y),
+              w: clampUnit(change.bbox.w),
+              h: clampUnit(change.bbox.h),
+            },
+            textBefore: change.textBefore ?? undefined,
+            textAfter: change.textAfter ?? undefined,
+          }));
+        }
+      } catch (err) {
+        console.warn("[hf-revision] bridge failed, falling back to fixtures:", err);
+      }
+    }
+
+    // 2. Fall back to seeded demo fixtures.
     if (
       base.sha256 === files["A-201-B"].sha256 &&
       target.sha256 === files["A-201-C"].sha256
@@ -306,7 +346,8 @@ function resolveTemplates(
     return [];
   }
 
-  // Browser-side: HF proxy first, then fixtures, then client-side raster diff.
+  // ---------- Browser path ----------
+  // HF proxy first, then fixtures, then client-side raster diff.
   return detectWithHuggingFace(ctx, base, target).then(async (hfChanges) => {
     if (hfChanges !== null) return hfChanges;
 

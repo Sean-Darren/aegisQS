@@ -27,6 +27,8 @@ from typing import Any
 import cv2
 import numpy as np
 
+from PIL import Image, ImageDraw
+
 _CLIP_MODEL = "openai/clip-vit-base-patch32"
 _PPM = 100.0  # nominal pixels-per-metre used by the raster pipeline
 
@@ -179,6 +181,9 @@ def _render_rgb(path: Path) -> np.ndarray:
     """Return an RGB numpy array for an image or the first PDF page."""
     suffix = path.suffix.lower()
 
+    if suffix == ".ifc":
+        return _render_ifc_rgb(path)
+
     if suffix == ".pdf":
         import fitz
         from PIL import Image
@@ -196,6 +201,159 @@ def _render_rgb(path: Path) -> np.ndarray:
     from PIL import Image
 
     image = Image.open(path).convert("RGB")
+    return np.array(image)
+
+
+_IFC_CATEGORY_COLOURS: dict[str, tuple[int, int, int]] = {
+    "IfcWall": (58, 58, 58),
+    "IfcSlab": (150, 150, 150),
+    "IfcRoof": (120, 90, 60),
+    "IfcColumn": (50, 90, 200),
+    "IfcBeam": (140, 100, 200),
+    "IfcDoor": (80, 200, 80),
+    "IfcWindow": (180, 220, 240),
+    "IfcStair": (240, 200, 80),
+    "IfcFurnishingElement": (200, 150, 100),
+}
+
+
+def _placement_matrix(placement: Any) -> np.ndarray:
+    """Return a 4×4 world transform for an ``IfcLocalPlacement``."""
+    identity = np.eye(4)
+    if placement is None:
+        return identity
+
+    parent = identity
+    if getattr(placement, "PlacementRelTo", None):
+        parent = _placement_matrix(placement.PlacementRelTo)
+
+    rel = getattr(placement, "RelativePlacement", None)
+    if rel is None:
+        return parent
+
+    location = np.asarray(
+        getattr(rel, "Location").Coordinates
+        if hasattr(rel, "Location") and rel.Location
+        else (0.0, 0.0, 0.0),
+        dtype=float,
+    )
+    axis = np.asarray(
+        rel.Axis.DirectionRatios if hasattr(rel, "Axis") and rel.Axis else (0.0, 0.0, 1.0),
+        dtype=float,
+    )
+    ref = np.asarray(
+        rel.RefDirection.DirectionRatios
+        if hasattr(rel, "RefDirection") and rel.RefDirection
+        else (1.0, 0.0, 0.0),
+        dtype=float,
+    )
+
+    axis = axis / (np.linalg.norm(axis) or 1.0)
+    ref = ref / (np.linalg.norm(ref) or 1.0)
+    y_axis = np.cross(axis, ref)
+    y_axis = y_axis / (np.linalg.norm(y_axis) or 1.0)
+    x_axis = np.cross(y_axis, axis)
+
+    rotation = np.eye(4)
+    rotation[:3, 0] = x_axis
+    rotation[:3, 1] = y_axis
+    rotation[:3, 2] = axis
+
+    translation = np.eye(4)
+    translation[:3, 3] = location
+    return parent @ translation @ rotation
+
+
+def _ifc_footprint(entity: Any) -> list[tuple[float, float]] | None:
+    """Return a 2D footprint for an element, preferring its IFC bounding box."""
+    rep = getattr(entity, "Representation", None)
+    if rep is None:
+        return None
+
+    for representation in getattr(rep, "Representations", []) or []:
+        for item in getattr(representation, "Items", []) or []:
+            if not hasattr(item, "XDim") or not hasattr(item, "YDim"):
+                continue
+            if item.is_a() not in ("IfcBoundingBox",):
+                continue
+            corner = getattr(item, "Corner", None)
+            ox = oy = 0.0
+            if corner and hasattr(corner, "Coordinates"):
+                coords = list(corner.Coordinates)
+                ox, oy = float(coords[0]), float(coords[1])
+            x = float(item.XDim)
+            y = float(item.YDim)
+            return [(ox, oy), (ox + x, oy), (ox + x, oy + y), (ox, oy + y)]
+    return None
+
+
+def _render_ifc_rgb(path: Path, max_side: int = 768) -> np.ndarray:
+    """Render a rough 2D plan from an IFC file for the drawing viewer.
+
+    The full 2D drawing pipeline expects pixels, so this converts the BIM
+    model into a simple architectural plan by projecting each element's
+    bounding box through its object placement.  It is intentionally cheap
+    (no geometry kernel) and exists only to let IFC revisions participate in
+    the drawing comparison workflow.
+    """
+    import ifcopenshell
+
+    model = ifcopenshell.open(str(path))
+    polygons: list[tuple[list[tuple[float, float]], tuple[int, int, int]]] = []
+    markers: list[tuple[tuple[float, float], tuple[int, int, int]]] = []
+
+    for entity in model.by_type("IfcProduct"):
+        category = entity.is_a()
+        colour = _IFC_CATEGORY_COLOURS.get(category, (180, 180, 180))
+        placement = getattr(entity, "ObjectPlacement", None)
+        matrix = _placement_matrix(placement)
+        footprint = _ifc_footprint(entity)
+
+        if footprint:
+            world = []
+            for (px, py) in footprint:
+                p = matrix @ np.array([px, py, 0.0, 1.0], dtype=float)
+                world.append((float(p[0]), float(p[1])))
+            polygons.append((world, colour))
+        else:
+            p = matrix @ np.array([0.0, 0.0, 0.0, 1.0], dtype=float)
+            markers.append(((float(p[0]), float(p[1])), colour))
+
+    all_points: list[tuple[float, float]] = [
+        point for polygon, _colour in polygons for point in polygon
+    ] + [point for point, _colour in markers]
+
+    if not all_points:
+        return np.full((max_side, max_side, 3), 255, dtype=np.uint8)
+
+    xs = [p[0] for p in all_points]
+    ys = [p[1] for p in all_points]
+    min_x, max_x = min(xs), max(xs)
+    min_y, max_y = min(ys), max(ys)
+    width = max(max_x - min_x, 1e-6)
+    height = max(max_y - min_y, 1e-6)
+
+    margin = 20
+    scale = min((max_side - 2 * margin) / width, (max_side - 2 * margin) / height)
+    canvas_w = max(1, int(width * scale + 2 * margin))
+    canvas_h = max(1, int(height * scale + 2 * margin))
+
+    image = Image.new("RGB", (canvas_w, canvas_h), (255, 255, 255))
+    draw = ImageDraw.Draw(image)
+
+    def project(point: tuple[float, float]) -> tuple[int, int]:
+        x = margin + int((point[0] - min_x) * scale)
+        y = canvas_h - margin - int((point[1] - min_y) * scale)
+        return x, y
+
+    for polygon, colour in polygons:
+        if len(polygon) >= 3:
+            draw.polygon([project(p) for p in polygon], fill=colour)
+
+    for point, colour in markers:
+        x, y = project(point)
+        draw.ellipse((x - 4, y - 4, x + 4, y + 4), fill=colour)
+
     return np.array(image)
 
 

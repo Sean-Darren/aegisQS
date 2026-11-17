@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import io
 import json
 import uuid
 from pathlib import Path
@@ -15,6 +16,7 @@ from fastapi import (
     File,
     Form,
     HTTPException,
+    Response,
     UploadFile,
 )
 
@@ -28,13 +30,15 @@ from app.schemas.bim import (
     RevisionComparisonResponse,
 )
 from app.revision_detector import estimate_revision_difference
+from app.image_material_detector import _render_ifc_rgb
 from app.service import SUPPORTED_EXTENSIONS, run_assessment
 from app.state import JobManager
 
 router = APIRouter()
 
 #: Formats the revision detector can actually render and diff.
-REVISION_EXTENSIONS = {".pdf", ".png", ".jpg", ".jpeg"}
+#: ``.ifc`` is rendered to a 2D plan image before diffing.
+REVISION_EXTENSIONS = {".ifc", ".pdf", ".png", ".jpg", ".jpeg"}
 
 
 async def _read_upload(file: UploadFile, limit: int) -> bytes:
@@ -259,3 +263,37 @@ async def compare_revisions(
             job_root.rmdir()
         except OSError:
             pass
+
+
+@router.post("/render-preview")
+async def render_ifc_preview(
+    file: UploadFile = File(...),
+    settings: Settings = Depends(get_settings),
+    _auth: None = Depends(ensure_authenticated),
+) -> Response:
+    """Return a lightweight 2D plan PNG for an uploaded IFC model.
+
+    The drawing comparison viewer can only paint PDF or raster pixels, so
+    IFC revisions need a raster preview before they can be illustrated.
+    """
+    suffix = Path(file.filename or "model.bin").suffix.lower()
+    if suffix != ".ifc":
+        raise HTTPException(
+            status_code=415,
+            detail="Only .ifc files can be rendered to a 2D preview.",
+        )
+
+    settings.upload_dir.mkdir(parents=True, exist_ok=True)
+    destination = settings.upload_dir / f"preview-{uuid.uuid4().hex}{suffix}"
+    destination.write_bytes(await _read_upload(file, settings.max_upload_bytes))
+
+    try:
+        rgb = await asyncio.to_thread(_render_ifc_rgb, destination)
+        from PIL import Image
+
+        image = Image.fromarray(rgb)
+        buffer = io.BytesIO()
+        image.save(buffer, format="PNG")
+        return Response(content=buffer.getvalue(), media_type="image/png")
+    finally:
+        destination.unlink(missing_ok=True)

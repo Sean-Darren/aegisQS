@@ -315,16 +315,19 @@ class IfcMaterialExtractor:
         raw: list[MaterialLayer] = []
         for layer in layer_set.MaterialLayers or []:
             mat = layer.Material
+            layer_name = getattr(layer, "Name", None)
+            mat_name = getattr(mat, "Name", None) if mat is not None else None
+            layer_thickness = getattr(layer, "LayerThickness", None)
             raw.append(MaterialLayer(
-                name=str(layer.Name or "") if layer.Name else (
-                    str(mat.Name) if mat and mat.Name else ""
+                name=str(layer_name or "") if layer_name else (
+                    str(mat_name) if mat_name else ""
                 ),
-                material_name=str(mat.Name) if mat and mat.Name else None,
+                material_name=str(mat_name) if mat_name else None,
                 thickness=(
-                    float(layer.LayerThickness) * self._length_factor
-                    if layer.LayerThickness is not None else None
+                    float(layer_thickness) * self._length_factor
+                    if layer_thickness is not None else None
                 ),
-                is_ventilated=bool(layer.IsVentilated),
+                is_ventilated=bool(getattr(layer, "IsVentilated", False)),
                 category=getattr(layer, "Category", None),
             ))
 

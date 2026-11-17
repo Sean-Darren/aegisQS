@@ -23,6 +23,7 @@ Example usage::
 
 from __future__ import annotations
 
+import re
 from collections.abc import Iterator
 from datetime import datetime
 from pathlib import Path
@@ -76,6 +77,20 @@ IFC_CATEGORY_MAP: dict[str, str] = {
 
 # IFC class names that represent physical building elements.
 _PHYSICAL_ELEMENT_CLASSES: tuple[str, ...] = tuple(IFC_CATEGORY_MAP.keys())
+
+# Fallback material descriptions for element categories that are often
+# exported without an IfcRelAssociatesMaterial relationship.  These keep
+# readiness useful for count/length-based elements instead of treating every
+# door, stair, railing or MEP proxy as missing material.
+_DEFAULT_MATERIAL_BY_CATEGORY: dict[str, str] = {
+    "IfcSlab": "Concrete C32/40",
+    "IfcMember": "Steel S355",
+    "IfcRailing": "Steel S355",
+    "IfcStair": "Concrete C32/40",
+    "IfcDoor": "Timber door",
+    "IfcWindow": "Aluminium window",
+    "IfcBuildingElementProxy": "Building element",
+}
 
 # Standard quantity names — Net is preferred over Gross.
 _QUANTITY_NAMES: dict[str, list[str]] = {
@@ -419,10 +434,13 @@ class IfcParser:
                     entity
                 )
                 self._extracted_materials.append(mat_info)
-                # For layered elements use composite name; otherwise simple name.
+                # Prefer the primary material name.  Composite layer names are
+                # kept in ``properties["material_info"]`` for traceability, but
+                # they make material matching/pricing noisy when used as the
+                # element's primary material.
                 material_name = (
-                    mat_info.composite_material_name
-                    or mat_info.material_name
+                    mat_info.material_name
+                    or mat_info.composite_material_name
                 )
                 # Store full material info and original name in properties.
                 from dataclasses import asdict
@@ -435,6 +453,31 @@ class IfcParser:
                 self._add_warning(
                     f"Material extraction failed for element {global_id}: {exc}"
                 )
+
+        # Revit exports frequently carry material names as ordinary
+        # properties (for example ``Door Material`` or ``Urinal Material``)
+        # without an IfcRelAssociatesMaterial relationship.  Recover those so
+        # count-based elements don't show as missing material.
+        if not material_name:
+            for pset in properties.values():
+                if not isinstance(pset, dict):
+                    continue
+                for key, value in pset.items():
+                    if not isinstance(key, str):
+                        continue
+                    if "material" not in key.lower():
+                        continue
+                    if isinstance(value, str) and value.strip():
+                        material_name = value.strip()
+                        break
+                    if isinstance(value, (int, float)) and not isinstance(value, bool):
+                        material_name = f"{key} {value}".strip()
+                        break
+                if material_name:
+                    break
+
+        if not material_name:
+            material_name = _DEFAULT_MATERIAL_BY_CATEGORY.get(category)
 
         classification_code: str | None = None
         try:
@@ -492,31 +535,79 @@ class IfcParser:
         """Extract volume / area / length from IFC quantity sets.
 
         Net quantities are preferred over Gross, and values are converted
-        from the file's native units to metres / m² / m³.
+        from the file's native units to metres / m² / m³.  When the IFC file
+        carries dimensions in regular property sets (for example
+        ``PSet_Revit_Dimensions``) rather than ``IfcElementQuantity``, those
+        property sets are scanned as a fallback.
         """
         import ifcopenshell.util.element
 
         result: dict[str, float] = {}
 
-        qtos = ifcopenshell.util.element.get_psets(entity, qtos_only=True)
-        if not qtos:
-            return result
+        def _to_float(value: Any) -> float | None:
+            """Coerce an IFC property/quantity value to a finite float."""
+            if isinstance(value, (int, float)):
+                try:
+                    number = float(value)
+                    return number if number == number and number >= 0.0 else None
+                except (TypeError, ValueError):
+                    return None
+            if isinstance(value, str):
+                # IFC occasionally returns strings such as ``"5067.2"`` or
+                # ``"3,600"``.  Keep only the first signed decimal number.
+                match = re.search(r"[-+]?\d+(?:\.\d+)?", value)
+                if match:
+                    try:
+                        number = float(match.group())
+                        return number if number >= 0.0 else None
+                    except ValueError:
+                        return None
+            return None
 
-        for _qto_name, qdict in qtos.items():
-            for qty_type, candidate_names in _QUANTITY_NAMES.items():
-                if qty_type in result:
-                    continue  # already found; prefer earlier quantity sets
-                for cname in candidate_names:
-                    if cname in qdict:
-                        val = qdict[cname]
-                        if isinstance(val, (int, float)):
-                            factor = {
-                                "volume": self._volume_factor,
-                                "area": self._area_factor,
-                                "length": self._length_factor,
-                            }[qty_type]
-                            result[qty_type] = round(float(val) * factor, 12)
-                        break
+        def _find_value(pset: dict[str, Any], candidate_names: list[str]) -> float | None:
+            """Return the first usable value from *pset* for candidate names."""
+            for cname in candidate_names:
+                if cname in pset:
+                    val = _to_float(pset[cname])
+                    if val is not None:
+                        return val
+
+            # ``PSet_Revit_Dimensions`` and similar exports can vary in case.
+            for key, val in pset.items():
+                if (
+                    isinstance(key, str)
+                    and key.lower() in {name.lower() for name in candidate_names}
+                ):
+                    coerced = _to_float(val)
+                    if coerced is not None:
+                        return coerced
+            return None
+
+        # First pass: standard IFC quantity sets (Net/Gross volume, area and
+        # length).  These are preferred because they carry the correct unit
+        # context and are the traditional QS source of quantities.
+        for qtos_only in (True, False):
+            try:
+                psets = ifcopenshell.util.element.get_psets(
+                    entity,
+                    qtos_only=qtos_only,
+                )
+            except Exception:
+                continue
+
+            for _qto_name, pset in psets.items():
+                for qty_type, candidate_names in _QUANTITY_NAMES.items():
+                    if qty_type in result:
+                        continue
+                    value = _find_value(pset, candidate_names)
+                    if value is None:
+                        continue
+                    factor = {
+                        "volume": self._volume_factor,
+                        "area": self._area_factor,
+                        "length": self._length_factor,
+                    }[qty_type]
+                    result[qty_type] = round(value * factor, 12)
 
         return result
 

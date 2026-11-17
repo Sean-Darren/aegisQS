@@ -1,7 +1,7 @@
 "use client";
 import { EntityActivity } from "@/components/records/entity-activity";
 import { useSearchParams } from "next/navigation";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
@@ -33,6 +33,7 @@ import { formatPercent } from "@/lib/format";
 import { confidenceThresholds } from "@/lib/config";
 import { Link } from "@/i18n/navigation";
 import { CircleCheck, TriangleAlert } from "lucide-react";
+import { renderBimPreview } from "@/features/bim";
 const Canvas = dynamic(
   () =>
     import("@/components/viewer/comparison-canvas").then(
@@ -59,6 +60,58 @@ export function ComparisonPage({ comparisonId }: { comparisonId: string }) {
     );
   return <ComparisonWorkspace key={comparisonId} comparison={query.data} />;
 }
+
+function useRenderedFile(
+  file: Blob | undefined,
+  fileName: string | undefined,
+  mimeType: string | undefined,
+) {
+  const isIfc = fileName?.toLowerCase().endsWith(".ifc") ?? false;
+  const [ifcPreview, setIfcPreview] = useState<
+    { source: Blob; blob: Blob; mimeType: string } | undefined
+  >();
+
+  useEffect(() => {
+    if (!file || !isIfc) return;
+
+    let cancelled = false;
+    renderBimPreview(
+      new File([file], fileName ?? "model.ifc", {
+        type: mimeType ?? "application/octet-stream",
+      }),
+    )
+      .then((blob) => {
+        if (!cancelled) {
+          setIfcPreview({ source: file, blob, mimeType: "image/png" });
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setIfcPreview({
+            source: file,
+            blob: file,
+            mimeType: mimeType ?? "application/octet-stream",
+          });
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [file, isIfc, fileName, mimeType]);
+
+  if (isIfc) {
+    if (ifcPreview && ifcPreview.source === file) {
+      return { blob: ifcPreview.blob, mimeType: ifcPreview.mimeType };
+    }
+    return undefined;
+  }
+
+  return file
+    ? { blob: file, mimeType: mimeType ?? "application/octet-stream" }
+    : undefined;
+}
+
 function ComparisonWorkspace({
   comparison,
 }: {
@@ -103,6 +156,16 @@ function ComparisonWorkspace({
   const versions = records.versions.data ?? [];
   const baseVersion = versions.find((v) => v.id === comparison.baseVersionId),
     targetVersion = versions.find((v) => v.id === comparison.targetVersionId);
+  const baseRender = useRenderedFile(
+    base.data,
+    baseVersion?.fileName,
+    baseVersion?.mimeType,
+  );
+  const targetRender = useRenderedFile(
+    target.data,
+    targetVersion?.fileName,
+    targetVersion?.mimeType,
+  );
   function select(id: string) {
     setSelected(id);
     const change = changes.find((c) => c.id === id);
@@ -364,10 +427,10 @@ function ComparisonWorkspace({
         >
           {base.isError || target.isError ? (
             <ErrorState message={t("pdfError")} />
-          ) : base.data && target.data ? (
+          ) : baseRender && targetRender ? (
             <Canvas
-              base={base.data}
-              target={target.data}
+              base={baseRender.blob}
+              target={targetRender.blob}
               mode={mode}
               page={page}
               baseLabel={t("baseCaption", {
@@ -376,8 +439,8 @@ function ComparisonWorkspace({
               targetLabel={t("targetCaption", {
                 revision: targetVersion?.label ?? "…",
               })}
-              baseMimeType={baseVersion?.mimeType}
-              targetMimeType={targetVersion?.mimeType}
+              baseMimeType={baseRender.mimeType}
+              targetMimeType={targetRender.mimeType}
               alignment={adjust ? draft : comparison.alignment}
               onControls={assign}
               onZoom={setZoom}

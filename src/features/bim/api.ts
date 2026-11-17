@@ -51,6 +51,22 @@ export async function getBimJob(jobId: string) {
   return parseJson(response, bimJobSnapshotSchema);
 }
 
+export async function renderBimPreview(file: File): Promise<Blob> {
+  const form = new FormData();
+  form.set("file", file);
+  const response = await fetch(`${bimWorkerUrl}/api/v1/bim/render-preview`, {
+    method: "POST",
+    body: form,
+  });
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(
+      `BIM preview renderer returned ${response.status}: ${text.slice(0, 180)}`,
+    );
+  }
+  return response.blob();
+}
+
 async function fetchProgressTicket(jobId: string): Promise<string | undefined> {
   // The worker mints single-use tickets for authenticated callers; if the
   // endpoint is unavailable (older worker), fall back to the origin check.

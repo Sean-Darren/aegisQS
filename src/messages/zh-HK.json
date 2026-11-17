@@ -279,7 +279,6 @@
     "notSpecified": "未指定",
     "all": "所有文件",
     "search": "搜尋文件",
-    "conflictsOnly": "僅顯示衝突",
     "noMatches": "沒有符合的文件，請更改搜尋或篩選條件。",
     "empty": "尚未有文件。請上載合約、圖則、現場記錄、財務文件或往來函件，並填寫文件編號及版本標籤。",
     "error": "無法載入文件，請檢查連線後再試。",
@@ -334,7 +333,12 @@
       "other": "其他"
     },
     "downloadError": "無法下載檔案。請重試。",
-    "versionError": "無法載入部分修訂版資料。請重試。"
+    "versionError": "無法載入部分修訂版資料。請重試。",
+    "filters": "篩選",
+    "resetFilters": "重設篩選",
+    "current": "現行",
+    "conflict": "有衝突",
+    "uploadHeading": "上載新版本"
   },
   "Drawing": {
     "register": "圖則",
@@ -431,7 +435,8 @@
     "alignmentMethods": {
       "auto": "自動",
       "manual": "手動"
-    }
+    },
+    "uploadDescription": "拖放一個或多個圖則檔案以新增圖則或新版本，然後在上載前填寫每個檔案的資料。"
   },
   "Variation": {
     "register": "潛在變更事件",
@@ -496,7 +501,6 @@
       "material": "材料"
     },
     "detail": "記錄詳情",
-    "description": "此記錄的來源檔案、版本及相關資料。",
     "notFound": "找不到此記錄。請返回登記冊並開啟目前的來源記錄。",
     "versionNumber": "版本 {number}",
     "downloadWorkbook": "在 Excel 開啟",
@@ -518,7 +522,8 @@
       "checking": "正在檢查",
       "checked": "已檢查",
       "failed": "失敗"
-    }
+    },
+    "back": "返回"
   },
   "Workbooks": {
     "title": "活頁簿",

@@ -3,12 +3,14 @@ import { Suspense, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { Upload } from "lucide-react";
 import { Link, useRouter } from "@/i18n/navigation";
 import { queryKeys, resources } from "@/lib/api";
 import {
   Button,
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogTitle,
   DialogTrigger,
   ErrorState,
@@ -183,7 +185,7 @@ function DrawingRow({ entry }: { entry: DrawingRegisterEntry }) {
 export function DrawingRegister({ projectId }: { projectId: string }) {
   const t = useTranslations("Drawing");
   const session = useSession();
-  const [upload, setUpload] = useState(false);
+  const [uploadOpen, setUploadOpen] = useState(false);
   const query = useQuery({
     queryKey: queryKeys.drawings(projectId),
     queryFn: () => resources.drawings(projectId),
@@ -196,14 +198,12 @@ export function DrawingRegister({ projectId }: { projectId: string }) {
           <p className="mt-2 text-sm text-muted-ink">{t("uploadHint")}</p>
         </div>
         {can(session.data, "document.upload") && (
-          <Button onClick={() => setUpload((value) => !value)}>
+          <Button onClick={() => setUploadOpen(true)}>
+            <Upload size={16} strokeWidth={2} aria-hidden="true" />
             {t("uploadDrawing")}
           </Button>
         )}
       </header>
-      {upload && can(session.data, "document.upload") && (
-        <UploadQueue projectId={projectId} />
-      )}
       {query.isPending && <Skeleton className="h-96 w-full" />}
       {query.isError && <ErrorState message={t("error")} />}
       {query.data?.length === 0 && (
@@ -213,17 +213,33 @@ export function DrawingRegister({ projectId }: { projectId: string }) {
             can(session.data, "document.upload")
               ? {
                   label: t("uploadDrawing"),
-                  onClick: () => setUpload(true),
+                  onClick: () => setUploadOpen(true),
                 }
               : undefined
           }
         />
       )}
       <Suspense fallback={<Skeleton className="h-48 w-full" />}>
-      {query.data?.map((entry) => (
-        <DrawingRow key={entry.document.id} entry={entry} />
-      ))}
+        {query.data?.map((entry) => (
+          <DrawingRow key={entry.document.id} entry={entry} />
+        ))}
       </Suspense>
+      {uploadOpen && can(session.data, "document.upload") && (
+        <Dialog
+          open
+          onOpenChange={(open) => {
+            if (!open) setUploadOpen(false);
+          }}
+        >
+          <DialogContent className="max-h-[85vh] space-y-4 overflow-y-auto">
+            <DialogTitle className="pr-7 text-xl font-semibold">
+              {t("uploadDrawing")}
+            </DialogTitle>
+            <DialogDescription>{t("uploadDescription")}</DialogDescription>
+            <UploadQueue projectId={projectId} />
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }

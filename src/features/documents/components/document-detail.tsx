@@ -200,7 +200,10 @@ export function DocumentDetail({
         </section>
       )}
       {can(session.data, "document.upload") && (
-        <UploadQueue projectId={doc.projectId} fixedDocument={doc} />
+        <section className="space-y-3">
+          <h2 className="text-lg font-semibold">{t("uploadHeading")}</h2>
+          <UploadQueue projectId={doc.projectId} fixedDocument={doc} />
+        </section>
       )}
       <EntityActivity
         projectId={doc.projectId}

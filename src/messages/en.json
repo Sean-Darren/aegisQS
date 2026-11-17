@@ -279,7 +279,6 @@
     "notSpecified": "Not specified",
     "all": "All documents",
     "search": "Search documents",
-    "conflictsOnly": "Conflicts only",
     "noMatches": "No matching documents. Change the search or filters.",
     "empty": "No documents yet. Upload a contract, drawing, site record, financial document or correspondence with its document number and revision label.",
     "error": "Documents could not be loaded. Check the connection and try again.",
@@ -334,7 +333,12 @@
       "other": "Other"
     },
     "downloadError": "The file could not be downloaded. Try again.",
-    "versionError": "Some revision details could not be loaded. Try again."
+    "versionError": "Some revision details could not be loaded. Try again.",
+    "filters": "Filters",
+    "resetFilters": "Reset filters",
+    "current": "Current",
+    "conflict": "In conflict",
+    "uploadHeading": "Upload a new version"
   },
   "Drawing": {
     "register": "Drawings",
@@ -431,7 +435,8 @@
     "alignmentMethods": {
       "auto": "Automatic",
       "manual": "Manual"
-    }
+    },
+    "uploadDescription": "Drop one or more drawing files to add a new drawing or a new revision, then complete the details for each before uploading."
   },
   "Variation": {
     "register": "Variation events",
@@ -496,7 +501,6 @@
       "material": "Material"
     },
     "detail": "Record details",
-    "description": "Source files, versions and linked records for this item.",
     "notFound": "This record could not be found. Return to the register and open its current source.",
     "versionNumber": "Version {number}",
     "downloadWorkbook": "Open in Excel",
@@ -518,7 +522,8 @@
       "checking": "Checking",
       "checked": "Checked",
       "failed": "Failed"
-    }
+    },
+    "back": "Back"
   },
   "Workbooks": {
     "title": "Workbooks",

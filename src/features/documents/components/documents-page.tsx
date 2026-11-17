@@ -1,15 +1,19 @@
 "use client";
 import { useState } from "react";
 import { useTranslations, useLocale } from "next-intl";
-import { Upload } from "lucide-react";
+import { Check, Filter, Upload } from "lucide-react";
 import { Link, useRouter } from "@/i18n/navigation";
 import {
+  Actor,
   Button,
   Dialog,
   DialogContent,
   DialogDescription,
   DialogTitle,
-  Actor,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
   EmptyState,
   ErrorState,
   Skeleton,
@@ -24,8 +28,45 @@ import {
   formatRevisionLabel,
   type FormatLocale,
 } from "@/lib/format";
-import { documentCategorySchema } from "@/schemas";
+import { documentCategorySchema, disciplineSchema } from "@/schemas";
 import { UploadQueue } from "./upload-queue";
+
+function FilterMenuSection({
+  label,
+  options,
+  value,
+  onChange,
+}: {
+  label: string;
+  options: { value: string; label: string; count?: number }[];
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <>
+      <p className="px-2 pb-1 pt-2 text-xs font-medium text-muted-ink">
+        {label}
+      </p>
+      {options.map((option) => (
+        <DropdownMenuItem
+          key={option.value}
+          onSelect={() => onChange(option.value)}
+        >
+          <span className="flex min-w-4 items-center">
+            {value === option.value && (
+              <Check size={14} strokeWidth={2} aria-hidden="true" />
+            )}
+          </span>
+          <span className="flex-1">{option.label}</span>
+          {option.count !== undefined && (
+            <span className="num text-xs text-muted-ink">{option.count}</span>
+          )}
+        </DropdownMenuItem>
+      ))}
+    </>
+  );
+}
+
 export function DocumentsPage({ projectId }: { projectId: string }) {
   const t = useTranslations("Hub");
   const locale = useLocale() as FormatLocale;
@@ -33,16 +74,24 @@ export function DocumentsPage({ projectId }: { projectId: string }) {
   const router = useRouter();
   const { documents, allVersions, versions } = useProjectDocuments(projectId);
   const [category, setCategory] = useState("");
+  const [discipline, setDiscipline] = useState("");
+  const [status, setStatus] = useState("");
   const [search, setSearch] = useState("");
-  const [conflicts, setConflicts] = useState(false);
   const [uploadOpen, setUploadOpen] = useState(false);
   const data = documents.data ?? [];
   const visible = data.filter(
     (d) =>
       (!category || d.category === category) &&
-      (!conflicts || d.hasConflict) &&
+      (!discipline || d.discipline === discipline) &&
+      (!status || (status === "conflict" ? d.hasConflict : !d.hasConflict)) &&
       `${d.docNumber} ${d.title}`.toLowerCase().includes(search.toLowerCase()),
   );
+  const activeFilters = [category, discipline, status].filter(Boolean).length;
+  const resetFilters = () => {
+    setCategory("");
+    setDiscipline("");
+    setStatus("");
+  };
   const fields = [
     "number",
     "title",
@@ -65,24 +114,75 @@ export function DocumentsPage({ projectId }: { projectId: string }) {
         )}
       </header>
       <div className="flex flex-wrap items-center gap-2">
-        <Button
-          variant={category === "" ? "primary" : "outline"}
-          onClick={() => setCategory("")}
-        >
-          {t("all")} <span className="tabular-nums">{data.length}</span>
-        </Button>
-        {documentCategorySchema.options.map((c) => (
-          <Button
-            key={c}
-            variant={category === c ? "primary" : "outline"}
-            onClick={() => setCategory(c)}
-          >
-            {t(`categories.${c}`)}{" "}
-            <span className="tabular-nums">
-              {data.filter((d) => d.category === c).length}
-            </span>
-          </Button>
-        ))}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline">
+              <Filter size={16} strokeWidth={2} aria-hidden="true" />
+              {t("filters")}
+              {activeFilters > 0 && (
+                <span className="num ml-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-clay-700 px-1 text-xs font-semibold text-primary-foreground">
+                  {activeFilters}
+                </span>
+              )}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="w-72">
+            <FilterMenuSection
+              label={t("category")}
+              value={category}
+              onChange={setCategory}
+              options={[
+                { value: "", label: t("all"), count: data.length },
+                ...documentCategorySchema.options.map((c) => ({
+                  value: c,
+                  label: t(`categories.${c}`),
+                  count: data.filter((d) => d.category === c).length,
+                })),
+              ]}
+            />
+            <div className="my-1 h-px bg-line" />
+            <FilterMenuSection
+              label={t("discipline")}
+              value={discipline}
+              onChange={setDiscipline}
+              options={[
+                { value: "", label: t("all"), count: data.length },
+                ...disciplineSchema.options.map((d) => ({
+                  value: d,
+                  label: t(`disciplines.${d}`),
+                  count: data.filter((doc) => doc.discipline === d).length,
+                })),
+              ]}
+            />
+            <div className="my-1 h-px bg-line" />
+            <FilterMenuSection
+              label={t("status")}
+              value={status}
+              onChange={setStatus}
+              options={[
+                { value: "", label: t("all"), count: data.length },
+                {
+                  value: "current",
+                  label: t("current"),
+                  count: data.filter((d) => !d.hasConflict).length,
+                },
+                {
+                  value: "conflict",
+                  label: t("conflict"),
+                  count: data.filter((d) => d.hasConflict).length,
+                },
+              ]}
+            />
+            {activeFilters > 0 && (
+              <>
+                <div className="my-1 h-px bg-line" />
+                <DropdownMenuItem onSelect={resetFilters}>
+                  {t("resetFilters")}
+                </DropdownMenuItem>
+              </>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
         <input
           type="search"
           aria-label={t("search")}
@@ -91,14 +191,6 @@ export function DocumentsPage({ projectId }: { projectId: string }) {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
-        <label className="flex cursor-pointer items-center gap-2 text-sm">
-          <input
-            type="checkbox"
-            checked={conflicts}
-            onChange={(e) => setConflicts(e.target.checked)}
-          />
-          {t("conflictsOnly")}
-        </label>
       </div>
       {documents.isPending && <Skeleton className="h-96 w-full" />}
       {documents.isError && (

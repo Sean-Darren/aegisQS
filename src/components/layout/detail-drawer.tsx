@@ -1,16 +1,12 @@
 "use client";
-import { useRef, useEffect, useCallback } from "react";
+import { useRef, useEffect, useCallback, useState } from "react";
 import dynamic from "next/dynamic";
+import { ArrowLeft } from "lucide-react";
 import { useProjectDocuments } from "@/lib/api/use-records";
 import { useParams } from "next/navigation";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import {
-  Drawer,
-  DrawerContent,
-  DrawerTitle,
-  DrawerDescription,
-} from "@/components/ui";
+import { Button, Drawer, DrawerContent, DrawerTitle } from "@/components/ui";
 const DocumentDetail = dynamic(
   () => import("@/features/documents").then((m) => m.DocumentDetail),
   { ssr: false },
@@ -40,14 +36,29 @@ export function DetailDrawer() {
   const documentId = type === "document" ? id : version?.documentId;
   const trigger = useRef<HTMLElement | null>(null);
   const drawer = useRef<HTMLDivElement>(null);
+  // Breadcrumb stack of previously viewed records inside the drawer, so the
+  // Back button can return from a linked record to the record it came from.
+  const [history, setHistory] = useState<string[]>([]);
+  const previousDetail = useRef<string | null>(null);
+  const goingBack = useRef(false);
   useEffect(() => {
-    if (detail) return;
-    const remember = () => {
-      trigger.current = document.activeElement as HTMLElement;
-    };
-    document.addEventListener("focusin", remember);
-    return () => document.removeEventListener("focusin", remember);
+    if (previousDetail.current && detail && previousDetail.current !== detail) {
+      // A back navigation replaces the current entry; do not push it again.
+      if (goingBack.current) goingBack.current = false;
+      else setHistory((list) => [...list, previousDetail.current!]);
+    }
+    if (!detail) setHistory([]);
+    previousDetail.current = detail;
   }, [detail]);
+  const back = () => {
+    const last = history[history.length - 1];
+    if (!last) return;
+    setHistory((list) => list.slice(0, -1));
+    goingBack.current = true;
+    const next = new URLSearchParams(params.toString());
+    next.set("detail", last);
+    router.replace(`${pathname}?${next}`, { scroll: false });
+  };
   const close = useCallback(() => {
     const next = new URLSearchParams(params.toString());
     next.delete("detail");
@@ -88,8 +99,15 @@ export function DetailDrawer() {
         }}
       >
         <div className="min-h-0 flex-1 overflow-y-auto p-5">
-          <DrawerTitle>{t("detail")}</DrawerTitle>
-          <DrawerDescription>{t("description")}</DrawerDescription>
+          {/* The visible heading was removed; the accessible name stays for
+              screen readers. */}
+          <DrawerTitle className="sr-only">{t("detail")}</DrawerTitle>
+          {history.length > 0 && (
+            <Button variant="ghost" className="-ml-2 mb-2" onClick={back}>
+              <ArrowLeft size={16} strokeWidth={1.5} aria-hidden="true" />
+              {t("back")}
+            </Button>
+          )}
           {type === "check" ? (
             <CheckDetail versionId={params.get("version") ?? ""} id={id} />
           ) : documentId ? (

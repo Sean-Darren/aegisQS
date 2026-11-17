@@ -4,6 +4,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { resources, queryKeys } from "@/lib/api";
 import {
+  Actor,
   Button,
   EmptyState,
   ErrorState,
@@ -56,7 +57,7 @@ function VersionRecord({ id, projectId }: { id: string; projectId: string }) {
       <p className="tabular-nums">
         {t("versionNumber", { number: v.versionNumber })} ·{" "}
         {formatFileSize(v.sizeBytes)} · {formatDate(v.uploadedAt, locale)} ·{" "}
-        {v.uploadedBy}
+        <Actor value={v.uploadedBy} />
       </p>
       <p>{v.sheetNames.join(", ")}</p>
       <Button variant="outline" onClick={() => void download(v)}>

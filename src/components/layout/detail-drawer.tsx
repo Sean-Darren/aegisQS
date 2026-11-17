@@ -81,7 +81,9 @@ export function DetailDrawer() {
         ref={drawer}
         onCloseAutoFocus={(event) => {
           event.preventDefault();
-          trigger.current?.focus();
+          // Restore focus without scrolling: refocusing a row that sits
+          // below the fold would yank the page down on close.
+          trigger.current?.focus({ preventScroll: true });
           trigger.current = null;
         }}
       >

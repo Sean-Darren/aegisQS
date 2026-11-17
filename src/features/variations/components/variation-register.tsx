@@ -5,6 +5,7 @@ import { useTranslations, useLocale } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { queryKeys, resources } from "@/lib/api";
 import {
+  Actor,
   SummaryCard,
   StatusChip,
   Skeleton,
@@ -139,7 +140,8 @@ export function VariationRegister({ projectId }: { projectId: string }) {
                     )}
                   </td>
                   <td className="p-3">
-                    {v.raisedBy} · {formatDate(v.raisedAt, locale)}
+                    <Actor value={v.raisedBy} /> ·{" "}
+                    {formatDate(v.raisedAt, locale)}
                   </td>
                 </tr>
               ))}

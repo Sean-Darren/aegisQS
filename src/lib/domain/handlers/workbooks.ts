@@ -72,7 +72,7 @@ export function createWorkbooksHandlers(ctx: DomainContext) {
       sizeBytes: file.bytes.byteLength,
       sheetNames: parsed.sheetNames,
       status: "parsing",
-      uploadedBy: currentUser().id,
+      uploadedBy: currentUser().role,
       uploadedAt: now(),
     };
     state.workbookVersions.push(version);

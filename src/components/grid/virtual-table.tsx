@@ -68,7 +68,7 @@ export function VirtualTable<T>({
             role="row"
             aria-rowindex={item.index + (header ? 2 : 1)}
             key={item.key}
-            className={onRowClick ? "cursor-pointer" : undefined}
+            className={`transition-colors hover:bg-stone-50${onRowClick ? " cursor-pointer" : ""}`}
             onClick={(event) => {
               if (
                 !(event.target as HTMLElement).closest(

@@ -309,7 +309,6 @@
     "reasonRequired": "設定現行版本前請填寫原因。",
     "resolveError": "無法更改現行版本，請檢查權限後再試。",
     "currentSet": "現行版本已更新",
-    "fullPage": "開啟文件頁面",
     "superseded": "已被取代 — Rev {revision} 為現行版本",
     "viewCurrent": "查看現行版本",
     "timeline": "版本記錄",
@@ -497,7 +496,7 @@
       "material": "材料"
     },
     "detail": "記錄詳情",
-    "description": "來源記錄、版本及支援數據。",
+    "description": "此記錄的來源檔案、版本及相關資料。",
     "notFound": "找不到此記錄。請返回登記冊並開啟目前的來源記錄。",
     "versionNumber": "版本 {number}",
     "downloadWorkbook": "在 Excel 開啟",

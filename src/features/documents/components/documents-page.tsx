@@ -9,6 +9,7 @@ import {
   DialogContent,
   DialogDescription,
   DialogTitle,
+  Actor,
   EmptyState,
   ErrorState,
   Skeleton,
@@ -24,7 +25,6 @@ import {
   type FormatLocale,
 } from "@/lib/format";
 import { documentCategorySchema } from "@/schemas";
-import { inputStyle } from "@/components/ui/form-styles";
 import { UploadQueue } from "./upload-queue";
 export function DocumentsPage({ projectId }: { projectId: string }) {
   const t = useTranslations("Hub");
@@ -87,7 +87,7 @@ export function DocumentsPage({ projectId }: { projectId: string }) {
           type="search"
           aria-label={t("search")}
           placeholder={t("search")}
-          className={`${inputStyle} ml-auto w-56`}
+          className="ml-auto h-9 w-56 shrink-0 rounded-md border border-line-strong bg-panel px-3 text-sm text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-clay-600"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
@@ -195,7 +195,7 @@ export function DocumentsPage({ projectId }: { projectId: string }) {
                     {formatDate(doc.updatedAt, locale)}
                   </div>
                   <div role="cell" className={cell}>
-                    {current?.uploadedBy ?? "…"}
+                    <Actor value={current?.uploadedBy} />
                   </div>
                 </>
               );

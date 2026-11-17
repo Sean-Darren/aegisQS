@@ -135,7 +135,7 @@ export function createHelpers(ctx: DomainContext) {
       ...(known ? { pageCount: known.pageCount } : {}),
       issuedDate,
       notes,
-      uploadedBy: currentUser().id,
+      uploadedBy: currentUser().role,
       uploadedAt: now(),
     };
     if (conflictWith) {

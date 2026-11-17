@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { useQueryClient } from "@tanstack/react-query";
-import { DecisionForm, ErrorState, useToast } from "@/components/ui";
+import { Actor, DecisionForm, ErrorState, useToast } from "@/components/ui";
 import { formatDate, formatFileSize, type FormatLocale } from "@/lib/format";
 import { can } from "@/lib/auth/permissions";
 import { resources, queryKeys } from "@/lib/api";
@@ -62,7 +62,9 @@ export function ConflictResolution({
                 {formatFileSize(version.sizeBytes)}
               </dd>
               <dt>{t("uploader")}</dt>
-              <dd>{version.uploadedBy}</dd>
+              <dd>
+                <Actor value={version.uploadedBy} />
+              </dd>
               <dt>{t("updated")}</dt>
               <dd className="tabular-nums">
                 {formatDate(version.uploadedAt, locale)}

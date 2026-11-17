@@ -240,7 +240,7 @@ export function createMaterialsHandlers(ctx: DomainContext) {
           projectId,
           material,
           forecast,
-          createdBy: currentUser().id,
+          createdBy: currentUser().role,
           createdAt: now(),
         });
         state.procurement.push(advice);

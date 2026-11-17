@@ -309,7 +309,6 @@
     "reasonRequired": "Enter a reason before setting the current version.",
     "resolveError": "The current version could not be changed. Check access and try again.",
     "currentSet": "Current version updated",
-    "fullPage": "Open document page",
     "superseded": "Superseded — Rev {revision} is current",
     "viewCurrent": "View current version",
     "timeline": "Version history",
@@ -497,7 +496,7 @@
       "material": "Material"
     },
     "detail": "Record details",
-    "description": "Source records, versions and supporting data.",
+    "description": "Source files, versions and linked records for this item.",
     "notFound": "This record could not be found. Return to the register and open its current source.",
     "versionNumber": "Version {number}",
     "downloadWorkbook": "Open in Excel",

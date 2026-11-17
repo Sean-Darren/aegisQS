@@ -3,7 +3,13 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
-import { Button, ErrorState, Skeleton, StatusChip } from "@/components/ui";
+import {
+  Actor,
+  Button,
+  ErrorState,
+  Skeleton,
+  StatusChip,
+} from "@/components/ui";
 import { PdfViewer } from "@/components/viewer";
 import { useDocument, useFile } from "@/lib/api/use-records";
 import { resources, queryKeys } from "@/lib/api";
@@ -125,12 +131,6 @@ export function DocumentDetail({
         <h1 className="text-2xl font-semibold">
           {doc.docNumber} · {doc.title}
         </h1>
-        <Link
-          href={`/projects/${doc.projectId}/documents/${doc.id}`}
-          className="text-sm text-clay-700 underline"
-        >
-          {t("fullPage")}
-        </Link>
       </header>
       {doc.hasConflict && (
         <ConflictResolution
@@ -173,7 +173,7 @@ export function DocumentDetail({
                   }
                 />
                 <span className="text-xs text-muted-ink">
-                  {v.fileName} · {v.uploadedBy} ·{" "}
+                  {v.fileName} · <Actor value={v.uploadedBy} /> ·{" "}
                   <span className="tabular-nums">
                     {formatDate(v.uploadedAt, locale)}
                   </span>

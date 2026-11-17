@@ -377,7 +377,7 @@ export function createVariationsHandlers(ctx: DomainContext) {
           status: "potential",
           costLines: seeded.lines,
           indicativeCost: seeded.indicativeCost,
-          raisedBy: currentUser().id,
+          raisedBy: currentUser().role,
           raisedAt: now(),
         };
         state.variations.push(v);

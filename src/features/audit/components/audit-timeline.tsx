@@ -1,17 +1,10 @@
 "use client";
 import { useLocale, useTranslations } from "next-intl";
 import { Calendar, ChevronRight, User } from "lucide-react";
-import { formatDate, type FormatLocale } from "@/lib/format";
+import { formatDate, actorLabelKey, type FormatLocale } from "@/lib/format";
 import { Link } from "@/i18n/navigation";
 import { recordHref } from "@/components/records/linked-records";
 import type { AuditEvent } from "@/schemas";
-
-const roleLabelKeys: Record<string, string> = {
-  senior_qs: "roleSenior",
-  qs: "roleQs",
-  viewer: "roleViewer",
-  admin: "roleAdmin",
-};
 
 /** Human label for actions without a curated translation, e.g.
  * "comparison.completed" -> "Completed". */
@@ -40,7 +33,7 @@ export function AuditTimeline({
       {events.map((event) => {
         const key = `actions.${event.action}`;
         const title = t.has(key) ? t(key) : fallbackActionLabel(event.action);
-        const roleKey = roleLabelKeys[event.actorRole];
+        const roleKey = actorLabelKey(event.actorRole);
         const content = (
           <>
             <div className="min-w-0 flex-1">

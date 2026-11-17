@@ -103,7 +103,7 @@ function document(
       pageCount: file.pageCount,
       status: i === labels.length - 1 ? "current" : "superseded",
       issuedDate: "2026-11-01",
-      uploadedBy: users[0].id,
+      uploadedBy: users[0].role,
       uploadedAt: fixtureTime,
     });
   });
@@ -188,7 +188,7 @@ versions.push(
     sizeBytes: bimArtifactBytes.byteLength,
     sha256: "0".repeat(64),
     status: "current",
-    uploadedBy: users[0].id,
+    uploadedBy: users[0].role,
     uploadedAt: fixtureTime,
   }),
 );
@@ -382,7 +382,7 @@ export const workbookVersions = [1, 2].map((v) => {
       info: 0,
     },
     totals: parsed.totals,
-    uploadedBy: users[1].id,
+    uploadedBy: users[1].role,
     uploadedAt: fixtureTime,
   });
 });
@@ -445,7 +445,7 @@ export const variations = [
       basis:
         "QS-entered quantities × contract BOQ rates; indicative range for review.",
     },
-    raisedBy: users[1].id,
+    raisedBy: users[1].role,
     raisedAt: fixtureTime,
   }),
   ...Array.from({ length: 5 }, (_, i) =>
@@ -465,7 +465,7 @@ export const variations = [
         "under_review",
       ][i],
       costLines: [],
-      raisedBy: users[1].id,
+      raisedBy: users[1].role,
       raisedAt: fixtureTime,
       ...([1, 2].includes(i)
         ? {
@@ -569,7 +569,7 @@ export const procurement = ["rebar", "concrete", "copper"].map((id, i) =>
     quantity: id === "rebar" ? 4.2 : 100,
     neededBy: "2027-06-01T00:00:00Z",
     leadTimeWeeks: 8,
-    createdBy: users[1].id,
+    createdBy: users[1].role,
     createdAt: fixtureTime,
   }),
 );

@@ -5,6 +5,7 @@ import { useTranslations, useLocale } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { queryKeys, resources } from "@/lib/api";
 import {
+  Actor,
   Button,
   AiGeneratedLabel,
   DecisionForm,
@@ -207,7 +208,7 @@ function VariationEditor({ variation }: { variation: VariationEvent }) {
           <StatusChip domain="variationStatus" value={variation.status} />
         </div>
         <p className="text-sm text-muted-ink">
-          {variation.drawingNumber} · {variation.raisedBy} ·{" "}
+          {variation.drawingNumber} · <Actor value={variation.raisedBy} /> ·{" "}
           {formatDate(variation.raisedAt, locale)}
         </p>
       </header>

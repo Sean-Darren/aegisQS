@@ -436,7 +436,8 @@
       "auto": "自動",
       "manual": "手動"
     },
-    "uploadDescription": "拖放一個或多個圖則檔案以新增圖則或新版本，然後在上載前填寫每個檔案的資料。"
+    "uploadDescription": "拖放一個或多個圖則檔案以新增圖則或新版本，然後在上載前填寫每個檔案的資料。",
+    "raisedInline": "已提出變更 {id}。可繼續審視，或前往變更分頁定價。"
   },
   "Variation": {
     "register": "潛在變更事件",
@@ -516,7 +517,6 @@
     "period": "月份",
     "median": "預測中位數",
     "likelyRange": "80% 可能範圍",
-    "openComparison": "開啟圖則比較",
     "workbookStates": {
       "parsing": "正在解析",
       "checking": "正在檢查",

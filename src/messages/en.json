@@ -436,7 +436,8 @@
       "auto": "Automatic",
       "manual": "Manual"
     },
-    "uploadDescription": "Drop one or more drawing files to add a new drawing or a new revision, then complete the details for each before uploading."
+    "uploadDescription": "Drop one or more drawing files to add a new drawing or a new revision, then complete the details for each before uploading.",
+    "raisedInline": "Variation {id} raised. Continue reviewing, or open the variations tab to price it."
   },
   "Variation": {
     "register": "Variation events",
@@ -516,7 +517,6 @@
     "period": "Month",
     "median": "Median forecast",
     "likelyRange": "80% likely range",
-    "openComparison": "Open drawing comparison",
     "workbookStates": {
       "parsing": "Parsing",
       "checking": "Checking",

@@ -20,7 +20,7 @@ import {
   formatUnitRate,
   type FormatLocale,
 } from "@/lib/format";
-import { LinkedRecords, recordHref } from "./linked-records";
+import { LinkedRecords } from "./linked-records";
 import type { BoqItem, WorkbookVersion } from "@/schemas";
 import { useState } from "react";
 
@@ -172,12 +172,6 @@ function ChangeRecord({ id, projectId }: { id: string; projectId: string }) {
       <AiGeneratedLabel />
       <StatusChip domain="changeStatus" value={change.status} />
       <LowConfidenceNote confidence={change.confidence} />
-      <Link
-        className="block text-clay-700 underline"
-        href={`${recordHref(projectId, "comparison", change.comparisonId)}?change=${encodeURIComponent(id)}`}
-      >
-        {t("openComparison")}
-      </Link>
       <LinkedRecords projectId={projectId} type="change" id={id} />
     </div>
   );

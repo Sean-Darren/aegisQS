@@ -25,9 +25,9 @@ export function ComparisonDialog({
   const query = useComparison(comparisonId);
   return (
     <Dialog open onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[92vh] w-[min(96vw,76rem)] flex-col p-0">
+      <DialogContent className="flex max-h-[94vh] w-[min(98vw,88rem)] flex-col p-4">
         <DialogTitle className="sr-only">{t("openComparison")}</DialogTitle>
-        <div className="min-h-0 flex-1 overflow-y-auto p-5">
+        <div className="min-h-0 flex-1 overflow-hidden">
           {query.isPending ? (
             <Skeleton className="h-[600px] w-full" />
           ) : query.isError || !query.data ? (
@@ -44,7 +44,7 @@ export function ComparisonDialog({
             <ComparisonWorkspace
               key={comparisonId}
               comparison={query.data}
-              onNavigate={() => onOpenChange(false)}
+              fit
             />
           )}
         </div>

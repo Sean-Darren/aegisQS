@@ -59,10 +59,14 @@ export function ComparisonPage({ comparisonId }: { comparisonId: string }) {
     );
   return <ComparisonWorkspace key={comparisonId} comparison={query.data} />;
 }
-function ComparisonWorkspace({
+export function ComparisonWorkspace({
   comparison,
+  onNavigate,
 }: {
   comparison: DrawingComparison;
+  /** Called when the workspace navigates away (e.g. raising a variation),
+      so a hosting dialog can close itself first. */
+  onNavigate?: () => void;
 }) {
   const t = useTranslations("Drawing");
   const client = useQueryClient();
@@ -173,6 +177,7 @@ function ComparisonWorkspace({
       void client.invalidateQueries({
         queryKey: queryKeys.changes(comparison.id),
       });
+      onNavigate?.();
       router.push(`/projects/${comparison.projectId}/variations/${created.id}`);
     } catch {
       setError(true);

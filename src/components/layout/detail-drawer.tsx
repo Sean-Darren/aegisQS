@@ -11,6 +11,10 @@ const DocumentDetail = dynamic(
   () => import("@/features/documents").then((m) => m.DocumentDetail),
   { ssr: false },
 );
+const ComparisonDetail = dynamic(
+  () => import("@/features/drawings").then((m) => m.ComparisonPage),
+  { ssr: false },
+);
 const RecordDetail = dynamic(
   () =>
     import("@/components/records/record-detail").then((m) => m.RecordDetail),
@@ -59,6 +63,37 @@ export function DetailDrawer() {
     next.set("detail", last);
     router.replace(`${pathname}?${next}`, { scroll: false });
   };
+  // Comparison links inside the drawer open the focused comparison in this
+  // panel (with the Back button to return) instead of leaving for the
+  // drawings tab.
+  const interceptComparisonLinks = (
+    event: React.MouseEvent<HTMLDivElement>,
+  ) => {
+    const anchor = (event.target as HTMLElement).closest(
+      "a[href*='/drawings/compare/']",
+    );
+    if (!anchor) return;
+    const match = (anchor.getAttribute("href") ?? "").match(
+      /compare\/([^/?]+)/,
+    );
+    if (!match) return;
+    event.preventDefault();
+    // Carry over a ?change= focus parameter so the embedded comparison
+    // preselects the change the user came from.
+    let focusChange: string | null = null;
+    try {
+      focusChange = new URL(
+        anchor.getAttribute("href")!,
+        location.origin,
+      ).searchParams.get("change");
+    } catch {
+      focusChange = null;
+    }
+    const next = new URLSearchParams(params.toString());
+    next.set("detail", `comparison:${decodeURIComponent(match[1])}`);
+    if (focusChange) next.set("change", focusChange);
+    router.replace(`${pathname}?${next}`, { scroll: false });
+  };
   const close = useCallback(() => {
     const next = new URLSearchParams(params.toString());
     next.delete("detail");
@@ -98,7 +133,10 @@ export function DetailDrawer() {
           trigger.current = null;
         }}
       >
-        <div className="min-h-0 flex-1 overflow-y-auto p-5">
+        <div
+          className="min-h-0 flex-1 overflow-y-auto p-5"
+          onClickCapture={interceptComparisonLinks}
+        >
           {/* The visible heading was removed; the accessible name stays for
               screen readers. */}
           <DrawerTitle className="sr-only">{t("detail")}</DrawerTitle>
@@ -108,7 +146,9 @@ export function DetailDrawer() {
               {t("back")}
             </Button>
           )}
-          {type === "check" ? (
+          {type === "comparison" ? (
+            <ComparisonDetail key={detail} comparisonId={id} />
+          ) : type === "check" ? (
             <CheckDetail versionId={params.get("version") ?? ""} id={id} />
           ) : documentId ? (
             <DocumentDetail

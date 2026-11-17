@@ -54,7 +54,7 @@ export async function getBimJob(jobId: string) {
 export async function renderBimPreview(file: File): Promise<Blob> {
   const form = new FormData();
   form.set("file", file);
-  const response = await fetch(`${bimWorkerUrl}/api/v1/bim/render-preview`, {
+  const response = await fetch("/api/v1/bim/render-preview", {
     method: "POST",
     body: form,
   });

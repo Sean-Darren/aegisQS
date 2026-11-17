@@ -4,6 +4,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { resources, queryKeys } from "@/lib/api";
 import {
+  Actor,
   Button,
   EmptyState,
   ErrorState,
@@ -19,7 +20,7 @@ import {
   formatUnitRate,
   type FormatLocale,
 } from "@/lib/format";
-import { LinkedRecords, recordHref } from "./linked-records";
+import { LinkedRecords } from "./linked-records";
 import type { BoqItem, WorkbookVersion } from "@/schemas";
 import { useState } from "react";
 
@@ -56,7 +57,7 @@ function VersionRecord({ id, projectId }: { id: string; projectId: string }) {
       <p className="tabular-nums">
         {t("versionNumber", { number: v.versionNumber })} ·{" "}
         {formatFileSize(v.sizeBytes)} · {formatDate(v.uploadedAt, locale)} ·{" "}
-        {v.uploadedBy}
+        <Actor value={v.uploadedBy} />
       </p>
       <p>{v.sheetNames.join(", ")}</p>
       <Button variant="outline" onClick={() => void download(v)}>
@@ -171,12 +172,6 @@ function ChangeRecord({ id, projectId }: { id: string; projectId: string }) {
       <AiGeneratedLabel />
       <StatusChip domain="changeStatus" value={change.status} />
       <LowConfidenceNote confidence={change.confidence} />
-      <Link
-        className="block text-clay-700 underline"
-        href={`${recordHref(projectId, "comparison", change.comparisonId)}?change=${encodeURIComponent(id)}`}
-      >
-        {t("openComparison")}
-      </Link>
       <LinkedRecords projectId={projectId} type="change" id={id} />
     </div>
   );

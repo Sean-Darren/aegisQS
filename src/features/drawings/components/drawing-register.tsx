@@ -3,12 +3,14 @@ import { Suspense, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Link, useRouter } from "@/i18n/navigation";
+import { Upload } from "lucide-react";
+
 import { queryKeys, resources } from "@/lib/api";
 import {
   Button,
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogTitle,
   DialogTrigger,
   ErrorState,
@@ -20,11 +22,17 @@ import { inputStyle } from "@/components/ui/form-styles";
 import { useSession } from "@/lib/auth/session";
 import { can } from "@/lib/auth/permissions";
 import { UploadQueue } from "@/features/documents/components/upload-queue";
+import { ComparisonDialog } from "./comparison-dialog";
 import type { DrawingRegisterEntry } from "@/schemas";
-function DrawingRow({ entry }: { entry: DrawingRegisterEntry }) {
+function DrawingRow({
+  entry,
+  onCompare,
+}: {
+  entry: DrawingRegisterEntry;
+  onCompare: (comparisonId: string) => void;
+}) {
   const t = useTranslations("Drawing");
   const params = useSearchParams();
-  const router = useRouter();
   const client = useQueryClient();
   const session = useSession();
   const doc = entry.document;
@@ -67,9 +75,7 @@ function DrawingRow({ entry }: { entry: DrawingRegisterEntry }) {
       void client.invalidateQueries({
         queryKey: queryKeys.drawings(doc.projectId),
       });
-      router.push(
-        `/projects/${doc.projectId}/drawings/compare/${comparison.id}`,
-      );
+      onCompare(comparison.id);
     } catch {
       setError(true);
     } finally {
@@ -116,9 +122,10 @@ function DrawingRow({ entry }: { entry: DrawingRegisterEntry }) {
       </div>
       {entry.latestComparison && (
         <p className="text-sm">
-          <Link
-            className="text-clay-700 underline"
-            href={`/projects/${doc.projectId}/drawings/compare/${entry.latestComparison.id}`}
+          <button
+            type="button"
+            className="rounded-sm text-clay-700 underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-clay-600"
+            onClick={() => onCompare(entry.latestComparison!.id)}
           >
             {t("latest", {
               count: Object.values(entry.latestComparison.changeCounts).reduce(
@@ -128,7 +135,7 @@ function DrawingRow({ entry }: { entry: DrawingRegisterEntry }) {
               unreviewed:
                 changes.data?.filter((c) => c.status === "new").length ?? 0,
             })}
-          </Link>{" "}
+          </button>{" "}
           · {t(`jobs.${entry.latestComparison.status}`)}
         </p>
       )}
@@ -183,7 +190,8 @@ function DrawingRow({ entry }: { entry: DrawingRegisterEntry }) {
 export function DrawingRegister({ projectId }: { projectId: string }) {
   const t = useTranslations("Drawing");
   const session = useSession();
-  const [upload, setUpload] = useState(false);
+  const [uploadOpen, setUploadOpen] = useState(false);
+  const [compareId, setCompareId] = useState<string>();
   const query = useQuery({
     queryKey: queryKeys.drawings(projectId),
     queryFn: () => resources.drawings(projectId),
@@ -196,14 +204,12 @@ export function DrawingRegister({ projectId }: { projectId: string }) {
           <p className="mt-2 text-sm text-muted-ink">{t("uploadHint")}</p>
         </div>
         {can(session.data, "document.upload") && (
-          <Button onClick={() => setUpload((value) => !value)}>
+          <Button onClick={() => setUploadOpen(true)}>
+            <Upload size={16} strokeWidth={2} aria-hidden="true" />
             {t("uploadDrawing")}
           </Button>
         )}
       </header>
-      {upload && can(session.data, "document.upload") && (
-        <UploadQueue projectId={projectId} />
-      )}
       {query.isPending && <Skeleton className="h-96 w-full" />}
       {query.isError && <ErrorState message={t("error")} />}
       {query.data?.length === 0 && (
@@ -213,17 +219,45 @@ export function DrawingRegister({ projectId }: { projectId: string }) {
             can(session.data, "document.upload")
               ? {
                   label: t("uploadDrawing"),
-                  onClick: () => setUpload(true),
+                  onClick: () => setUploadOpen(true),
                 }
               : undefined
           }
         />
       )}
       <Suspense fallback={<Skeleton className="h-48 w-full" />}>
-      {query.data?.map((entry) => (
-        <DrawingRow key={entry.document.id} entry={entry} />
-      ))}
+        {query.data?.map((entry) => (
+          <DrawingRow
+            key={entry.document.id}
+            entry={entry}
+            onCompare={setCompareId}
+          />
+        ))}
       </Suspense>
+      {compareId && (
+        <ComparisonDialog
+          comparisonId={compareId}
+          onOpenChange={(open) => {
+            if (!open) setCompareId(undefined);
+          }}
+        />
+      )}
+      {uploadOpen && can(session.data, "document.upload") && (
+        <Dialog
+          open
+          onOpenChange={(open) => {
+            if (!open) setUploadOpen(false);
+          }}
+        >
+          <DialogContent className="max-h-[85vh] space-y-4 overflow-y-auto">
+            <DialogTitle className="pr-7 text-xl font-semibold">
+              {t("uploadDrawing")}
+            </DialogTitle>
+            <DialogDescription>{t("uploadDescription")}</DialogDescription>
+            <UploadQueue projectId={projectId} />
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }

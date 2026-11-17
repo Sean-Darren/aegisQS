@@ -110,3 +110,17 @@ export function formatSignedCurrency(value: number) {
   const rounded = Math.round(finite(value) * 100) / 100;
   return `${rounded < 0 ? "−" : "+"}${formatCurrency(Math.abs(rounded))}`;
 }
+
+const actorLabelKeys: Record<string, string> = {
+  senior_qs: "roleSenior",
+  qs: "roleQs",
+  viewer: "roleViewer",
+  admin: "roleAdmin",
+};
+
+/** Message key in the Shell namespace that labels a role value, or null when
+ * the value is not a known role (e.g. a raw user id) and should be shown
+ * as-is. Actor fields store the role; this maps it to a translated label. */
+export function actorLabelKey(value: string): string | null {
+  return actorLabelKeys[value] ?? null;
+}

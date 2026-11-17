@@ -42,7 +42,8 @@
     "audit": "審計記錄",
     "materials": "材料",
     "projects": "項目",
-    "admin": "管理"
+    "admin": "管理",
+    "toggleSidebar": "收合或展開側邊欄"
   },
   "Projects": {
     "title": "項目",
@@ -50,17 +51,41 @@
     "empty": "目前沒有可用項目。",
     "error": "無法載入項目，請重試。",
     "open": "開啟項目",
+    "openAriaLabel": "開啟 {name}",
+    "cardActions": "{name} 的操作",
     "created": "建立於 {date}",
     "addProject": "新增項目",
-    "addProjectDescription": "建立新項目，以便與工作區內現有項目一併分析。",
+    "addProjectDescription": "填寫以下表格以登記新項目。項目建立後，此工作區的所有成員均可使用。",
+    "editProject": "編輯項目",
+    "editProjectDescription": "更新以下項目資料。",
     "name": "項目名稱",
     "code": "項目編號",
     "codeOptional": "留空可自動產生項目編號。",
+    "location": "位置",
+    "locationOptional": "選填",
+    "buildingType": "建築類型",
+    "notSpecified": "未指定",
+    "buildingTypes": {
+      "residential": "住宅",
+      "apartment": "公寓",
+      "commercial": "商業",
+      "office": "寫字樓",
+      "hotel": "酒店",
+      "retail": "零售",
+      "industrial": "工業",
+      "institutional": "機構",
+      "mixedUse": "混合用途",
+      "other": "其他"
+    },
     "create": "建立項目",
     "creating": "建立項目中…",
     "createdProject": "已建立 {name}。",
     "nameRequired": "請輸入項目名稱。",
     "createError": "無法建立項目，請重試。",
+    "saveChanges": "儲存變更",
+    "saving": "儲存中…",
+    "updatedProject": "已更新 {name}。",
+    "updateError": "無法更新項目，請重試。",
     "deleteProject": "刪除項目",
     "deleteProjectDescription": "刪除 {name} 及其所有記錄？此操作無法復原。",
     "deleting": "刪除項目中…",
@@ -105,6 +130,45 @@
     "exportError": "無法準備 CSV。請重新匯出。",
     "actorSummary": "{actor} · {role}",
     "viewEntity": "檢視{entity}",
+    "view": "查看",
+    "actions": {
+      "project": {
+        "created": "已建立項目",
+        "updated": "已更新項目"
+      },
+      "document": {
+        "version_uploaded": "已上載文件版本",
+        "version_added": "已加入文件版本",
+        "current_set": "已設定現行版本"
+      },
+      "comparison": {
+        "completed": "圖則比對完成",
+        "run": "圖則比對已執行",
+        "alignment_updated": "比對對齊已更新"
+      },
+      "change": {
+        "marked_potential_variation": "變更已標記為潛在變更",
+        "review": "變更已審核",
+        "reviewed": "變更已審核"
+      },
+      "variation": {
+        "raised": "已提出變更",
+        "cost_updated": "變更成本已更新",
+        "decide": "已記錄變更決定",
+        "decided": "已記錄變更決定"
+      },
+      "workbook": {
+        "checked": "工作簿檢查完成",
+        "mapping_updated": "工作簿對應已更新",
+        "upload": "已上載工作簿",
+        "uploaded": "已上載工作簿"
+      },
+      "procurement": {
+        "created": "已儲存採購建議",
+        "plan": "採購計劃已更新",
+        "materials_extracted": "已抽取材料資料"
+      }
+    },
     "entities": {
       "project": "project",
       "document": "document",
@@ -215,12 +279,12 @@
     "notSpecified": "未指定",
     "all": "所有文件",
     "search": "搜尋文件",
-    "conflictsOnly": "僅顯示衝突",
     "noMatches": "沒有符合的文件，請更改搜尋或篩選條件。",
     "empty": "尚未有文件。請上載合約、圖則、現場記錄、財務文件或往來函件，並填寫文件編號及版本標籤。",
     "error": "無法載入文件，請檢查連線後再試。",
     "retry": "重試",
     "upload": "上載文件",
+    "uploadDescription": "拖放一個或多個檔案以新增文件或新版本，然後在上載前填寫每個檔案的資料。",
     "uploadFile": "上載檔案",
     "uploading": "正在上載…",
     "uploaded": "檔案已上載",
@@ -244,7 +308,6 @@
     "reasonRequired": "設定現行版本前請填寫原因。",
     "resolveError": "無法更改現行版本，請檢查權限後再試。",
     "currentSet": "現行版本已更新",
-    "fullPage": "開啟文件頁面",
     "superseded": "已被取代 — Rev {revision} 為現行版本",
     "viewCurrent": "查看現行版本",
     "timeline": "版本記錄",
@@ -270,7 +333,12 @@
       "other": "其他"
     },
     "downloadError": "無法下載檔案。請重試。",
-    "versionError": "無法載入部分修訂版資料。請重試。"
+    "versionError": "無法載入部分修訂版資料。請重試。",
+    "filters": "篩選",
+    "resetFilters": "重設篩選",
+    "current": "現行",
+    "conflict": "有衝突",
+    "uploadHeading": "上載新版本"
   },
   "Drawing": {
     "register": "圖則",
@@ -367,7 +435,9 @@
     "alignmentMethods": {
       "auto": "自動",
       "manual": "手動"
-    }
+    },
+    "uploadDescription": "拖放一個或多個圖則檔案以新增圖則或新版本，然後在上載前填寫每個檔案的資料。",
+    "raisedInline": "已提出變更 {id}。可繼續審視，或前往變更分頁定價。"
   },
   "Variation": {
     "register": "潛在變更事件",
@@ -416,7 +486,10 @@
       "forecast_adjusted": "按預測調整",
       "manual": "手動"
     },
-    "saveBeforeDecision": "請先儲存成本項目，然後再記錄決定。"
+    "saveBeforeDecision": "請先儲存成本項目，然後再記錄決定。",
+    "back": "返回變更記錄",
+    "noPrices": "尚無定價",
+    "unpricedHint": "加入成本項目以顯示範圍"
   },
   "Records": {
     "linked": "連結記錄",
@@ -432,7 +505,6 @@
       "material": "材料"
     },
     "detail": "記錄詳情",
-    "description": "來源記錄、版本及支援數據。",
     "notFound": "找不到此記錄。請返回登記冊並開啟目前的來源記錄。",
     "versionNumber": "版本 {number}",
     "downloadWorkbook": "在 Excel 開啟",
@@ -448,13 +520,13 @@
     "period": "月份",
     "median": "預測中位數",
     "likelyRange": "80% 可能範圍",
-    "openComparison": "開啟圖則比較",
     "workbookStates": {
       "parsing": "正在解析",
       "checking": "正在檢查",
       "checked": "已檢查",
       "failed": "失敗"
-    }
+    },
+    "back": "返回"
   },
   "Workbooks": {
     "title": "活頁簿",
@@ -747,7 +819,6 @@
     "overlayOutside": "部分建議日期超出目前圖表範圍。請選擇較長的預測期；確切日期仍列於上方建議。"
   },
   "Overview": {
-    "title": "項目概覽",
     "error": "無法載入項目摘要，請重試。",
     "retry": "重試",
     "documents": "文件",
@@ -769,7 +840,7 @@
     "clear": "目前沒有待處理事項，可繼續檢視項目記錄。",
     "recent": "近期活動",
     "emptyActivity": "尚無活動。請上載文件以開始項目記錄。",
-    "allActivity": "檢視完整審計記錄",
+    "showAllActivity": "顯示全部活動",
     "openDocuments": "開啟文件",
     "openDrawings": "開啟圖則",
     "openVariations": "開啟變更",

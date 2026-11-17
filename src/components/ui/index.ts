@@ -1,9 +1,11 @@
 export * from "./button";
 export * from "./icon-button";
 export * from "./badge";
+export * from "./actor";
 
 export * from "./tabs";
 export * from "./dialog";
+export * from "./dropdown";
 export * from "./drawer";
 export * from "./tooltip";
 export * from "./toast";

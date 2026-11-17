@@ -1,13 +1,23 @@
 "use client";
 import { useState } from "react";
 import { useTranslations, useLocale } from "next-intl";
+import { Check, Filter, Upload } from "lucide-react";
 import { Link, useRouter } from "@/i18n/navigation";
 import {
+  Actor,
+  Button,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
   EmptyState,
   ErrorState,
   Skeleton,
   StatusChip,
-  Button,
 } from "@/components/ui";
 import { VirtualTable } from "@/components/grid";
 import { useProjectDocuments } from "@/lib/api/use-records";
@@ -18,9 +28,45 @@ import {
   formatRevisionLabel,
   type FormatLocale,
 } from "@/lib/format";
-import { documentCategorySchema } from "@/schemas";
-import { inputStyle } from "@/components/ui/form-styles";
+import { documentCategorySchema, disciplineSchema } from "@/schemas";
 import { UploadQueue } from "./upload-queue";
+
+function FilterMenuSection({
+  label,
+  options,
+  value,
+  onChange,
+}: {
+  label: string;
+  options: { value: string; label: string; count?: number }[];
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <>
+      <p className="px-2 pb-1 pt-2 text-xs font-medium text-muted-ink">
+        {label}
+      </p>
+      {options.map((option) => (
+        <DropdownMenuItem
+          key={option.value}
+          onSelect={() => onChange(option.value)}
+        >
+          <span className="flex min-w-4 items-center">
+            {value === option.value && (
+              <Check size={14} strokeWidth={2} aria-hidden="true" />
+            )}
+          </span>
+          <span className="flex-1">{option.label}</span>
+          {option.count !== undefined && (
+            <span className="num text-xs text-muted-ink">{option.count}</span>
+          )}
+        </DropdownMenuItem>
+      ))}
+    </>
+  );
+}
+
 export function DocumentsPage({ projectId }: { projectId: string }) {
   const t = useTranslations("Hub");
   const locale = useLocale() as FormatLocale;
@@ -28,16 +74,24 @@ export function DocumentsPage({ projectId }: { projectId: string }) {
   const router = useRouter();
   const { documents, allVersions, versions } = useProjectDocuments(projectId);
   const [category, setCategory] = useState("");
+  const [discipline, setDiscipline] = useState("");
+  const [status, setStatus] = useState("");
   const [search, setSearch] = useState("");
-  const [conflicts, setConflicts] = useState(false);
-  const [upload, setUpload] = useState(false);
+  const [uploadOpen, setUploadOpen] = useState(false);
   const data = documents.data ?? [];
   const visible = data.filter(
     (d) =>
       (!category || d.category === category) &&
-      (!conflicts || d.hasConflict) &&
+      (!discipline || d.discipline === discipline) &&
+      (!status || (status === "conflict" ? d.hasConflict : !d.hasConflict)) &&
       `${d.docNumber} ${d.title}`.toLowerCase().includes(search.toLowerCase()),
   );
+  const activeFilters = [category, discipline, status].filter(Boolean).length;
+  const resetFilters = () => {
+    setCategory("");
+    setDiscipline("");
+    setStatus("");
+  };
   const fields = [
     "number",
     "title",
@@ -53,49 +107,90 @@ export function DocumentsPage({ projectId }: { projectId: string }) {
       <header className="flex justify-between gap-3">
         <h1 className="text-2xl font-semibold">{t("register")}</h1>
         {can(session.data, "document.upload") && (
-          <Button onClick={() => setUpload((v) => !v)}>{t("upload")}</Button>
+          <Button onClick={() => setUploadOpen(true)}>
+            <Upload size={16} strokeWidth={2} aria-hidden="true" />
+            {t("upload")}
+          </Button>
         )}
       </header>
-      {upload && can(session.data, "document.upload") && (
-        <UploadQueue projectId={projectId} />
-      )}
-      <div className="flex flex-wrap gap-2">
-        <Button
-          variant={category === "" ? "primary" : "outline"}
-          onClick={() => setCategory("")}
-        >
-          {t("all")} <span className="tabular-nums">{data.length}</span>
-        </Button>
-        {documentCategorySchema.options.map((c) => (
-          <Button
-            key={c}
-            variant={category === c ? "primary" : "outline"}
-            onClick={() => setCategory(c)}
-          >
-            {t(`categories.${c}`)}{" "}
-            <span className="tabular-nums">
-              {data.filter((d) => d.category === c).length}
-            </span>
-          </Button>
-        ))}
-      </div>
-      <div className="flex flex-wrap gap-5">
-        <label className="min-w-64">
-          {t("search")}
-          <input
-            className={inputStyle}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </label>
-        <label className="flex items-center gap-2">
-          <input
-            type="checkbox"
-            checked={conflicts}
-            onChange={(e) => setConflicts(e.target.checked)}
-          />
-          {t("conflictsOnly")}
-        </label>
+      <div className="flex flex-wrap items-center gap-2">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline">
+              <Filter size={16} strokeWidth={2} aria-hidden="true" />
+              {t("filters")}
+              {activeFilters > 0 && (
+                <span className="num ml-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-clay-700 px-1 text-xs font-semibold text-primary-foreground">
+                  {activeFilters}
+                </span>
+              )}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="w-72">
+            <FilterMenuSection
+              label={t("category")}
+              value={category}
+              onChange={setCategory}
+              options={[
+                { value: "", label: t("all"), count: data.length },
+                ...documentCategorySchema.options.map((c) => ({
+                  value: c,
+                  label: t(`categories.${c}`),
+                  count: data.filter((d) => d.category === c).length,
+                })),
+              ]}
+            />
+            <div className="my-1 h-px bg-line" />
+            <FilterMenuSection
+              label={t("discipline")}
+              value={discipline}
+              onChange={setDiscipline}
+              options={[
+                { value: "", label: t("all"), count: data.length },
+                ...disciplineSchema.options.map((d) => ({
+                  value: d,
+                  label: t(`disciplines.${d}`),
+                  count: data.filter((doc) => doc.discipline === d).length,
+                })),
+              ]}
+            />
+            <div className="my-1 h-px bg-line" />
+            <FilterMenuSection
+              label={t("status")}
+              value={status}
+              onChange={setStatus}
+              options={[
+                { value: "", label: t("all"), count: data.length },
+                {
+                  value: "current",
+                  label: t("current"),
+                  count: data.filter((d) => !d.hasConflict).length,
+                },
+                {
+                  value: "conflict",
+                  label: t("conflict"),
+                  count: data.filter((d) => d.hasConflict).length,
+                },
+              ]}
+            />
+            {activeFilters > 0 && (
+              <>
+                <div className="my-1 h-px bg-line" />
+                <DropdownMenuItem onSelect={resetFilters}>
+                  {t("resetFilters")}
+                </DropdownMenuItem>
+              </>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
+        <input
+          type="search"
+          aria-label={t("search")}
+          placeholder={t("search")}
+          className="ml-auto h-9 w-56 shrink-0 rounded-md border border-line-strong bg-panel px-3 text-sm text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-clay-600"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
       </div>
       {documents.isPending && <Skeleton className="h-96 w-full" />}
       {documents.isError && (
@@ -125,6 +220,7 @@ export function DocumentsPage({ projectId }: { projectId: string }) {
       {visible.length > 0 && (
         <div className="rounded-lg border border-line bg-panel">
           <VirtualTable
+            autoHeight
             label={t("register")}
             rows={visible}
             rowHeight={48}
@@ -191,13 +287,29 @@ export function DocumentsPage({ projectId }: { projectId: string }) {
                     {formatDate(doc.updatedAt, locale)}
                   </div>
                   <div role="cell" className={cell}>
-                    {current?.uploadedBy ?? "…"}
+                    <Actor value={current?.uploadedBy} />
                   </div>
                 </>
               );
             }}
           />
         </div>
+      )}
+      {uploadOpen && can(session.data, "document.upload") && (
+        <Dialog
+          open
+          onOpenChange={(open) => {
+            if (!open) setUploadOpen(false);
+          }}
+        >
+          <DialogContent className="max-h-[85vh] space-y-4 overflow-y-auto">
+            <DialogTitle className="pr-7 text-xl font-semibold">
+              {t("upload")}
+            </DialogTitle>
+            <DialogDescription>{t("uploadDescription")}</DialogDescription>
+            <UploadQueue projectId={projectId} />
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   );

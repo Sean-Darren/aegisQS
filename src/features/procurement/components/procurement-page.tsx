@@ -29,6 +29,7 @@ import {
   formatNumber,
   formatRange,
   formatSignedCurrency,
+  actorLabelKey,
   type FormatLocale,
 } from "@/lib/format";
 import type { ProjectMaterialNeed } from "@/schemas";
@@ -47,6 +48,11 @@ const link =
   "rounded-sm text-clay-700 underline focus-visible:outline-2 focus-visible:outline-clay-600";
 export function ProcurementPage({ projectId }: { projectId: string }) {
   const t = useTranslations("Procurement");
+  const shell = useTranslations("Shell");
+  const actorName = (value: string) => {
+    const key = actorLabelKey(value);
+    return key ? shell(key) : value;
+  };
   const locale = useLocale() as FormatLocale;
   const session = useSession();
   const toast = useToast();
@@ -77,7 +83,10 @@ export function ProcurementPage({ projectId }: { projectId: string }) {
       toast(t("extracted", { count: result.length }), "success");
     },
     onError: (error) =>
-      toast(error instanceof ApiError ? error.message : t("extractError"), "error"),
+      toast(
+        error instanceof ApiError ? error.message : t("extractError"),
+        "error",
+      ),
   });
   const selected =
     advice.data?.find((a) => a.id === selectedId) ?? advice.data?.[0];
@@ -438,7 +447,7 @@ export function ProcurementPage({ projectId }: { projectId: string }) {
                     </p>
                     <p className="text-xs text-muted-ink tabular-nums">
                       {t("createdBy", {
-                        actor: a.createdBy,
+                        actor: actorName(a.createdBy),
                         date: formatDate(a.createdAt, locale),
                       })}
                     </p>

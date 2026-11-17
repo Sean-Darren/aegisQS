@@ -29,6 +29,7 @@ vi.mock("@/components/ui", async () => {
     ErrorState: ({ message }: { message: string }) => (
       <p role="alert">{message}</p>
     ),
+    Actor: ({ value }: { value?: string | null }) => <>{value ?? "…"}</>,
     useToast: () => vi.fn(),
   };
 });

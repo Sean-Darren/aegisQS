@@ -9,6 +9,8 @@ export function createProjectsHandlers(ctx: DomainContext) {
   const createProjectSchema = z.object({
     name: z.string().trim().min(1).max(120),
     code: z.string().trim().min(1).max(20).optional(),
+    location: z.string().trim().max(140).nullable().optional(),
+    buildingType: s.buildingTypeSchema.nullable().optional(),
   });
   function belongsToProject(event: s.AuditEvent, projectId: string): boolean {
     const document = (id: string) =>
@@ -92,6 +94,8 @@ export function createProjectsHandlers(ctx: DomainContext) {
         id,
         code,
         name: body.name,
+        location: body.location?.trim() || undefined,
+        buildingType: body.buildingType ?? undefined,
         createdAt: now(),
         memberIds: [currentUser().id],
       });
@@ -104,6 +108,42 @@ export function createProjectsHandlers(ctx: DomainContext) {
         { code: project.code, name: project.name },
       );
       return reply(s.projectSchema, project, 201);
+    }),
+    route("patch", "/projects/:projectId", async ({ request, params }) => {
+      requirePermission("project.update");
+      const id = String(params.projectId);
+      const project = requireProject(id);
+      const body = createProjectSchema.partial().parse(await request.json());
+      if (body.code) {
+        const requestedCode = body.code.trim().toUpperCase();
+        const duplicate = state.projects.some(
+          (p) => p.code.toUpperCase() === requestedCode && p.id !== id,
+        );
+        if (duplicate)
+          throw new MockError(409, "A project with this code already exists.");
+      }
+      const updated = s.projectSchema.parse({
+        ...project,
+        ...(body.name !== undefined ? { name: body.name } : {}),
+        ...(body.code !== undefined
+          ? { code: body.code.trim().toUpperCase() }
+          : {}),
+        ...(body.location !== undefined
+          ? { location: body.location?.trim() || undefined }
+          : {}),
+        ...(body.buildingType !== undefined
+          ? { buildingType: body.buildingType ?? undefined }
+          : {}),
+      });
+      state.projects = state.projects.map((p) => (p.id === id ? updated : p));
+      audit(
+        "project.updated",
+        "project",
+        updated.id,
+        `Project ${updated.code} updated`,
+        { code: updated.code, name: updated.name },
+      );
+      return reply(s.projectSchema, updated);
     }),
     route("delete", "/projects/:projectId", ({ params }) => {
       requirePermission("project.delete");

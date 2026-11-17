@@ -42,7 +42,8 @@
     "audit": "Audit",
     "materials": "Materials",
     "projects": "Projects",
-    "admin": "Admin"
+    "admin": "Admin",
+    "toggleSidebar": "Collapse or expand sidebar"
   },
   "Projects": {
     "title": "Projects",
@@ -50,17 +51,41 @@
     "empty": "No projects are available yet.",
     "error": "Projects could not be loaded. Try again.",
     "open": "Open project",
+    "openAriaLabel": "Open {name}",
+    "cardActions": "Actions for {name}",
     "created": "Created {date}",
     "addProject": "Add project",
-    "addProjectDescription": "Create a new project so you can analyze it alongside the projects already in this workspace.",
+    "addProjectDescription": "Complete the form below to register a new project. Once created, it will be available to all members of this workspace.",
+    "editProject": "Edit project",
+    "editProjectDescription": "Update the project details below.",
     "name": "Project name",
     "code": "Project code",
     "codeOptional": "Leave blank to generate a project code automatically.",
+    "location": "Location",
+    "locationOptional": "Optional",
+    "buildingType": "Building type",
+    "notSpecified": "Not specified",
+    "buildingTypes": {
+      "residential": "Residential",
+      "apartment": "Apartment",
+      "commercial": "Commercial",
+      "office": "Office",
+      "hotel": "Hotel",
+      "retail": "Retail",
+      "industrial": "Industrial",
+      "institutional": "Institutional",
+      "mixedUse": "Mixed-use",
+      "other": "Other"
+    },
     "create": "Create project",
     "creating": "Creating project…",
     "createdProject": "{name} created.",
     "nameRequired": "Enter a project name.",
     "createError": "The project could not be created. Try again.",
+    "saveChanges": "Save changes",
+    "saving": "Saving…",
+    "updatedProject": "{name} updated.",
+    "updateError": "The project could not be updated. Try again.",
     "deleteProject": "Delete project",
     "deleteProjectDescription": "Delete {name} and all of its records? This action cannot be undone.",
     "deleting": "Deleting project…",
@@ -105,6 +130,45 @@
     "exportError": "The CSV could not be prepared. Try exporting again.",
     "actorSummary": "{actor} · {role}",
     "viewEntity": "View {entity}",
+    "view": "View",
+    "actions": {
+      "project": {
+        "created": "Project created",
+        "updated": "Project updated"
+      },
+      "document": {
+        "version_uploaded": "Document version uploaded",
+        "version_added": "Document version added",
+        "current_set": "Current version set"
+      },
+      "comparison": {
+        "completed": "Drawing comparison completed",
+        "run": "Drawing comparison run",
+        "alignment_updated": "Comparison alignment updated"
+      },
+      "change": {
+        "marked_potential_variation": "Change marked as potential variation",
+        "review": "Change reviewed",
+        "reviewed": "Change reviewed"
+      },
+      "variation": {
+        "raised": "Variation raised",
+        "cost_updated": "Variation cost updated",
+        "decide": "Variation decision recorded",
+        "decided": "Variation decision recorded"
+      },
+      "workbook": {
+        "checked": "Workbook checks completed",
+        "mapping_updated": "Workbook mapping updated",
+        "upload": "Workbook uploaded",
+        "uploaded": "Workbook uploaded"
+      },
+      "procurement": {
+        "created": "Procurement advice saved",
+        "plan": "Procurement plan updated",
+        "materials_extracted": "Materials extracted"
+      }
+    },
     "entities": {
       "project": "project",
       "document": "document",
@@ -215,12 +279,12 @@
     "notSpecified": "Not specified",
     "all": "All documents",
     "search": "Search documents",
-    "conflictsOnly": "Conflicts only",
     "noMatches": "No matching documents. Change the search or filters.",
     "empty": "No documents yet. Upload a contract, drawing, site record, financial document or correspondence with its document number and revision label.",
     "error": "Documents could not be loaded. Check the connection and try again.",
     "retry": "Try again",
     "upload": "Upload documents",
+    "uploadDescription": "Drop one or more files to add a new document or a new revision, then complete the details for each before uploading.",
     "uploadFile": "Upload file",
     "uploading": "Uploading…",
     "uploaded": "File uploaded",
@@ -244,7 +308,6 @@
     "reasonRequired": "Enter a reason before setting the current version.",
     "resolveError": "The current version could not be changed. Check access and try again.",
     "currentSet": "Current version updated",
-    "fullPage": "Open document page",
     "superseded": "Superseded — Rev {revision} is current",
     "viewCurrent": "View current version",
     "timeline": "Version history",
@@ -270,7 +333,12 @@
       "other": "Other"
     },
     "downloadError": "The file could not be downloaded. Try again.",
-    "versionError": "Some revision details could not be loaded. Try again."
+    "versionError": "Some revision details could not be loaded. Try again.",
+    "filters": "Filters",
+    "resetFilters": "Reset filters",
+    "current": "Current",
+    "conflict": "In conflict",
+    "uploadHeading": "Upload a new version"
   },
   "Drawing": {
     "register": "Drawings",
@@ -367,7 +435,9 @@
     "alignmentMethods": {
       "auto": "Automatic",
       "manual": "Manual"
-    }
+    },
+    "uploadDescription": "Drop one or more drawing files to add a new drawing or a new revision, then complete the details for each before uploading.",
+    "raisedInline": "Variation {id} raised. Continue reviewing, or open the variations tab to price it."
   },
   "Variation": {
     "register": "Variation events",
@@ -416,7 +486,10 @@
       "forecast_adjusted": "Forecast adjusted",
       "manual": "Manual"
     },
-    "saveBeforeDecision": "Save the cost lines before recording a decision."
+    "saveBeforeDecision": "Save the cost lines before recording a decision.",
+    "back": "Back to variations",
+    "noPrices": "No priced amounts",
+    "unpricedHint": "Add cost lines to see the range"
   },
   "Records": {
     "linked": "Linked records",
@@ -432,7 +505,6 @@
       "material": "Material"
     },
     "detail": "Record details",
-    "description": "Source records, versions and supporting data.",
     "notFound": "This record could not be found. Return to the register and open its current source.",
     "versionNumber": "Version {number}",
     "downloadWorkbook": "Open in Excel",
@@ -448,13 +520,13 @@
     "period": "Month",
     "median": "Median forecast",
     "likelyRange": "80% likely range",
-    "openComparison": "Open drawing comparison",
     "workbookStates": {
       "parsing": "Parsing",
       "checking": "Checking",
       "checked": "Checked",
       "failed": "Failed"
-    }
+    },
+    "back": "Back"
   },
   "Workbooks": {
     "title": "Workbooks",
@@ -747,7 +819,6 @@
     "overlayOutside": "Some advice dates are outside this chart window. Select a longer horizon to see them; exact dates remain in the advice above."
   },
   "Overview": {
-    "title": "Project overview",
     "error": "Project summary could not be loaded. Try again.",
     "retry": "Try again",
     "documents": "Documents",
@@ -769,7 +840,7 @@
     "clear": "Nothing currently needs attention. Continue reviewing your project records.",
     "recent": "Recent activity",
     "emptyActivity": "No activity yet. Upload a document to begin the project record.",
-    "allActivity": "View full audit trail",
+    "showAllActivity": "Show all activity",
     "openDocuments": "Open documents",
     "openDrawings": "Open drawings",
     "openVariations": "Open variations",

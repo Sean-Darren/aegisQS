@@ -1,5 +1,6 @@
 import { z } from "zod";
 import * as s from "@/schemas";
+import type { BuildingType } from "@/schemas";
 import {
   apiClient,
   type createApiClient,
@@ -36,8 +37,21 @@ export function createResources(
     me: () => client.get("/me", s.userSchema),
     projects: () => client.get("/projects", z.array(s.projectSchema)),
     project: (p: string) => client.get(project(p), s.projectSchema),
-    createProject: (body: { name: string; code?: string }) =>
-      client.post("/projects", s.projectSchema, body),
+    createProject: (body: {
+      name: string;
+      code?: string;
+      location?: string | null;
+      buildingType?: BuildingType | null;
+    }) => client.post("/projects", s.projectSchema, body),
+    updateProject: (
+      p: string,
+      body: {
+        name?: string;
+        code?: string;
+        location?: string | null;
+        buildingType?: BuildingType | null;
+      },
+    ) => client.patch(project(p), s.projectSchema, body),
     deleteProject: (p: string) => client.delete(project(p), s.projectSchema),
     overview: (p: string) =>
       client.get(`${project(p)}/overview`, s.projectOverviewSchema),

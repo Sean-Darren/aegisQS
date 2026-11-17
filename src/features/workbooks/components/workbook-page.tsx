@@ -9,6 +9,7 @@ import { resources, queryKeys } from "@/lib/api";
 import { useSession } from "@/lib/auth/session";
 import { can } from "@/lib/auth/permissions";
 import {
+  Actor,
   Button,
   Tabs,
   TabsList,
@@ -383,7 +384,8 @@ function Workspace({ workbook }: { workbook: Workbook }) {
                       {v.fileName}
                     </Button>
                     <p className="tabular-nums">
-                      {v.uploadedBy} · {formatDate(v.uploadedAt, locale)}
+                      <Actor value={v.uploadedBy} /> ·{" "}
+                      {formatDate(v.uploadedAt, locale)}
                     </p>
                     <CheckSummary summary={v.checkSummary} />
                     {v.totals?.map((total) => (

@@ -5,7 +5,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
-import { useRouter } from "@/i18n/navigation";
 import { queryKeys, resources } from "@/lib/api";
 import { useDocument, useFile } from "@/lib/api/use-records";
 import {
@@ -61,6 +60,7 @@ export function ComparisonPage({ comparisonId }: { comparisonId: string }) {
   return <ComparisonWorkspace key={comparisonId} comparison={query.data} />;
 }
 
+
 function useRenderedFile(
   file: Blob | undefined,
   fileName: string | undefined,
@@ -112,14 +112,20 @@ function useRenderedFile(
     : undefined;
 }
 
-function ComparisonWorkspace({
+export function ComparisonWorkspace({
   comparison,
+  fit = false,
+  initialChange,
 }: {
   comparison: DrawingComparison;
+  /** Fit mode (popup): fixed-height layout where only the change list
+      scrolls, and the activity panel is omitted. */
+  fit?: boolean;
+  /** Change to select when the workspace mounts (popup focus). */
+  initialChange?: string;
 }) {
   const t = useTranslations("Drawing");
   const client = useQueryClient();
-  const router = useRouter();
   const session = useSession();
   const records = useDocument(comparison.documentId);
   const base = useFile(comparison.baseVersionId),
@@ -128,7 +134,7 @@ function ComparisonWorkspace({
   const [mode, setMode] = useState<ViewerMode>("side");
   const params = useSearchParams();
   const changeParam = params.get("change") ?? "";
-  const [selected, setSelected] = useState(changeParam);
+  const [selected, setSelected] = useState(changeParam || initialChange || "");
   const [syncedChangeParam, setSyncedChangeParam] = useState(changeParam);
   if (syncedChangeParam !== changeParam) {
     // Follow ?change= links even when the workspace is already mounted.
@@ -144,6 +150,7 @@ function ComparisonWorkspace({
   const [draft, setDraft] = useState(comparison.alignment);
   const [error, setError] = useState(false);
   const [raising, setRaising] = useState(false);
+  const [raisedId, setRaisedId] = useState<string>();
   const controls = useRef<CanvasControls | null>(null);
   const assign = useCallback((value: CanvasControls) => {
     controls.current = value;
@@ -236,7 +243,9 @@ function ComparisonWorkspace({
       void client.invalidateQueries({
         queryKey: queryKeys.changes(comparison.id),
       });
-      router.push(`/projects/${comparison.projectId}/variations/${created.id}`);
+      // Stay here: confirm inline instead of navigating away.
+      setRaisedId(created.id);
+      setChecked([]);
     } catch {
       setError(true);
     } finally {
@@ -265,7 +274,7 @@ function ComparisonWorkspace({
     return <ErrorState message={`${t("error")} ${comparison.error ?? ""}`} />;
   return (
     <div
-      className="space-y-4"
+      className={fit ? "flex h-full min-h-0 flex-col gap-4" : "space-y-4"}
       onKeyDown={(event) => {
         if (
           (event.target as HTMLElement).closest(
@@ -419,7 +428,13 @@ function ComparisonWorkspace({
           </select>
         </label>
       )}
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
+      <div
+        className={
+          fit
+            ? "grid min-h-0 flex-1 gap-4 lg:grid-cols-[minmax(0,1fr)_340px]"
+            : "grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]"
+        }
+      >
         <section
           tabIndex={0}
           aria-label={t("canvasHelp")}
@@ -459,7 +474,13 @@ function ComparisonWorkspace({
             {t("canvasHelp")}
           </p>
         </section>
-        <aside className="space-y-4 rounded-lg border border-line bg-panel p-4">
+        <aside
+          className={
+            fit
+              ? "flex min-h-0 flex-col gap-3 rounded-lg border border-line bg-panel p-4"
+              : "space-y-4 rounded-lg border border-line bg-panel p-4"
+          }
+        >
           <h2 className="text-lg font-semibold">
             {t("changes", { count: changes.length })}
           </h2>
@@ -495,57 +516,70 @@ function ComparisonWorkspace({
           </label>
           {changesQuery.isError && <ErrorState message={t("error")} />}
           {visible.length === 0 && <EmptyState message={t("noChanges")} />}
-          <ol className="space-y-2">
-            {visible.map((change) => (
-              <li
-                key={change.id}
-                className={`rounded-md border p-3 ${active?.id === change.id ? "border-clay-600 bg-limewash-100" : "border-line"}`}
-              >
-                <div className="flex items-center gap-2">
-                  {can(session.data, "variation.raise") &&
-                    !change.variationEventId && (
-                      <input
-                        type="checkbox"
-                        aria-label={t("selectChange", {
-                          number: change.number,
-                        })}
-                        checked={checked.includes(change.id)}
-                        onChange={(e) =>
-                          setChecked((old) =>
-                            e.target.checked
-                              ? [...old, change.id]
-                              : old.filter((id) => id !== change.id),
-                          )
-                        }
-                      />
-                    )}
-                  <button
-                    onClick={() => select(change.id)}
-                    className="text-left focus-visible:outline-2 focus-visible:outline-clay-600"
-                  >
-                    <span className="tabular-nums">△{change.number}</span>{" "}
-                    <StatusChip domain="changeKind" value={change.kind} />
-                    <p className="mt-2 text-sm">{change.summary}</p>
-                    {(change.textBefore || change.textAfter) && (
-                      <p className="mt-1 text-xs tabular-nums text-muted-ink">
-                        {change.textBefore && <del>{change.textBefore}</del>}
-                        {change.textBefore && change.textAfter ? " → " : ""}
-                        {change.textAfter}
-                      </p>
-                    )}
-                  </button>
-                </div>
-                <AiGeneratedLabel />
-                <p className="text-xs tabular-nums">
-                  {t("confidence")} {formatPercent(change.confidence)}
-                </p>
-                <LowConfidenceNote confidence={change.confidence} />
-                <StatusChip domain="changeStatus" value={change.status} />
-              </li>
-            ))}
-          </ol>
+          <div className={fit ? "min-h-0 flex-1 overflow-y-auto" : undefined}>
+            <ol className="space-y-2">
+              {visible.map((change) => (
+                <li
+                  key={change.id}
+                  className={`rounded-md border p-2 ${active?.id === change.id ? "border-clay-600 bg-limewash-100" : "border-line"}`}
+                >
+                  <div className="flex items-start gap-2">
+                    {can(session.data, "variation.raise") &&
+                      !change.variationEventId && (
+                        <input
+                          type="checkbox"
+                          className="mt-1"
+                          aria-label={t("selectChange", {
+                            number: change.number,
+                          })}
+                          checked={checked.includes(change.id)}
+                          onChange={(e) =>
+                            setChecked((old) =>
+                              e.target.checked
+                                ? [...old, change.id]
+                                : old.filter((id) => id !== change.id),
+                            )
+                          }
+                        />
+                      )}
+                    <button
+                      onClick={() => select(change.id)}
+                      className="min-w-0 flex-1 text-left focus-visible:outline-2 focus-visible:outline-clay-600"
+                    >
+                      <span className="flex flex-wrap items-center gap-2">
+                        <span className="tabular-nums">△{change.number}</span>
+                        <StatusChip
+                          domain="changeKind"
+                          value={change.kind}
+                          compact
+                        />
+                        <StatusChip
+                          domain="changeStatus"
+                          value={change.status}
+                          compact
+                        />
+                        <span className="text-xs tabular-nums text-muted-ink">
+                          {formatPercent(change.confidence)}
+                        </span>
+                      </span>
+                      <p className="mt-1 text-sm">{change.summary}</p>
+                      {(change.textBefore || change.textAfter) && (
+                        <p className="mt-0.5 text-xs tabular-nums text-muted-ink">
+                          {change.textBefore && <del>{change.textBefore}</del>}
+                          {change.textBefore && change.textAfter ? " → " : ""}
+                          {change.textAfter}
+                        </p>
+                      )}
+                    </button>
+                  </div>
+                </li>
+              ))}
+            </ol>
+          </div>
           {active && (
-            <section className="space-y-3 border-t border-line pt-3">
+            <section
+              className={`space-y-3 border-t border-line pt-3${fit ? " shrink-0" : ""}`}
+            >
               <h3 className="font-semibold">{active.summary}</h3>
               <AiGeneratedLabel />
               {(active.textBefore || active.textAfter) && (
@@ -585,6 +619,14 @@ function ComparisonWorkspace({
               )}
             </section>
           )}
+          {raisedId && (
+            <p
+              role="status"
+              className="rounded-md border border-line bg-limewash-100 p-3 text-sm"
+            >
+              {t("raisedInline", { id: raisedId })}
+            </p>
+          )}
           {can(session.data, "variation.raise") && (
             <span title={!checked.length ? t("selectFirst") : undefined}>
               <Button
@@ -597,13 +639,15 @@ function ComparisonWorkspace({
           )}
         </aside>
       </div>
-      <EntityActivity
-        projectId={comparison.projectId}
-        entities={[
-          { type: "comparison", id: comparison.id },
-          ...changes.map((c) => ({ type: "change" as const, id: c.id })),
-        ]}
-      />
+      {!fit && (
+        <EntityActivity
+          projectId={comparison.projectId}
+          entities={[
+            { type: "comparison", id: comparison.id },
+            ...changes.map((c) => ({ type: "change" as const, id: c.id })),
+          ]}
+        />
+      )}
     </div>
   );
 }

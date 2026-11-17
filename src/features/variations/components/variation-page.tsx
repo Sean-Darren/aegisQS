@@ -2,9 +2,11 @@
 import { useRef, useState } from "react";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { useTranslations, useLocale } from "next-intl";
+import { ArrowLeft } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { queryKeys, resources } from "@/lib/api";
 import {
+  Actor,
   Button,
   AiGeneratedLabel,
   DecisionForm,
@@ -13,6 +15,7 @@ import {
   ErrorState,
   StatusChip,
 } from "@/components/ui";
+import { ComparisonDialog } from "@/features/drawings/components/comparison-dialog";
 import { panelStyle, inputStyle } from "@/components/ui/form-styles";
 import { useSession } from "@/lib/auth/session";
 import { can } from "@/lib/auth/permissions";
@@ -48,11 +51,11 @@ export function VariationPage({ variationId }: { variationId: string }) {
 function SourceThumbnail({
   change,
   comparisonId,
-  projectId,
+  onFocus,
 }: {
   change: DrawingChange;
   comparisonId: string;
-  projectId: string;
+  onFocus: (comparisonId: string, changeId: string) => void;
 }) {
   const t = useTranslations("Variation");
   const comparison = useQuery({
@@ -61,9 +64,10 @@ function SourceThumbnail({
   });
   const file = useFile(comparison.data?.targetVersionId ?? "");
   return (
-    <Link
-      href={`/projects/${projectId}/drawings/compare/${comparisonId}?change=${change.id}`}
-      className="block space-y-2 rounded-md border border-line p-3 text-clay-700 underline"
+    <button
+      type="button"
+      onClick={() => onFocus(comparisonId, change.id)}
+      className="block w-full space-y-2 rounded-md border border-line p-3 text-left transition-colors hover:bg-stone-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-clay-600"
     >
       <div className="relative h-36 overflow-hidden bg-viewer-bg">
         {file.data && (
@@ -87,13 +91,17 @@ function SourceThumbnail({
       </div>
       <p>{change.summary}</p>
       <AiGeneratedLabel />
-    </Link>
+    </button>
   );
 }
 type Draft = { line: CostLine; quantity: string; rate: string };
 function VariationEditor({ variation }: { variation: VariationEvent }) {
   const t = useTranslations("Variation");
   const locale = useLocale() as FormatLocale;
+  const [focus, setFocus] = useState<{
+    comparisonId: string;
+    changeId: string;
+  }>();
   const client = useQueryClient();
   const session = useSession();
   const changes = useQuery({
@@ -199,6 +207,13 @@ function VariationEditor({ variation }: { variation: VariationEvent }) {
   });
   return (
     <div className="space-y-5">
+      <Link
+        className="inline-flex items-center gap-1 rounded-sm text-sm font-medium text-clay-700 underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-clay-600"
+        href={`/projects/${variation.projectId}/variations`}
+      >
+        <ArrowLeft size={16} strokeWidth={1.5} aria-hidden="true" />
+        {t("back")}
+      </Link>
       <header className="space-y-2">
         <div className="flex flex-wrap gap-3">
           <h1 className="text-2xl font-semibold">
@@ -207,11 +222,41 @@ function VariationEditor({ variation }: { variation: VariationEvent }) {
           <StatusChip domain="variationStatus" value={variation.status} />
         </div>
         <p className="text-sm text-muted-ink">
-          {variation.drawingNumber} · {variation.raisedBy} ·{" "}
+          {variation.drawingNumber} · <Actor value={variation.raisedBy} /> ·{" "}
           {formatDate(variation.raisedAt, locale)}
         </p>
       </header>
       {error && <ErrorState message={t("error")} />}
+      {variation.decision && (
+        <section className="space-y-3 rounded-lg border border-line bg-panel p-5">
+          <h2 className="text-lg font-semibold">{t("decision")}</h2>
+          <p>
+            {variation.decision.reason} ·{" "}
+            <Actor value={variation.decision.by} /> ·{" "}
+            {formatDate(variation.decision.at, locale)}
+          </p>
+        </section>
+      )}
+      {can(session.data, "variation.decide") && (
+        <section className="space-y-3 rounded-lg border border-line bg-panel p-5">
+          <h2 className="text-lg font-semibold">{t("decision")}</h2>
+          {dirty && (
+            <p className="text-sm text-muted-ink">{t("saveBeforeDecision")}</p>
+          )}
+          <DecisionForm
+            actions={[
+              { value: "confirmed", label: t("confirm") },
+              { value: "rejected", label: t("reject") },
+            ]}
+            actionLabel={t("decision")}
+            reasonLabel={t("reason")}
+            errorMessage={t("reasonRequired")}
+            submitLabel={t("recordDecision")}
+            pending={decision.isPending || dirty || saving}
+            onSubmit={(value) => decision.mutate(value)}
+          />
+        </section>
+      )}
       <div className="grid gap-5 xl:grid-cols-[300px_minmax(0,1fr)]">
         <section className={panelStyle}>
           <h2 className="text-lg font-semibold">{t("sources")}</h2>
@@ -222,7 +267,9 @@ function VariationEditor({ variation }: { variation: VariationEvent }) {
                 key={change.id}
                 change={change}
                 comparisonId={variation.comparisonId}
-                projectId={variation.projectId}
+                onFocus={(comparisonId, changeId) =>
+                  setFocus({ comparisonId, changeId })
+                }
               />
             ))}
         </section>
@@ -423,39 +470,19 @@ function VariationEditor({ variation }: { variation: VariationEvent }) {
           comparisonId={variation.comparisonId}
         />
       </section>
-      {variation.decision && (
-        <section className={panelStyle}>
-          <h2>{t("decision")}</h2>
-          <p>
-            {variation.decision.reason} · {variation.decision.by} ·{" "}
-            {formatDate(variation.decision.at, locale)}
-          </p>
-        </section>
-      )}
-      {can(session.data, "variation.decide") && (
-        <section className={panelStyle}>
-          <h2 className="text-lg font-semibold">{t("decision")}</h2>
-          {dirty && (
-            <p className="text-sm text-muted-ink">{t("saveBeforeDecision")}</p>
-          )}
-          <DecisionForm
-            actions={[
-              { value: "confirmed", label: t("confirm") },
-              { value: "rejected", label: t("reject") },
-            ]}
-            actionLabel={t("decision")}
-            reasonLabel={t("reason")}
-            errorMessage={t("reasonRequired")}
-            submitLabel={t("recordDecision")}
-            pending={decision.isPending || dirty || saving}
-            onSubmit={(value) => decision.mutate(value)}
-          />
-        </section>
-      )}
       <EntityActivity
         projectId={variation.projectId}
         entities={[{ type: "variation", id: variation.id }]}
       />
+      {focus && (
+        <ComparisonDialog
+          comparisonId={focus.comparisonId}
+          changeId={focus.changeId}
+          onOpenChange={(open) => {
+            if (!open) setFocus(undefined);
+          }}
+        />
+      )}
     </div>
   );
 }

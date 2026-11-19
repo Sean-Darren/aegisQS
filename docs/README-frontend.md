@@ -81,7 +81,7 @@ Open `/en/projects/P-001/procurement`. The rebar need links to VE-007 and starts
 
 Follow [DEMO.md](./DEMO.md). With mocks enabled in development, Start demo story prepares the pre-upload position; Reset demo data restores the exact finished fixture snapshot and clears query state and scheduled jobs. Viewers cannot use these controls. Full reloads restore the finished snapshot. Neither control exists in the production UI.
 
-Run `npm run typecheck`, `npm run lint`, `npm test`, `npm run build`, then `npm run test:e2e`. Run typecheck after the Playwright server stops: Next regenerates the included `.next-playwright` type files during startup. Run `node scripts/report-bundles.mjs` after a production build to update [bundle-report.md](./bundle-report.md). Route-entry sizes there exclude shared/deferred chunks.
+Run `npm run typecheck`, `npm run lint`, `npm test`, `npm run build`, then `npm run test:e2e`. Run typecheck after the Playwright server stops: Next regenerates the included `.next-playwright` type files during startup. Run `node scripts/report-bundles.mjs` after a production build to generate a local bundle report. Route-entry sizes in that report exclude shared/deferred chunks.
 
 `tests/e2e/release-accessibility.spec.ts` covers every route in both locales. Chart, viewer and sheet tests also exercise text alternatives and keyboard controls. The dev identity selector does not authenticate a real backend.
 

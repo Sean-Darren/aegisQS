@@ -24,6 +24,9 @@
 # misc
 .DS_Store
 *.pem
+*.key
+*.p12
+*.pfx
 
 # debug
 npm-debug.log*
@@ -49,6 +52,7 @@ __pycache__/
 !.env.example
 /playwright-report/
 /test-results/
+/docs/bundle-report.md
 
 /addin/.next/
 /addin/.env.local

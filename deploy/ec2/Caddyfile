@@ -1,5 +1,5 @@
-# Replace these temporary hostnames if the instance IP changes.
-smartqs.13-212-119-93.sslip.io {
+# Template only: replace both example domains and the documentation IP before use.
+app.example.com {
 	request_body {
 		max_size 55MB
 	}
@@ -7,12 +7,12 @@ smartqs.13-212-119-93.sslip.io {
 		flush_interval -1
 	}
 }
-excel.13-212-119-93.sslip.io {
+addin.example.com {
 	request_body {
 		max_size 55MB
 	}
 	reverse_proxy 127.0.0.1:3200
 }
-http://13.212.119.93 {
-	redir https://smartqs.13-212-119-93.sslip.io{uri} 302
+http://192.0.2.10 {
+	redir https://app.example.com{uri} 302
 }
